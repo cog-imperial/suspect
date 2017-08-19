@@ -5,8 +5,12 @@ from functools import reduce
 from convexity_detection.expr_visitor import (
     BottomUpExprVisitor,
     ProductExpression,
+    DivisionExpression,
     SumExpression,
     LinearExpression,
+    NegationExpression,
+    AbsExpression,
+    UnaryFunctionExpression,
     expr_callback,
 )
 from pyomo.core.base.var import SimpleVar
@@ -88,32 +92,142 @@ class Bound(object):
         return '[{}, {}]'.format(self.l, self.u)
 
 
+def _sin_bound(lower, upper):
+    if upper - lower >= 2 * np.pi:
+        return Bound(-1, 1)
+    else:
+        l = lower % (2 * np.pi)
+        u = l + (upper - lower)
+        new_u = max(np.sin(l), np.sin(u))
+        new_l = min(np.sin(l), np.sin(u))
+        if l <= 0.5 * np.pi <= u:
+            new_u = 1
+        if l <= 1.5 * np.pi <= u:
+            new_l = -1
+        return Bound(new_l, new_u)
+
+
 class BoundsVisitor(BottomUpExprVisitor):
     def __init__(self):
         self.memo = {}
 
+    def bound(self, expr):
+        if isinstance(expr, Number):
+            return Bound(expr, expr)
+        else:
+            return self.memo[id(expr)]
+
+    def set_bound(self, expr, bound):
+        self.memo[id(expr)] = bound
+
     @expr_callback(SimpleVar)
     def visit_simple_var(self, v):
         bound = Bound(v.bounds[0], v.bounds[1])
-        self.memo[id(v)] = bound
+        self.set_bound(v, bound)
+
+    @expr_callback(Number)
+    def visit_number(self, n):
+        pass  # do nothing
 
     @expr_callback(ProductExpression)
     def visit_product(self, expr):
-        bounds = [self.memo[id(c)] for c in expr._args]
+        bounds = [self.bound(c) for c in expr._args]
         bound = reduce(operator.mul, bounds, 1)
-        self.memo[id(expr)] = bound
+        self.set_bound(expr, bound)
+
+    @expr_callback(DivisionExpression)
+    def visit_division(self, expr):
+        top, bot = expr._args
+        bound = self.bound(top) / self.bound(bot)
+        self.set_bound(expr, bound)
 
     @expr_callback(LinearExpression)
     def visit_linear(self, expr):
-        bounds = [expr._coef[id(c)] * self.memo[id(c)] for c in expr._args]
+        bounds = [expr._coef[id(c)] * self.bound(c) for c in expr._args]
         bound = sum(bounds)
-        self.memo[id(expr)] = bound
+        self.set_bound(expr, bound)
 
     @expr_callback(SumExpression)
     def visit_sum(self, expr):
-        bounds = [self.memo[id(c)] for c in expr._args]
+        bounds = [self.bound(c) for c in expr._args]
         bound = sum(bounds)
-        self.memo[id(expr)] = bound
+        self.set_bound(expr, bound)
+
+    @expr_callback(NegationExpression)
+    def visit_negation(self, expr):
+        assert len(expr._args) == 1
+
+        bound = self.bound(expr._args[0])
+        new_bound = Bound(-bound.u, -bound.l)
+        self.set_bound(expr, new_bound)
+
+    @expr_callback(AbsExpression)
+    def visit_abs(self, expr):
+        assert len(expr._args) == 1
+
+        bound = self.bound(expr._args[0])
+        upper_bound = max(abs(bound.l), abs(bound.u))
+        if bound.l <= 0 and bound.u >= 0:
+            abs_bound = Bound(0, upper_bound)
+        else:
+            lower_bound = min(abs(bound.l), abs(bound.u))
+            abs_bound = Bound(lower_bound, upper_bound)
+        self.set_bound(expr, abs_bound)
+
+    @expr_callback(UnaryFunctionExpression)
+    def visit_unary_function(self, expr):
+        assert len(expr._args) == 1
+
+        name = expr._name
+        arg = expr._args[0]
+        arg_bound = self.bound(arg)
+
+        if name == 'sqrt':
+            if arg_bound.l < 0:
+                raise ValueError('math domain error')
+            new_bound = Bound(np.sqrt(arg_bound.l), np.sqrt(arg_bound.u))
+
+        elif name == 'log':
+            if arg_bound.l <= 0:
+                raise ValueError('math domain error')
+            new_bound = Bound(np.log(arg_bound.l), np.log(arg_bound.u))
+
+        elif name == 'asin':
+            if arg_bound.l < -1 or arg_bound.u > 1:
+                raise ValueError('math domain error')
+            new_bound = Bound(np.arcsin(arg_bound.l), np.arcsin(arg_bound.u))
+
+        elif name == 'acos':
+            if arg_bound.l < -1 or arg_bound.u > 1:
+                raise ValueError('math domain error')
+            # arccos is a decreasing function, swap upper and lower
+            new_bound = Bound(np.arccos(arg_bound.u), np.arccos(arg_bound.l))
+
+        elif name == 'atan':
+            new_bound = Bound(np.arctan(arg_bound.l), np.arctan(arg_bound.u))
+
+        elif name == 'exp':
+            new_bound = Bound(np.exp(arg_bound.l), np.exp(arg_bound.u))
+
+        elif name == 'sin':
+            if arg_bound.u - arg_bound.l >= 2 * np.pi:
+                new_bound = Bound(-1, 1)
+            else:
+                new_bound = _sin_bound(arg_bound.l, arg_bound.u)
+
+        elif name == 'cos':
+            if arg_bound.u - arg_bound.l >= 2 * np.pi:
+                new_bound = Bound(-1, 1)
+            else:
+                # translate left by pi/2
+                l = arg_bound.l - 0.5 * np.pi
+                u = arg_bound.u - 0.5 * np.pi
+                # -sin(x - pi/2) == cos(x)
+                new_bound = Bound(0, 0) - _sin_bound(l, u)
+
+        else:
+            raise RuntimeError('unknown unary function {}'.format(name))
+        self.set_bound(expr, new_bound)
 
 
 def expr_bounds(expr):
@@ -121,6 +235,44 @@ def expr_bounds(expr):
     v = BoundsVisitor()
     v.visit(expr)
     return v.memo[id(expr)]
+
+
+def _is_positive(bounds, expr):
+    bound = bounds[id(expr)]
+    return bound.l > 0
+
+
+def is_positive(expr):
+    v = BoundsVisitor()
+    v.visit(expr)
+    return _is_positive(v.memo, expr)
+
+
+def _is_nonnegative(bounds, expr):
+    bound = bounds[id(expr)]
+    return bound.l >= 0
+
+
+def is_nonnegative(expr):
+    v = BoundsVisitor()
+    v.visit(expr)
+    return _is_nonnegative(v.memo, expr)
+
+
+def _is_nonpositive(bounds, expr):
+    return not _is_positive(bounds, expr)
+
+
+def is_nonpositive(expr):
+    return not is_positive(expr)
+
+
+def _is_negative(bounds, expr):
+    return not _is_nonnegative(bounds, expr)
+
+
+def is_negative(expr):
+    return not is_negative(expr)
 
 
 if __name__ == '__main__':

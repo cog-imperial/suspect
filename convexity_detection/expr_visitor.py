@@ -11,6 +11,7 @@ SumExpression = omo._SumExpression
 LinearExpression = omo._LinearExpression
 NegationExpression = omo._NegationExpression
 UnaryFunctionExpression = omo._UnaryFunctionExpression
+AbsExpression = omo._AbsExpression
 
 
 def expr_callback(expr_cls):
