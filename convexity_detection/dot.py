@@ -1,6 +1,15 @@
 from numbers import Number
-from convexity_detection.expr_visitor import ExprVisitor
-import pyomo.core.base.expr_pyomo4 as omo
+from convexity_detection.expr_visitor import (
+    ExprVisitor,
+    ProductExpression,
+    DivisionExpression,
+    SumExpression,
+    LinearExpression,
+    NegationExpression,
+    UnaryFunctionExpression,
+    expr_callback,
+)
+# import pyomo.core.base.expr_pyomo4 as omo
 from pyomo.core.base.var import SimpleVar
 import numpy as np
 
@@ -41,17 +50,21 @@ class DotVisitor(ExprVisitor):
     def visit_end(self):
         self._f.write('}\n')
 
-    def visit_product(self, lvl, e):
+
+    @expr_callback(ProductExpression)
+    def visit_product(self, e):
         self.write_node(e, '*')
         for a in e._args:
             self.write_arc(e, a)
 
-    def visit_division(self, lvl, e):
+    @expr_callback(DivisionExpression)
+    def visit_division(self, e):
         self.write_node(e, '/')
         for a in e._args:
             self.write_arc(e, a)
 
-    def visit_linear(self, lvl, e):
+    @expr_callback(LinearExpression)
+    def visit_linear(self, e):
         self.write_node(e, '+')
 
         for node, coef in e._coef.items():
@@ -62,23 +75,28 @@ class DotVisitor(ExprVisitor):
             self._f.write('    const{} [label="{:.4f}"];\n'.format(id(e), e._const))
             self._f.write('    {0} -> const{0};\n'.format(id(e)))
 
-    def visit_sum(self, lvl, e):
+    @expr_callback(SumExpression)
+    def visit_sum(self, e):
         self.write_node(e, '+')
         for a in e._args:
             self.write_arc(e, a)
 
-    def visit_simple_var(self, lvl, v):
+    @expr_callback(SimpleVar)
+    def visit_simple_var(self, v):
         self.write_node(v, v.name)
 
-    def visit_unary_function(self, lvl, e):
-        self.write_node(e, e._name)
-        for a in e._args:
-            self.write_arc(e, a)
-
-    def visit_negation(self, lvl, e):
+    @expr_callback(NegationExpression)
+    def visit_negation(self, e):
         self.write_node(e, 'neg')
         for a in e._args:
             self.write_arc(e, a)
 
-    def visit_number(self, lvl, n):
+    @expr_callback(UnaryFunctionExpression)
+    def visit_unary_function(self, e):
+        self.write_node(e, e._name)
+        for a in e._args:
+            self.write_arc(e, a)
+
+    @expr_callback(Number)
+    def visit_number(self, n):
         print(n)

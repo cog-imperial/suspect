@@ -3,50 +3,96 @@ import pyomo.core.base.expr_pyomo4 as omo
 from pyomo.core.base.var import SimpleVar
 
 
-class ExprVisitor(object):
+InequalityExpression = omo._InequalityExpression
+EqualityExpression = omo._EqualityExpression
+ProductExpression = omo._ProductExpression
+DivisionExpression = omo._DivisionExpression
+SumExpression = omo._SumExpression
+LinearExpression = omo._LinearExpression
+NegationExpression = omo._NegationExpression
+UnaryFunctionExpression = omo._UnaryFunctionExpression
+
+
+def expr_callback(expr_cls):
+    def decorator(func):
+        func._expr_callback = expr_cls
+        return func
+    return decorator
+
+
+class ExprVisitorMeta(type):
+    def __new__(metacls, name, bases, namespace, **kwargs):
+        result = type.__new__(metacls, name, bases, dict(namespace))
+        result._expr_callbacks = [
+            (f, f._expr_callback) for f in namespace.values() if hasattr(f, '_expr_callback')
+        ]
+        return result
+
+
+def try_callback(visitor, expr):
+    """Try calling one of the registered callbacks, raising an exception
+    if no callback matches.
+    """
+    visited = False
+    for cb, expr_cls in visitor._expr_callbacks:
+        if isinstance(expr, expr_cls):
+            cb(visitor, expr)
+            visited = True
+            break  # stop at first match
+
+    if not visited:
+        msg = 'No callback found for {} {}'.format(
+            expr, type(expr)
+        )
+        raise RuntimeError(msg)
+
+
+class ExprVisitor(object, metaclass=ExprVisitorMeta):
     def visit(self, expr):
         with omo.bypass_clone_check():
             stack = [(0, expr)]
             while len(stack) > 0:
                 (lvl, expr) = stack.pop()
-                if isinstance(expr, SimpleVar):
-                    self.visit_simple_var(lvl, expr)
-                    continue
 
                 if isinstance(expr, omo._ExpressionBase):
                     for arg in expr._args:
                         stack.append((lvl+1, arg))
 
-                if isinstance(expr, omo._InequalityExpression):
-                    self.visit_inequality(expr)
-                elif isinstance(expr, omo._EqualityExpression):
-                    self.visit_equality(expr)
-                elif isinstance(expr, omo._ProductExpression):
-                    self.visit_product(lvl, expr)
-                elif isinstance(expr, omo._DivisionExpression):
-                    self.visit_division(lvl, expr)
-                elif isinstance(expr, omo._SumExpression):
-                    self.visit_sum(lvl, expr)
-                elif isinstance(expr, omo._GetItemExpression):
-                    self.visit_get_item(expr)
-                elif isinstance(expr, omo.Expr_if):
-                    self.visit_expr_if(expr)
-                elif isinstance(expr, omo._ProductExpression):
-                    self.visit_product(lvl, expr)
-                elif isinstance(expr, omo._LinearExpression):
-                    self.visit_linear(lvl, expr)
-                elif isinstance(expr, omo._NegationExpression):
-                    self.visit_negation(lvl, expr)
-                elif isinstance(expr, omo._AbsExpression):
-                    self.visit_abs(expr)
-                elif isinstance(expr, omo._PowExpression):
-                    self.visit_pow(expr)
-                elif isinstance(expr, omo._UnaryFunctionExpression):
-                    self.visit_unary_function(lvl, expr)
-                elif isinstance(expr, omo._ExternalFunctionExpression):
-                    self.visit_external_function(expr)
-                elif isinstance(expr, Number):
-                    self.visit_number(lvl, expr)
+                try_callback(self, expr)
+
+            self.visit_end()
+
+    def visit_end(self):
+        pass
+
+
+class BottomUpExprVisitor(object, metaclass=ExprVisitorMeta):
+    """A visitor that visits leaf nodes first and the root last"""
+    def visit(self, expr):
+        expr_level = {}
+        expr_by_id = {}
+        with omo.bypass_clone_check():
+            stack = [(0, expr)]
+            while len(stack) > 0:
+                (lvl, expr) = stack.pop()
+
+                old_lvl = expr_level.get(id(expr), -1)
+                expr_level[id(expr)] = max(old_lvl, lvl)
+                expr_by_id[id(expr)] = expr
+
+                if isinstance(expr, omo._ExpressionBase):
+                    for arg in expr._args:
+                        stack.append((lvl+1, arg))
+
+            expr_level = sorted(
+                [(lvl, ex) for ex, lvl in expr_level.items()],
+                reverse=True,
+            )
+
+            for _, expr_id in expr_level:
+                expr = expr_by_id[expr_id]
+                try_callback(self, expr)
+
             self.visit_end()
 
     def visit_end(self):

@@ -1,7 +1,14 @@
 import numpy as np
 from numbers import Number
-from convexity_detection.expr_visitor import ExprVisitor
-import pyomo.core.base.expr_pyomo4 as omo
+import operator
+from functools import reduce
+from convexity_detection.expr_visitor import (
+    BottomUpExprVisitor,
+    ProductExpression,
+    SumExpression,
+    LinearExpression,
+    expr_callback,
+)
 from pyomo.core.base.var import SimpleVar
 
 
@@ -81,50 +88,39 @@ class Bound(object):
         return '[{}, {}]'.format(self.l, self.u)
 
 
-class BoundsVisitor(ExprVisitor):
+class BoundsVisitor(BottomUpExprVisitor):
     def __init__(self):
-        self.stack = []
+        self.memo = {}
 
-    def visit_linear(self, h, expr):
-        self.stack.append((h, 'linear', expr, [id(a) for a in expr._args]))
-        print('linear {} {}'.format(h, expr))
-
-    def visit_product(self, h, expr):
-        self.stack.append((h, 'product', expr, [id(a) for a in expr._args]))
-        print('product {} {}'.format(h, expr))
-
-    def visit_simple_var(self, h, v):
+    @expr_callback(SimpleVar)
+    def visit_simple_var(self, v):
         bound = Bound(v.bounds[0], v.bounds[1])
-        self.stack.append((h, 'var', v, bound))
-        print('var {} {}'.format(h, v))
+        self.memo[id(v)] = bound
 
-    def visit_sum(self, h, expr):
-        self.stack.append((h, 'sum', expr, [id(a) for a in expr._args]))
-        print('sum {} {}'.format(h, expr))
+    @expr_callback(ProductExpression)
+    def visit_product(self, expr):
+        bounds = [self.memo[id(c)] for c in expr._args]
+        bound = reduce(operator.mul, bounds, 1)
+        self.memo[id(expr)] = bound
+
+    @expr_callback(LinearExpression)
+    def visit_linear(self, expr):
+        bounds = [expr._coef[id(c)] * self.memo[id(c)] for c in expr._args]
+        bound = sum(bounds)
+        self.memo[id(expr)] = bound
+
+    @expr_callback(SumExpression)
+    def visit_sum(self, expr):
+        bounds = [self.memo[id(c)] for c in expr._args]
+        bound = sum(bounds)
+        self.memo[id(expr)] = bound
 
 
 def expr_bounds(expr):
     """Given an expression, computes its bounds"""
     v = BoundsVisitor()
     v.visit(expr)
-    values = {}
-    ops = sorted(v.stack, key=lambda t: t[0], reverse=True)
-    for _, type_, e, children in ops:
-        if type_ == 'var':
-            values[id(e)] = children
-        elif type_ == 'product':
-            bounds = [values[c] for c in children]
-            b = 1
-            for x in bounds:
-                b = b * x
-            values[id(e)] = b
-        elif type_ == 'sum' or type_ == 'linear':
-            bounds = [values[c] for c in children]
-            b = 0
-            for x in bounds:
-                b = b + x
-            values[id(e)] = b
-    return values[id(expr)]
+    return v.memo[id(expr)]
 
 
 if __name__ == '__main__':

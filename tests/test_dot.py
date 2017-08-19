@@ -27,4 +27,3 @@ def test_dot():
     print(e0)
 
     print(f.getvalue())
-    assert False
