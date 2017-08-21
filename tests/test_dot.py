@@ -10,6 +10,7 @@ import pyomo.core.base.expr_pyomo4 as omo
 set_pyomo4_expression_tree()
 
 
+# TODO: test this
 def test_dot():
     x = aml.Var()
     y = aml.Var()
@@ -24,6 +25,3 @@ def test_dot():
     f = io.StringIO()
     v = DotVisitor(f)
     v.visit(e0)
-    print(e0)
-
-    print(f.getvalue())

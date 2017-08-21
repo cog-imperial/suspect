@@ -24,6 +24,12 @@ class Bound(object):
             u = np.inf
         if l > u:
             raise ValueError('l must be >= u')
+        # 0 is very important for positive/negative, so if a bound is
+        # close to it we set it to 0 explicitly
+        if np.isclose(l, 0):
+            l = 0
+        if np.isclose(u, 0):
+            u = 0
         self.l = l
         self.u = u
 
@@ -144,6 +150,7 @@ class BoundsVisitor(BottomUpExprVisitor):
     @expr_callback(LinearExpression)
     def visit_linear(self, expr):
         bounds = [expr._coef[id(c)] * self.bound(c) for c in expr._args]
+        bounds.append(Bound(expr._const, expr._const))
         bound = sum(bounds)
         self.set_bound(expr, bound)
 
@@ -260,26 +267,22 @@ def is_nonnegative(expr):
 
 
 def _is_nonpositive(bounds, expr):
-    return not _is_positive(bounds, expr)
+    bound = bounds[id(expr)]
+    return bound.u <= 0
 
 
 def is_nonpositive(expr):
-    return not is_positive(expr)
+    v = BoundsVisitor()
+    v.visit(expr)
+    return _is_nonpositive(v.memo, expr)
 
 
 def _is_negative(bounds, expr):
-    return not _is_nonnegative(bounds, expr)
+    bound = bounds[id(expr)]
+    return bound.u < 0
 
 
 def is_negative(expr):
-    return not is_negative(expr)
-
-
-if __name__ == '__main__':
-    import pyomo.environ as aml
-    from pyomo_compat import set_pyomo4_expression_tree
-    set_pyomo4_expression_tree()
-    x = aml.Var()
-    y = aml.Var()
-    z = aml.Var()
-    expr0 = (x + y) * z
+    v = BoundsVisitor()
+    v.visit(expr)
+    return _is_negative(v.memo, expr)

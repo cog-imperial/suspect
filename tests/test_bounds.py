@@ -1,17 +1,8 @@
 import pytest
 import pyomo.environ as aml
 from convexity_detection.bounds import *
-from convexity_detection.pyomo_compat import *
 import numpy as np
-
-
-set_pyomo4_expression_tree()
-
-
-def _var(bounds=None):
-    x = aml.Var(bounds=bounds)
-    x.construct()
-    return x
+from util import _var
 
 
 def test_bounds_arithmetic():
@@ -59,6 +50,7 @@ def test_bound_linear():
     #  = [-2, inf] * [2, 4]
 
     assert expr_bounds(e1) == Bound(-8, None)
+    assert expr_bounds(3 - _var((0, 2))) == Bound(1, 3)
 
 
 def test_bound_abs():
@@ -137,6 +129,7 @@ def test_bound_cos():
     assert_cos_bound((-0.5*np.pi, 0.5*np.pi), (0, 1))
     assert_cos_bound((0, 0.5*np.pi), (0, 1))
     assert_cos_bound((np.pi - 0.2, 2*np.pi), (-1, 1))
+    assert is_nonnegative(aml.cos(_var((1.5*np.pi, 2.5*np.pi))))
 
 
 def test_bound_negation():
