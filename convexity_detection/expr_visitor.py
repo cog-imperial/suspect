@@ -1,6 +1,4 @@
-from numbers import Number
 import pyomo.core.base.expr_pyomo4 as omo
-from pyomo.core.base.var import SimpleVar
 
 
 InequalityExpression = omo._InequalityExpression
@@ -25,7 +23,8 @@ class ExprVisitorMeta(type):
     def __new__(metacls, name, bases, namespace, **kwargs):
         result = type.__new__(metacls, name, bases, dict(namespace))
         result._expr_callbacks = [
-            (f, f._expr_callback) for f in namespace.values() if hasattr(f, '_expr_callback')
+            (f, f._expr_callback)
+            for f in namespace.values() if hasattr(f, '_expr_callback')
         ]
         return result
 

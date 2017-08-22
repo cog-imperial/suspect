@@ -50,7 +50,6 @@ class DotVisitor(ExprVisitor):
     def visit_end(self):
         self._f.write('}\n')
 
-
     @expr_callback(ProductExpression)
     def visit_product(self, e):
         self.write_node(e, '*')
@@ -72,7 +71,9 @@ class DotVisitor(ExprVisitor):
             self._f.write('    {} -> {};\n'.format(id(e), node_id))
 
         if not np.isclose(e._const, 0):
-            self._f.write('    const{} [label="{:.4f}"];\n'.format(id(e), e._const))
+            self._f.write('    const{} [label="{:.4f}"];\n'.format(
+                id(e), e._const)
+            )
             self._f.write('    {0} -> const{0};\n'.format(id(e)))
 
     @expr_callback(SumExpression)

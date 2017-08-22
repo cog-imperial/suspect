@@ -1,8 +1,5 @@
-import numpy as np
 from numbers import Number
 from enum import Enum
-import operator
-from functools import reduce
 import pyomo.environ as aml
 from convexity_detection.bounds import (
     BoundsVisitor,
@@ -317,7 +314,6 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
             self.set_monotonicity(expr, Monotonicity.Nondecreasing)
         else:
             self.set_monotonicity(expr, Monotonicity.Unknown)
-
 
     @expr_callback(UnaryFunctionExpression)
     def visit_unary_function(self, expr):
