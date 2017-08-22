@@ -1,0 +1,10 @@
+image: python:3.6.2
+
+pipelines:
+  default:
+    - step:
+        caches:
+          - pip
+        script:
+          - pip install -r requirements.txt
+          - python setup.py test
