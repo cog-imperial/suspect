@@ -232,6 +232,21 @@ class BoundsVisitor(BottomUpExprVisitor):
                 # -sin(x - pi/2) == cos(x)
                 new_bound = Bound(0, 0) - _sin_bound(l, u)
 
+        elif name == 'tan':
+            if arg_bound.u - arg_bound.l >= np.pi:
+                new_bound = Bound(None, None)
+            else:
+                l = arg_bound.l % np.pi
+                u = arg_bound.u % np.pi
+                new_l = np.tan(l)
+                if np.isclose(l, 0.5 * np.pi):
+                    new_l = None
+                new_u = np.tan(u)
+                if np.isclose(u, 0.5 * np.pi):
+                    new_u = None
+
+                new_bound = Bound(new_l, new_u)
+
         else:
             raise RuntimeError('unknown unary function {}'.format(name))
         self.set_bound(expr, new_bound)

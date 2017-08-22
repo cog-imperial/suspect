@@ -132,6 +132,16 @@ def test_bound_cos():
     assert is_nonnegative(aml.cos(_var((1.5*np.pi, 2.5*np.pi))))
 
 
+def test_bound_tan():
+    def assert_tan_bound(bounds, expected_bounds):
+        assert expr_bounds(aml.tan(_var(bounds))) == Bound(*expected_bounds)
+
+    assert_tan_bound((None, None), (None, None))
+    assert_tan_bound((0, 0.5 * np.pi), (0, None))
+    assert_tan_bound((0.5*np.pi, 0.5*np.pi), (None, None))
+    assert_tan_bound((np.pi-0.1, np.pi+0.1), (-np.tan(0.1), np.tan(0.1)))
+
+
 def test_bound_negation():
     e0 = -_var((-10, 1))
     assert expr_bounds(e0) == Bound(-1, 10)
