@@ -7,5 +7,5 @@ setup(
     packages=find_packages('convexity_detection'),
     requires=['pyomo'],
     setup_requires=['pytest-runner'],
-    tests_requires=['pytest'],
+    tests_requires=['pytest', 'pytest-cov'],
 )
