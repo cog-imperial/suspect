@@ -140,6 +140,10 @@ def test_bound_tan():
     assert_tan_bound((0, 0.5 * np.pi), (0, None))
     assert_tan_bound((0.5*np.pi, 0.5*np.pi), (None, None))
     assert_tan_bound((np.pi-0.1, np.pi+0.1), (-np.tan(0.1), np.tan(0.1)))
+    assert_tan_bound(
+        (0.5*np.pi-0.1, 0.5*np.pi+0.1),
+        (np.tan(0.5*np.pi+0.1), np.tan(0.5*np.pi-0.1))
+    )
 
 
 def test_bound_negation():

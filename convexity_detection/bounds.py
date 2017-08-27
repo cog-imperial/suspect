@@ -237,11 +237,13 @@ class BoundsVisitor(BottomUpExprVisitor):
                 new_bound = Bound(None, None)
             else:
                 l = arg_bound.l % np.pi
-                u = arg_bound.u % np.pi
-                new_l = np.tan(l)
+                u = l + (arg_bound.u - arg_bound.l)
+                tan_l = np.tan(l)
+                tan_u = np.tan(u)
+                new_l = min(tan_l, tan_u)
+                new_u = max(tan_l, tan_u)
                 if np.isclose(l, 0.5 * np.pi):
                     new_l = None
-                new_u = np.tan(u)
                 if np.isclose(u, 0.5 * np.pi):
                     new_u = None
 
