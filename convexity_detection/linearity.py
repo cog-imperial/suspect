@@ -1,5 +1,6 @@
 from numbers import Number
 from enum import Enum
+from collections import defaultdict
 import pyomo.environ as aml
 from convexity_detection.bounds import (
     BoundsVisitor,
@@ -139,6 +140,10 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
     def visit_number(self, n):
         pass
 
+    @expr_callback(SumExpression)
+    def visit_sum(self, expr):
+        self.visit_linear(expr)
+
     @expr_callback(LinearExpression)
     def visit_linear(self, expr):
         def _adjust_monotonicity(mono, coef):
@@ -156,8 +161,13 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
                 # if coef == 0, it's a constant with value 0.0
                 return Monotonicity.Constant
 
+        if hasattr(expr, '_coef'):
+            coefs = expr._coef
+        else:
+            coefs = defaultdict(lambda: 1.0)
+
         monos = [
-            _adjust_monotonicity(self.monotonicity(a), expr._coef[id(a)])
+            _adjust_monotonicity(self.monotonicity(a), coefs[id(a)])
             for a in expr._args
         ]
         all_nondec = all([m.is_nondecreasing() for m in monos])

@@ -303,3 +303,8 @@ def is_negative(expr):
     v = BoundsVisitor()
     v.visit(expr)
     return _is_negative(v.memo, expr)
+
+
+def _is_zero(bounds, expr):
+    bound = bounds[id(expr)]
+    return np.isclose(bound.l, 0) and np.isclose(bound.u, 0)
