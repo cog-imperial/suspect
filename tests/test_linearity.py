@@ -1,7 +1,7 @@
 import pytest
 import pyomo.environ as aml
 from convexity_detection.linearity import *
-import numpy as np
+from convexity_detection.math import pi
 from util import _var
 
 
@@ -169,15 +169,15 @@ def test_monotonicity_acos():
 
 def test_monotonicity_sin():
     assert is_unknown(aml.sin(_var()))
-    assert is_nondecreasing(aml.sin(_var((-0.5*np.pi, 0.5*np.pi))))
-    assert is_nondecreasing(aml.sin(_var((0, 0.5*np.pi))))
-    assert is_nonincreasing(aml.sin(_var((2.5*np.pi, 3.5*np.pi))))
-    assert is_nondecreasing(aml.sin(_var((1.5*np.pi, 2.5*np.pi))))
-    assert is_unknown(aml.sin(_var((0.5*np.pi-0.2, 0.5*np.pi + 0.1))))
+    assert is_nondecreasing(aml.sin(_var((-0.5*pi, 0.5*pi))))
+    assert is_nondecreasing(aml.sin(_var((0, 0.5*pi))))
+    assert is_nonincreasing(aml.sin(_var((2.5*pi, 3.5*pi))))
+    assert is_nondecreasing(aml.sin(_var((1.5*pi, 2.5*pi))))
+    assert is_unknown(aml.sin(_var((0.5*pi-0.2, 0.5*pi + 0.1))))
 
 
 def test_monotonicity_cos():
     assert is_unknown(aml.cos(_var()))
-    assert is_nondecreasing(aml.cos(_var((-np.pi, 0))))
-    assert is_nonincreasing(aml.cos(_var((2*np.pi, 3*np.pi))))
+    assert is_nondecreasing(aml.cos(_var((-pi, 0))))
+    assert is_nonincreasing(aml.cos(_var((2*pi, 3*pi))))
     assert is_unknown(aml.cos(_var((-0.01, 0.01))))

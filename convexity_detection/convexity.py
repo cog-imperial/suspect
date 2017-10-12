@@ -1,7 +1,6 @@
 from numbers import Number
 from enum import Enum
 from collections import defaultdict
-import numpy as np
 import pyomo.environ as aml
 from convexity_detection.bounds import (
     BoundsVisitor,
@@ -29,6 +28,7 @@ from convexity_detection.expr_visitor import (
     UnaryFunctionExpression,
     expr_callback,
 )
+from convexity_detection.math import *
 from pyomo.core.base.var import SimpleVar
 
 
@@ -54,17 +54,17 @@ class Convexity(Enum):
 def _sin_convexity(bound, cvx, arg):
     # if bound is like [0, pi], we need to be extra carefull
     diff = bound.u - bound.l
-    if diff > np.pi:
+    if diff > pi:
         return Convexity.Unknown
 
-    sin_l = np.sin(bound.l)
-    sin_u = np.sin(bound.u)
-    if sin_l * sin_u < 0 and not np.isclose(sin_l*sin_u, 0):
+    sin_l = sin(bound.l)
+    sin_u = sin(bound.u)
+    if sin_l * sin_u < 0 and not almosteq(sin_l*sin_u, 0):
         return Convexity.Unknown
 
-    l = bound.l % (2 * np.pi)
+    l = bound.l % (2 * pi)
     u = l + diff
-    if l <= 0.5 * np.pi <= u:
+    if l <= 0.5 * pi <= u:
         cond_linear = cvx.is_linear()
         cond_convex = (
             cvx.is_convex() and is_nonpositive(aml.cos(arg))
@@ -74,7 +74,7 @@ def _sin_convexity(bound, cvx, arg):
         )
         if cond_linear or cond_convex or cond_concave:
             return Convexity.Concave
-    elif l <= 1.5 * np.pi <= u:
+    elif l <= 1.5 * pi <= u:
         cond_linear = cvx.is_linear()
         cond_concave = (
             cvx.is_concave() and is_nonpositive(aml.cos(arg))
@@ -90,17 +90,17 @@ def _sin_convexity(bound, cvx, arg):
 def _cos_convexity(bound, cvx, arg):
     # if bound is like [0, pi], we need to be extra carefull
     diff = bound.u - bound.l
-    if diff > np.pi:
+    if diff > pi:
         return Convexity.Unknown
 
-    cos_l = np.cos(bound.l)
-    cos_u = np.cos(bound.u)
-    if cos_l * cos_u < 0 and not np.isclose(cos_l*cos_u, 0):
+    cos_l = cos(bound.l)
+    cos_u = cos(bound.u)
+    if cos_l * cos_u < 0 and not almosteq(cos_l*cos_u, 0):
         return Convexity.Unknown
 
-    l = bound.l % (2 * np.pi)
+    l = bound.l % (2 * pi)
     u = l + diff
-    if u <= 0.5*np.pi or l >= 1.5*np.pi:
+    if u <= 0.5*pi or l >= 1.5*pi:
         cond_linear = cvx.is_linear()
         cond_convex = (
             cvx.is_convex() and is_nonpositive(aml.sin(arg))
@@ -125,12 +125,12 @@ def _cos_convexity(bound, cvx, arg):
 
 def _tan_convexity(bound, cvx):
     diff = bound.u - bound.l
-    if diff > 0.5 * np.pi:
+    if diff > 0.5 * pi:
         return Convexity.Unknown
 
-    tan_l = np.tan(bound.l)
-    tan_u = np.tan(bound.u)
-    if tan_l * tan_u < 0 and not np.isclose(tan_l*tan_u, 0):
+    tan_l = tan(bound.l)
+    tan_u = tan(bound.u)
+    if tan_l * tan_u < 0 and not almosteq(tan_l*tan_u, 0):
         return Convexity.Unknown
 
     if tan_u >= 0 and tan_l >= 0 and cvx.is_convex():
@@ -224,7 +224,7 @@ class ConvexityExprVisitor(BottomUpExprVisitor):
 
     def is_zero(self, expr):
         if isinstance(expr, Number):
-            return np.isclose(expr, 0)
+            return almosteq(expr, 0)
         else:
             return _is_zero(self.bounds, expr)
 

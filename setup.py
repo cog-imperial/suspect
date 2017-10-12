@@ -5,7 +5,7 @@ setup(
     author='Francesco Ceccon',
     author_email='francesco@ceccon.me',
     packages=find_packages('convexity_detection'),
-    requires=['pyomo', 'numpy'],
+    requires=['pyomo', 'numpy', 'mpmath'],
     setup_requires=['pytest-runner'],
     tests_requires=['pytest', 'pytest-cov'],
 )

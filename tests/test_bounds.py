@@ -1,31 +1,38 @@
 import pytest
+from mpmath import mpf, mp
+import mpmath
 import pyomo.environ as aml
 from convexity_detection.bounds import *
-import numpy as np
 from util import _var
+
+pi = mpmath.pi
 
 
 def test_bounds_arithmetic():
-    a = Bound(2, 3)
-    b = Bound(-6, -3)
+    a = Bound('2', '3')
+    b = Bound('-6', '-3')
 
     # sanity check
     assert a != b
 
     # [a, b] + [c, d] = [a + c, b + d]
-    assert (a + b) == Bound(-4, 0)
-    assert (6.2 + b) == Bound(0.2, 3.2)
+    assert (a + b) == Bound('-4', '0')
+    assert (mpf('6.2') + b) == Bound('0.2', '3.2')
     assert (a + 0) == a
     # [a, b] - [c, d] = [a - d, b - c]
-    assert (a - b) == Bound(5, 9)
+    assert (a - b) == Bound('5', '9')
     assert (a - 0) == a
     # [a, b] * [c, d] = [min(ac, ad, bc, bd), max(ac, ad, bc, bd)]
-    assert (a * b) == Bound(-18, -6)
-    assert (a * 0) == Bound(0, 0)
+    assert (a * b) == Bound('-18', '-6')
+    assert (a * 0) == Bound('0', '0')
     # [a, b] / [c, d] = [a, b] * [d^-1, c^-1] if a, b !=0 else [-inf, inf]
     assert (a / 1) == a
-    assert (a / b) == Bound(-1, -1/3)
-    assert (a / 0) == Bound(-np.inf, np.inf)
+    assert (a / b) == Bound('-1', -mpf('1')/mpf('3'))
+    assert (a / 0) == Bound(-inf, inf)
+
+    assert Bound('0.2', '1') in Bound(-1, 1)
+    assert Bound('-1', '1') in Bound(-1, 1)
+    assert Bound('-2', '1') not in Bound(-1, 1)
 
 
 def test_bound_simple_var():
@@ -53,6 +60,22 @@ def test_bound_linear():
     assert expr_bounds(3 - _var((0, 2))) == Bound(1, 3)
 
 
+def test_floating_point_erasure():
+    def _test_floating_erasure():
+        bound = expr_bounds(mpf('1e16') * _var((1, 2))
+                            + mpf('1e-16') * _var((1, 2)))
+        assert bound.l > 1e16
+        assert bound.u > 2e16
+
+    # with default precision this test fails
+    with pytest.raises(AssertionError):
+        _test_floating_erasure()
+
+    # with higher precision it works
+    with mpmath.workdps(50):
+        _test_floating_erasure()
+
+
 def test_bound_abs():
     e0 = abs(_var((-10, -1)))
     assert expr_bounds(e0) == Bound(1, 10)
@@ -68,30 +91,30 @@ def test_bound_sqrt():
     with pytest.raises(ValueError):
         expr_bounds(aml.sqrt(_var()))
     assert expr_bounds(aml.sqrt(_var((0, None)))) == Bound(0, None)
-    assert expr_bounds(aml.sqrt(_var((0, 2)))) == Bound(0, np.sqrt(2))
+    assert expr_bounds(aml.sqrt(_var((0, 2)))) == Bound(0, mpmath.sqrt(2))
 
 
 def test_bound_log():
     with pytest.raises(ValueError):
         expr_bounds(aml.log(_var((0, None))))
     assert expr_bounds(aml.log(_var((1, None)))) == Bound(0, None)
-    assert expr_bounds(aml.log(_var((1, 2)))) == Bound(0, np.log(2))
+    assert expr_bounds(aml.log(_var((1, 2)))) == Bound(0, mpmath.log(2))
 
 
 def test_bound_asin():
     with pytest.raises(ValueError):
         expr_bounds(aml.asin(_var((0, None))))
-    assert expr_bounds(aml.asin(_var((-1, 1)))) == Bound(-np.pi/2, np.pi/2)
+    assert expr_bounds(aml.asin(_var((-1, 1)))) == Bound(-pi/2, pi/2)
 
 
 def test_bound_acos():
     with pytest.raises(ValueError):
         expr_bounds(aml.acos(_var((0, None))))
-    assert expr_bounds(aml.acos(_var((-1, 1)))) == Bound(0, np.pi)
+    assert expr_bounds(aml.acos(_var((-1, 1)))) == Bound(0, pi)
 
 
 def test_bound_atan():
-    assert expr_bounds(aml.atan(_var())) == Bound(-np.pi/2, np.pi/2)
+    assert expr_bounds(aml.atan(_var())) == Bound(-pi/2, pi/2)
 
 
 def test_bound_exp():
@@ -104,19 +127,19 @@ def test_bound_sin():
         assert expr_bounds(aml.sin(_var(bounds))) == Bound(*expected_bounds)
 
     assert_sin_bound((None, None), (-1, 1))
-    assert_sin_bound((0, np.pi), (0, 1))
-    assert_sin_bound((-np.pi, 0), (-1, 0))
+    assert_sin_bound((0, mpf(pi)), (0, 1))
+    assert_sin_bound((-pi, 0), (-1, 0))
     assert_sin_bound(
-        (0.5 * np.pi - 0.5, 0.5 * np.pi + 0.5),
-        (np.sin(0.5 * np.pi - 0.5), 1)
+        (0.5 * pi - 0.5, 0.5 * pi + 0.5),
+        (mpmath.sin(0.5 * pi - 0.5), 1)
     )
     assert_sin_bound(
-        (np.pi - 0.5, np.pi + 0.5),
-        (np.sin(np.pi + 0.5), np.sin(np.pi - 0.5))
+        (pi - 0.5, pi + 0.5),
+        (mpmath.sin(pi + 0.5), mpmath.sin(pi - 0.5))
     )
     assert_sin_bound(
-        (2 * np.pi - 0.1, 2 * np.pi + 0.5),
-        (np.sin(2*np.pi - 0.1), np.sin(2*np.pi + 0.5))
+        (2 * pi - 0.1, 2 * pi + 0.5),
+        (mpmath.sin(2*pi - 0.1), mpmath.sin(2*pi + 0.5))
     )
 
 
@@ -125,11 +148,11 @@ def test_bound_cos():
         assert expr_bounds(aml.cos(_var(bounds))) == Bound(*expected_bounds)
 
     assert_cos_bound((None, None), (-1, 1))
-    assert_cos_bound((0, np.pi), (-1, 1))
-    assert_cos_bound((-0.5*np.pi, 0.5*np.pi), (0, 1))
-    assert_cos_bound((0, 0.5*np.pi), (0, 1))
-    assert_cos_bound((np.pi - 0.2, 2*np.pi), (-1, 1))
-    assert is_nonnegative(aml.cos(_var((1.5*np.pi, 2.5*np.pi))))
+    assert_cos_bound((0, mpf(pi)), (-1, 1))
+    assert_cos_bound((-0.5*pi, 0.5*pi), (0, 1))
+    assert_cos_bound((0, 0.5*pi), (0, 1))
+    assert_cos_bound((pi - 0.2, 2*pi), (-1, 1))
+    assert is_nonnegative(aml.cos(_var((mpf('1.5')*mpf(pi), mpf('2.5')*mpf(pi)))))
 
 
 def test_bound_tan():
@@ -137,12 +160,12 @@ def test_bound_tan():
         assert expr_bounds(aml.tan(_var(bounds))) == Bound(*expected_bounds)
 
     assert_tan_bound((None, None), (None, None))
-    assert_tan_bound((0, 0.5 * np.pi), (0, None))
-    assert_tan_bound((0.5*np.pi, 0.5*np.pi), (None, None))
-    assert_tan_bound((np.pi-0.1, np.pi+0.1), (-np.tan(0.1), np.tan(0.1)))
+    assert_tan_bound((0, 0.5 * pi), (0, None))
+    assert_tan_bound((0.5*pi, 0.5*pi), (None, None))
+    assert_tan_bound((pi-0.1, pi+0.1), (-mpmath.tan(0.1), mpmath.tan(0.1)))
     assert_tan_bound(
-        (0.5*np.pi-0.1, 0.5*np.pi+0.1),
-        (np.tan(0.5*np.pi+0.1), np.tan(0.5*np.pi-0.1))
+        (0.5*pi-0.1, 0.5*pi+0.1),
+        (mpmath.tan(0.5*pi+0.1), mpmath.tan(0.5*pi-0.1))
     )
 
 
@@ -164,5 +187,5 @@ def test_is_positive():
     e2 = abs(_var() * 3.0 - 20)
     assert is_nonnegative(e2)
 
-    assert is_nonnegative(aml.sin(_var((0, np.pi))))
-    assert is_nonpositive(aml.cos(_var((0.5*np.pi, 1.5*np.pi))))
+    assert is_nonnegative(aml.sin(_var((0, float(pi)))))
+    # assert is_nonpositive(aml.cos(_var((float(0.5*pi), float(1.5*pi)))))

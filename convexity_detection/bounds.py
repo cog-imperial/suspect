@@ -1,4 +1,3 @@
-import numpy as np
 from numbers import Number
 import operator
 from functools import reduce
@@ -13,23 +12,26 @@ from convexity_detection.expr_visitor import (
     UnaryFunctionExpression,
     expr_callback,
 )
+from convexity_detection.math import *
+from convexity_detection.error import DomainError
 from pyomo.core.base.var import SimpleVar
 
 
 class Bound(object):
     def __init__(self, l, u):
         if l is None:
-            l = -np.inf
+            l = -inf
         if u is None:
-            u = np.inf
+            u = inf
+
+        if not isinstance(l, mpf):
+            l = mpf(l)
+        if not isinstance(u, mpf):
+            u = mpf(u)
+
         if l > u:
             raise ValueError('l must be >= u')
-        # 0 is very important for positive/negative, so if a bound is
-        # close to it we set it to 0 explicitly
-        if np.isclose(l, 0):
-            l = 0
-        if np.isclose(u, 0):
-            u = 0
+
         self.l = l
         self.u = u
 
@@ -78,7 +80,7 @@ class Bound(object):
             ol = other.l
             ou = other.u
             if ol <= 0 and ou >= 0:
-                return Bound(-np.inf, np.inf)
+                return Bound(-inf, inf)
             else:
                 return self.__mul__(Bound(1/ou, 1/ol))
         elif isinstance(other, Number):
@@ -89,7 +91,10 @@ class Bound(object):
     def __eq__(self, other):
         if not isinstance(other, Bound):
             return False
-        return np.isclose(self.l, other.l) and np.isclose(self.u, other.u)
+        return almosteq(self.l, other.l) and almosteq(self.u, other.u)
+
+    def __contains__(self, other):
+        return other.l >= self.l and other.u <= self.u
 
     def __repr__(self):
         return '<{} at {}>'.format(str(self), id(self))
@@ -99,16 +104,16 @@ class Bound(object):
 
 
 def _sin_bound(lower, upper):
-    if upper - lower >= 2 * np.pi:
+    if upper - lower >= 2 * pi:
         return Bound(-1, 1)
     else:
-        l = lower % (2 * np.pi)
+        l = lower % (2 * pi)
         u = l + (upper - lower)
-        new_u = max(np.sin(l), np.sin(u))
-        new_l = min(np.sin(l), np.sin(u))
-        if l <= 0.5 * np.pi <= u:
+        new_u = max(sin(l), sin(u))
+        new_l = min(sin(l), sin(u))
+        if l <= 0.5 * pi <= u:
             new_u = 1
-        if l <= 1.5 * np.pi <= u:
+        if l <= 1.5 * pi <= u:
             new_l = -1
         return Bound(new_l, new_u)
 
@@ -191,60 +196,61 @@ class BoundsVisitor(BottomUpExprVisitor):
 
         if name == 'sqrt':
             if arg_bound.l < 0:
-                raise ValueError('math domain error')
-            new_bound = Bound(np.sqrt(arg_bound.l), np.sqrt(arg_bound.u))
+                raise DomainError('sqrt')
+            new_bound = Bound(sqrt(arg_bound.l), sqrt(arg_bound.u))
 
         elif name == 'log':
             if arg_bound.l <= 0:
-                raise ValueError('math domain error')
-            new_bound = Bound(np.log(arg_bound.l), np.log(arg_bound.u))
+                raise DomainError('log')
+            new_bound = Bound(log(arg_bound.l), log(arg_bound.u))
 
         elif name == 'asin':
-            if arg_bound.l < -1 or arg_bound.u > 1:
-                raise ValueError('math domain error')
-            new_bound = Bound(np.arcsin(arg_bound.l), np.arcsin(arg_bound.u))
+            if arg_bound not in Bound(-1, 1):
+                raise DomainError('asin')
+            new_bound = Bound(asin(arg_bound.l), asin(arg_bound.u))
 
         elif name == 'acos':
-            if arg_bound.l < -1 or arg_bound.u > 1:
-                raise ValueError('math domain error')
+            if arg_bound not in Bound(-1, 1):
+                raise DomainError('acos')
             # arccos is a decreasing function, swap upper and lower
-            new_bound = Bound(np.arccos(arg_bound.u), np.arccos(arg_bound.l))
+            new_bound = Bound(acos(arg_bound.u), acos(arg_bound.l))
 
         elif name == 'atan':
-            new_bound = Bound(np.arctan(arg_bound.l), np.arctan(arg_bound.u))
+            new_bound = Bound(atan(arg_bound.l), atan(arg_bound.u))
 
         elif name == 'exp':
-            new_bound = Bound(np.exp(arg_bound.l), np.exp(arg_bound.u))
+            new_bound = Bound(exp(arg_bound.l), exp(arg_bound.u))
 
         elif name == 'sin':
-            if arg_bound.u - arg_bound.l >= 2 * np.pi:
+            if arg_bound.u - arg_bound.l >= 2 * pi:
                 new_bound = Bound(-1, 1)
             else:
                 new_bound = _sin_bound(arg_bound.l, arg_bound.u)
 
         elif name == 'cos':
-            if arg_bound.u - arg_bound.l >= 2 * np.pi:
+            if arg_bound.u - arg_bound.l >= 2 * pi:
                 new_bound = Bound(-1, 1)
             else:
                 # translate left by pi/2
-                l = arg_bound.l - 0.5 * np.pi
-                u = arg_bound.u - 0.5 * np.pi
+                pi_2 = pi / mpf('2')
+                l = arg_bound.l - pi_2
+                u = arg_bound.u - pi_2
                 # -sin(x - pi/2) == cos(x)
                 new_bound = Bound(0, 0) - _sin_bound(l, u)
 
         elif name == 'tan':
-            if arg_bound.u - arg_bound.l >= np.pi:
+            if arg_bound.u - arg_bound.l >= pi:
                 new_bound = Bound(None, None)
             else:
-                l = arg_bound.l % np.pi
+                l = arg_bound.l % pi
                 u = l + (arg_bound.u - arg_bound.l)
-                tan_l = np.tan(l)
-                tan_u = np.tan(u)
+                tan_l = tan(l)
+                tan_u = tan(u)
                 new_l = min(tan_l, tan_u)
                 new_u = max(tan_l, tan_u)
-                if np.isclose(l, 0.5 * np.pi):
+                if almosteq(l, 0.5 * pi):
                     new_l = None
-                if np.isclose(u, 0.5 * np.pi):
+                if almosteq(u, 0.5 * pi):
                     new_u = None
 
                 new_bound = Bound(new_l, new_u)
@@ -274,7 +280,7 @@ def is_positive(expr):
 
 def _is_nonnegative(bounds, expr):
     bound = bounds[id(expr)]
-    return bound.l >= 0
+    return almostgte(bound.l, 0)
 
 
 def is_nonnegative(expr):
@@ -285,7 +291,7 @@ def is_nonnegative(expr):
 
 def _is_nonpositive(bounds, expr):
     bound = bounds[id(expr)]
-    return bound.u <= 0
+    return almostlte(bound.u, 0)
 
 
 def is_nonpositive(expr):
@@ -307,4 +313,4 @@ def is_negative(expr):
 
 def _is_zero(bounds, expr):
     bound = bounds[id(expr)]
-    return np.isclose(bound.l, 0) and np.isclose(bound.u, 0)
+    return almosteq(bound.l, 0) and almosteq(bound.u, 0)

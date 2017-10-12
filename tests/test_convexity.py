@@ -1,7 +1,7 @@
 import pytest
 import pyomo.environ as aml
 from convexity_detection.convexity import *
-import numpy as np
+from convexity_detection.math import pi
 from util import _var
 
 
@@ -76,9 +76,9 @@ def test_convexity_sin():
 
     assert_sin(None, None, Convexity.Unknown)
     assert_sin(-0.5, 0.5, Convexity.Unknown)
-    assert_sin(0, 0.5*np.pi, Convexity.Concave)
-    assert_sin(2*np.pi, 3*np.pi, Convexity.Concave)
-    assert_sin(3*np.pi, 4*np.pi, Convexity.Convex)
+    assert_sin(0, 0.5*pi, Convexity.Concave)
+    assert_sin(2*pi, 3*pi, Convexity.Concave)
+    assert_sin(3*pi, 4*pi, Convexity.Convex)
 
 
 def test_convexity_cos():
@@ -86,21 +86,21 @@ def test_convexity_cos():
         assert expr_convexity(aml.cos(_var((l, u)))) == expected
 
     assert_cos(None, None, Convexity.Unknown)
-    assert_cos(0.5*np.pi-0.2, 0.5*np.pi+0.3, Convexity.Unknown)
-    assert_cos(-0.5*np.pi, 0.5*np.pi, Convexity.Concave)
-    assert_cos(0.5*np.pi, 1.5*np.pi, Convexity.Convex)
-    assert_cos(1.5*np.pi, 2.5*np.pi, Convexity.Concave)
+    assert_cos(0.5*pi-0.2, 0.5*pi+0.3, Convexity.Unknown)
+    assert_cos(-0.5*pi, 0.5*pi, Convexity.Concave)
+    assert_cos(0.5*pi, 1.5*pi, Convexity.Convex)
+    assert_cos(1.5*pi, 2.5*pi, Convexity.Concave)
 
 
 def test_convexity_tan():
     def assert_tan(l, u, expected):
         assert expr_convexity(aml.tan(_var((l, u)))) == expected
 
-    assert_tan(0, 2*np.pi, Convexity.Unknown)
+    assert_tan(0, 2*pi, Convexity.Unknown)
     assert_tan(-0.5, 0.5, Convexity.Unknown)
-    assert_tan(0.5*np.pi-0.1, 0.5*np.pi+0.1, Convexity.Unknown)
-    assert_tan(0, 0.5*np.pi, Convexity.Convex)
-    assert_tan(-0.5*np.pi, 0, Convexity.Concave)
+    assert_tan(0.5*pi-0.1, 0.5*pi+0.1, Convexity.Unknown)
+    assert_tan(0, 0.5*pi, Convexity.Convex)
+    assert_tan(-0.5*pi, 0, Convexity.Concave)
 
     assert expr_convexity(
         aml.tan(aml.exp(_var((None, 0))))
