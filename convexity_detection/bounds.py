@@ -14,7 +14,7 @@ from convexity_detection.expr_visitor import (
 )
 from convexity_detection.math import *
 from convexity_detection.error import DomainError
-from pyomo.core.base.var import SimpleVar
+from pyomo.core.base import _VarData
 
 
 class Bound(object):
@@ -131,7 +131,7 @@ class BoundsVisitor(BottomUpExprVisitor):
     def set_bound(self, expr, bound):
         self.memo[id(expr)] = bound
 
-    @expr_callback(SimpleVar)
+    @expr_callback(_VarData)
     def visit_simple_var(self, v):
         bound = Bound(v.bounds[0], v.bounds[1])
         self.set_bound(v, bound)
