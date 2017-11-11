@@ -100,3 +100,59 @@ def test_expr_hash_float_hasher(model):
 
     assert expr_hash(model.cons3[0]) == expr_hash(model.cons4[0])
     assert expr_hash(model.cons3[0], h) != expr_hash(model.cons4[0], h)
+
+
+def test_expr_equal(model):
+    assert not expr_equal(1.2, 2.3)
+    assert expr_equal(model.x[1], model.x[1])
+    assert expr_equal(model.x[1] + 1.23, model.x[1] + 1.23)
+    assert not expr_equal(model.x[1], model.y[1, 0])
+    assert not expr_equal(model.x[1], 2)
+
+    sum1 = sum(model.x[i] for i in model.I)
+    sum2 = sum(model.x[i] for i in model.I)
+    sum3 = sum((i + 1) * model.x[i] for i in model.I)
+    sum4 = sum(i * model.x[i] for i in model.I)
+    sum5 = sum((i + 1) * model.x[i] for i in model.I)
+    sum6 = sum(model.y[i, 0] for i in model.I)
+
+    assert expr_equal(sum1, sum2)
+    assert not expr_equal(sum1, sum3)
+    assert not expr_equal(sum1, sum4)
+    assert expr_equal(sum3, sum5)
+    assert not expr_equal(sum1, sum6)
+
+    fun1 = aml.cos(sum1)
+    fun2 = aml.cos(sum2)
+    fun3 = aml.sin(sum1)
+
+    assert expr_equal(fun1, fun2)
+    assert not expr_equal(fun1, fun3)
+    assert expr_equal(fun1 * fun3, fun2 * fun3)
+    assert expr_equal(fun1 / fun3, fun2 / fun3)
+
+
+def test_expr_map(model):
+    model.cons1 = aml.Constraint(
+        rule=lambda m: sum(m.x[i] for i in m.I) == 2.34
+    )
+    model.cons2 = aml.Constraint(
+        rule=lambda m: sum((i+1)*m.x[i] for i in m.I) == 3
+    )
+
+    memo = ExpressionDict()
+
+    assert memo[model.cons1.expr] is None
+
+    memo[model.cons1.expr] = 42
+    assert 42 == memo[model.cons1.expr]
+
+    assert memo[model.cons2.expr] is None
+
+    memo[model.cons2.expr] = 123
+    assert 123 == memo[model.cons2.expr]
+
+    memo[model.cons1.expr] = 100
+    assert 100 == memo[model.cons1.expr]
+
+    assert len(memo) == 2
