@@ -27,3 +27,10 @@ def model_constraints(model):
     for cons in model.component_map(aml.Constraint, active=True).itervalues():
         for idx in cons:
             yield cons[idx]
+
+
+def model_objectives(model):
+    """Return a list of objectives in the model"""
+    for obj in model.component_map(aml.Objective, active=True).itervalues():
+        for idx in obj:
+            yield obj[idx]
