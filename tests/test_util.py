@@ -39,6 +39,7 @@ def test_model_constraints(model):
     )
     assert 1 + 1 + 10 + 50 == len([_ for _ in model_constraints(model)])
 
+
 def test_model_objectives(model):
     model.obj1 = aml.Objective(expr=sum(model.x[i] for i in model.I))
     model.obj2 = aml.Objective(expr=model.x[0] - model.x[1])

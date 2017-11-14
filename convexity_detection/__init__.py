@@ -11,3 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from .pyomo_compat import set_pyomo4_expression_tree
+
+set_pyomo4_expression_tree()
