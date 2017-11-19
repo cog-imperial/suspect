@@ -14,7 +14,7 @@
 
 import pytest
 import pyomo.environ as aml
-from convexity_detection.linearity import *
+from convexity_detection.monotonicity import *
 from convexity_detection.math import pi
 from util import _var
 
@@ -25,39 +25,6 @@ def test_monotonicity_enum():
     assert Monotonicity.Constant.is_nondecreasing()
     assert Monotonicity.Constant.is_nonincreasing()
     assert Monotonicity.Constant.is_constant()
-
-
-def test_is_constant():
-    x = _var()
-    y = _var()
-
-    assert is_constant(aml.log(2.0))
-    assert not is_constant(aml.log(x))
-    x.fix(2.0)
-    assert not is_constant(x + aml.tan(y))
-    y.fix(3.0)
-    assert is_constant(x + aml.sin(y/x))
-
-
-def test_is_linear():
-    x = _var()
-
-    variables = [aml.Var() for _ in range(10)]
-    for v in variables:
-        v.construct()
-
-    e0 = sum(v for v in variables)
-    assert is_linear(e0)
-
-    e1 = sum(x*v for v in variables)
-    assert not is_linear(e1)
-
-    x.fix(2.0)
-    assert is_linear(e1)
-
-    for v in variables:
-        v.fix(1.0)
-    assert is_linear(e1)
 
 
 def test_monotonicity_linear():

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.bounds import Bound, expr_bounds
+from convexity_detection.bounds import Bound, expression_bounds
 from convexity_detection.expr_visitor import (
     EqualityExpression,
     InequalityExpression,
@@ -192,7 +192,7 @@ def tighten_variable_bounds(constraint, x):
         if x_coef is None:
             # var not found
             return var_bounds
-        linear_bounds = expr_bounds(linear)
+        linear_bounds = expression_bounds(linear)
     else:
         # Can't update bounds without linear part
         return var_bounds
@@ -200,7 +200,7 @@ def tighten_variable_bounds(constraint, x):
     starting_bounds = inequality_bounds(expr)
 
     if nonlinear is not None:
-        nonlinear_bounds = expr_bounds(nonlinear)
+        nonlinear_bounds = expression_bounds(nonlinear)
     else:
         nonlinear_bounds = Bound(0, 0)
 

@@ -12,7 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from numbers import Number
 import pyomo.environ as aml
+
+
+numeric_types = (int, Number, aml.NumericConstant)
+
+
+def numeric_value(n):
+    if isinstance(n, (int, Number)):
+        return n
+    elif isinstance(n, aml.NumericConstant):
+        return n.value
+    else:
+        raise ValueError('must be one of numeric_types')
 
 
 def model_variables(model):

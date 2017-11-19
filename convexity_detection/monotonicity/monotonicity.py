@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import io
-import pyomo.environ as aml
+from enum import Enum
+
+
+class Monotonicity(Enum):
+    Nondecreasing = 0
+    Nonincreasing = 1
+    Constant = 2
+    Unknown = 3
+
+    def is_nondecreasing(self):
+        return self == self.Nondecreasing or self == self.Constant
+
+    def is_nonincreasing(self):
+        return self == self.Nonincreasing or self == self.Constant
+
+    def is_constant(self):
+        return self == self.Constant
+
+    def is_unknown(self):
+        return self == self.Unknown

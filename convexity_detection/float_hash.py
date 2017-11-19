@@ -16,12 +16,11 @@ import abc
 from convexity_detection.math import (
     mpf,
     almosteq,
-    almostgte,
     almostlte,
 )
 
 
-class FloatHasher(object, metaclass=abc.ABCMeta):
+class FloatHasher(abc.ABC):
     @abc.abstractmethod
     def hash(self, f):
         raise NotImplementedError('hash')

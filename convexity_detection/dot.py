@@ -13,22 +13,12 @@
 # limitations under the License.
 
 from numbers import Number
-from convexity_detection.expr_visitor import (
-    ExprVisitor,
-    ProductExpression,
-    DivisionExpression,
-    SumExpression,
-    LinearExpression,
-    NegationExpression,
-    UnaryFunctionExpression,
-    expr_callback,
-)
-# import pyomo.core.base.expr_pyomo4 as omo
+import convexity_detection.expr_visitor as expr_visitor
 from pyomo.core.base.var import SimpleVar
 import numpy as np
 
 
-class DotVisitor(ExprVisitor):
+class DotExpressionHandler(expr_visitor.ExpressionHandler):
     def __init__(self, outfile):
         self._f = outfile
         self._visited = set()
@@ -61,22 +51,30 @@ class DotVisitor(ExprVisitor):
         else:
             self._f.write('    {} -> {};\n'.format(id(from_), id(to)))
 
-    def visit_end(self):
+    def finish(self):
         self._f.write('}\n')
 
-    @expr_callback(ProductExpression)
+    def visit_equality(self, e):
+        self.write_node(e, '=')
+        for a in e._args:
+            self.write_arc(e, a)
+        return 42
+
+    def visit_inequality(self, e):
+        self.write_node(e, '<=>')
+        for a in e._args:
+            self.write_arc(e, a)
+
     def visit_product(self, e):
         self.write_node(e, '*')
         for a in e._args:
             self.write_arc(e, a)
 
-    @expr_callback(DivisionExpression)
     def visit_division(self, e):
         self.write_node(e, '/')
         for a in e._args:
             self.write_arc(e, a)
 
-    @expr_callback(LinearExpression)
     def visit_linear(self, e):
         self.write_node(e, '+')
 
@@ -90,28 +88,43 @@ class DotVisitor(ExprVisitor):
             )
             self._f.write('    {0} -> const{0};\n'.format(id(e)))
 
-    @expr_callback(SumExpression)
     def visit_sum(self, e):
         self.write_node(e, '+')
         for a in e._args:
             self.write_arc(e, a)
 
-    @expr_callback(SimpleVar)
-    def visit_simple_var(self, v):
+    def visit_variable(self, v):
         self.write_node(v, v.name)
 
-    @expr_callback(NegationExpression)
     def visit_negation(self, e):
         self.write_node(e, 'neg')
         for a in e._args:
             self.write_arc(e, a)
 
-    @expr_callback(UnaryFunctionExpression)
+    def visit_abs(self, e):
+        self.write_node(e, 'abs')
+        for a in e._args:
+            self.write_arc(e, a)
+
+    def visit_pow(self, e):
+        self.write_node(e, '**')
+        for a in e._args:
+            self.write_arc(e, a)
+
     def visit_unary_function(self, e):
         self.write_node(e, e._name)
         for a in e._args:
             self.write_arc(e, a)
 
-    @expr_callback(Number)
     def visit_number(self, n):
         print(n)
+
+    def visit_numeric_constant(self, c):
+        self._f.write('    {} [label="{:.4f}"];\n'.format(
+            id(c), c.value))
+
+
+def write_dot(outfile, expr):
+    handler = DotExpressionHandler(outfile)
+    expr_visitor.visit(handler, expr)
+    handler.finish()

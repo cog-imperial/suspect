@@ -15,22 +15,19 @@
 from numbers import Number
 import operator
 from functools import reduce
+import warnings
 from convexity_detection.expr_visitor import (
-    BottomUpExprVisitor,
-    ProductExpression,
-    DivisionExpression,
-    SumExpression,
-    LinearExpression,
-    NegationExpression,
-    AbsExpression,
-    PowExpression,
-    UnaryFunctionExpression,
-    NumericConstant,
-    expr_callback,
+    bottom_up_visit as visit_expression,
+    ExpressionHandler,
+    accumulated,
 )
+from convexity_detection.util import (
+    numeric_types,
+    numeric_value,
+)
+from convexity_detection.expr_dict import ExpressionDict
 from convexity_detection.math import *
 from convexity_detection.error import DomainError
-from pyomo.core.base import _VarData
 
 
 class Bound(object):
@@ -50,6 +47,21 @@ class Bound(object):
 
         self.l = l
         self.u = u
+
+    def is_zero(self):
+        return almosteq(self.l, 0) and almosteq(self.u, 0)
+
+    def is_positive(self):
+        return self.l > 0
+
+    def is_negative(self):
+        return self.u < 0
+
+    def is_nonnegative(self):
+        return almostgte(self.l, 0)
+
+    def is_nonpositive(self):
+        return almostlte(self.u, 0)
 
     def __add__(self, other):
         l = self.l
@@ -134,88 +146,92 @@ def _sin_bound(lower, upper):
         return Bound(new_l, new_u)
 
 
-class BoundsVisitor(BottomUpExprVisitor):
+class BoundsHandler(ExpressionHandler):
     def __init__(self):
-        self.memo = {}
+        self.memo = ExpressionDict()
+
+    def accumulate(self, expr, bound):
+        if bound is not None:
+            self.memo[expr] = bound
 
     def bound(self, expr):
-        if isinstance(expr, Number):
-            return Bound(expr, expr)
-        elif isinstance(expr, NumericConstant):
-            return Bound(expr.value, expr.value)
+        if isinstance(expr, numeric_types):
+            value = numeric_value(expr)
+            return Bound(value, value)
         else:
-            return self.memo[id(expr)]
+            return self.memo[expr]
 
-    def set_bound(self, expr, bound):
-        self.memo[id(expr)] = bound
+    @accumulated
+    def visit_variable(self, v):
+        return Bound(v.bounds[0], v.bounds[1])
 
-    @expr_callback(_VarData)
-    def visit_simple_var(self, v):
-        bound = Bound(v.bounds[0], v.bounds[1])
-        self.set_bound(v, bound)
-
-    @expr_callback(Number)
+    @accumulated
     def visit_number(self, n):
         pass  # do nothing
 
-    @expr_callback(NumericConstant)
+    @accumulated
     def visit_numeric_constant(self, n):
         pass
 
-    @expr_callback(ProductExpression)
+    @accumulated
+    def visit_equality(self, expr):
+        assert(len(expr._args) == 2)
+        _, rhs = expr._args
+        return self.bound(rhs)
+
+    @accumulated
+    def visit_inequality(self, expr):
+        pass
+
+    @accumulated
     def visit_product(self, expr):
         bounds = [self.bound(c) for c in expr._args]
-        bound = reduce(operator.mul, bounds, 1)
-        self.set_bound(expr, bound)
+        return reduce(operator.mul, bounds, 1)
 
-    @expr_callback(DivisionExpression)
+    @accumulated
     def visit_division(self, expr):
         top, bot = expr._args
-        bound = self.bound(top) / self.bound(bot)
-        self.set_bound(expr, bound)
+        return self.bound(top) / self.bound(bot)
 
-    @expr_callback(LinearExpression)
+    @accumulated
     def visit_linear(self, expr):
         bounds = [expr._coef[id(c)] * self.bound(c) for c in expr._args]
         bounds.append(Bound(expr._const, expr._const))
-        bound = sum(bounds)
-        self.set_bound(expr, bound)
+        return sum(bounds)
 
-    @expr_callback(SumExpression)
+    @accumulated
     def visit_sum(self, expr):
         bounds = [self.bound(c) for c in expr._args]
-        bound = sum(bounds)
-        self.set_bound(expr, bound)
+        return sum(bounds)
 
-    @expr_callback(NegationExpression)
+    @accumulated
     def visit_negation(self, expr):
         assert len(expr._args) == 1
 
         bound = self.bound(expr._args[0])
-        new_bound = Bound(-bound.u, -bound.l)
-        self.set_bound(expr, new_bound)
+        return Bound(-bound.u, -bound.l)
 
-    @expr_callback(AbsExpression)
+    @accumulated
     def visit_abs(self, expr):
         assert len(expr._args) == 1
 
         bound = self.bound(expr._args[0])
         upper_bound = max(abs(bound.l), abs(bound.u))
         if bound.l <= 0 and bound.u >= 0:
-            abs_bound = Bound(0, upper_bound)
+            return Bound(0, upper_bound)
         else:
             lower_bound = min(abs(bound.l), abs(bound.u))
-            abs_bound = Bound(lower_bound, upper_bound)
-        self.set_bound(expr, abs_bound)
+            return Bound(lower_bound, upper_bound)
 
-    @expr_callback(PowExpression)
+    @accumulated
     def visit_pow(self, expr):
         assert len(expr._args) == 2
         base, exponent = expr._args
 
-        self.set_bound(expr, Bound(None, None))
+        warnings.warn('Bounds of pow expression are set [-inf, inf]')
+        return Bound(None, None)
 
-    @expr_callback(UnaryFunctionExpression)
+    @accumulated
     def visit_unary_function(self, expr):
         assert len(expr._args) == 1
 
@@ -226,50 +242,50 @@ class BoundsVisitor(BottomUpExprVisitor):
         if name == 'sqrt':
             if arg_bound.l < 0:
                 raise DomainError('sqrt')
-            new_bound = Bound(sqrt(arg_bound.l), sqrt(arg_bound.u))
+            return Bound(sqrt(arg_bound.l), sqrt(arg_bound.u))
 
         elif name == 'log':
             if arg_bound.l <= 0:
                 raise DomainError('log')
-            new_bound = Bound(log(arg_bound.l), log(arg_bound.u))
+            return Bound(log(arg_bound.l), log(arg_bound.u))
 
         elif name == 'asin':
             if arg_bound not in Bound(-1, 1):
                 raise DomainError('asin')
-            new_bound = Bound(asin(arg_bound.l), asin(arg_bound.u))
+            return Bound(asin(arg_bound.l), asin(arg_bound.u))
 
         elif name == 'acos':
             if arg_bound not in Bound(-1, 1):
                 raise DomainError('acos')
             # arccos is a decreasing function, swap upper and lower
-            new_bound = Bound(acos(arg_bound.u), acos(arg_bound.l))
+            return Bound(acos(arg_bound.u), acos(arg_bound.l))
 
         elif name == 'atan':
-            new_bound = Bound(atan(arg_bound.l), atan(arg_bound.u))
+            return Bound(atan(arg_bound.l), atan(arg_bound.u))
 
         elif name == 'exp':
-            new_bound = Bound(exp(arg_bound.l), exp(arg_bound.u))
+            return Bound(exp(arg_bound.l), exp(arg_bound.u))
 
         elif name == 'sin':
             if arg_bound.u - arg_bound.l >= 2 * pi:
-                new_bound = Bound(-1, 1)
+                return Bound(-1, 1)
             else:
-                new_bound = _sin_bound(arg_bound.l, arg_bound.u)
+                return _sin_bound(arg_bound.l, arg_bound.u)
 
         elif name == 'cos':
             if arg_bound.u - arg_bound.l >= 2 * pi:
-                new_bound = Bound(-1, 1)
+                return Bound(-1, 1)
             else:
                 # translate left by pi/2
                 pi_2 = pi / mpf('2')
                 l = arg_bound.l - pi_2
                 u = arg_bound.u - pi_2
                 # -sin(x - pi/2) == cos(x)
-                new_bound = Bound(0, 0) - _sin_bound(l, u)
+                return Bound(0, 0) - _sin_bound(l, u)
 
         elif name == 'tan':
             if arg_bound.u - arg_bound.l >= pi:
-                new_bound = Bound(None, None)
+                return Bound(None, None)
             else:
                 l = arg_bound.l % pi
                 u = l + (arg_bound.u - arg_bound.l)
@@ -282,64 +298,38 @@ class BoundsVisitor(BottomUpExprVisitor):
                 if almosteq(u, 0.5 * pi):
                     new_u = None
 
-                new_bound = Bound(new_l, new_u)
+                return Bound(new_l, new_u)
 
         else:
             raise RuntimeError('unknown unary function {}'.format(name))
-        self.set_bound(expr, new_bound)
 
 
-def expr_bounds(expr):
-    """Given an expression, computes its bounds"""
-    v = BoundsVisitor()
-    v.visit(expr)
-    return v.memo[id(expr)]
+def _expression_bounds(expr):
+    handler = BoundsHandler()
+    visit_expression(handler, expr)
+    return handler
 
 
-def _is_positive(bounds, expr):
-    bound = bounds[id(expr)]
-    return bound.l > 0
+def expression_bounds(expr):
+    """Compute bounds of `expr`."""
+    return _expression_bounds(expr).bound(expr)
 
 
 def is_positive(expr):
-    v = BoundsVisitor()
-    v.visit(expr)
-    return _is_positive(v.memo, expr)
-
-
-def _is_nonnegative(bounds, expr):
-    bound = bounds[id(expr)]
-    return almostgte(bound.l, 0)
+    return expression_bounds(expr).is_positive()
 
 
 def is_nonnegative(expr):
-    v = BoundsVisitor()
-    v.visit(expr)
-    return _is_nonnegative(v.memo, expr)
-
-
-def _is_nonpositive(bounds, expr):
-    bound = bounds[id(expr)]
-    return almostlte(bound.u, 0)
+    return expression_bounds(expr).is_nonnegative()
 
 
 def is_nonpositive(expr):
-    v = BoundsVisitor()
-    v.visit(expr)
-    return _is_nonpositive(v.memo, expr)
-
-
-def _is_negative(bounds, expr):
-    bound = bounds[id(expr)]
-    return bound.u < 0
+    return expression_bounds(expr).is_nonpositive()
 
 
 def is_negative(expr):
-    v = BoundsVisitor()
-    v.visit(expr)
-    return _is_negative(v.memo, expr)
+    return expression_bounds(expr).is_negative()
 
 
-def _is_zero(bounds, expr):
-    bound = bounds[id(expr)]
-    return almosteq(bound.l, 0) and almosteq(bound.u, 0)
+def is_zero(expr):
+    return expression_bounds(expr).is_positive()

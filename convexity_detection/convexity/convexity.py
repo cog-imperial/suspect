@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import io
-import pyomo.environ as aml
+from enum import Enum
+
+
+class Convexity(Enum):
+    Convex = 0
+    Concave = 1
+    Linear = 2
+    Unknown = 3
+
+    def is_convex(self):
+        return self == self.Convex or self == self.Linear
+
+    def is_concave(self):
+        return self == self.Concave or self == self.Linear
+
+    def is_linear(self):
+        return self == self.Linear
+
+    def is_unknown(self):
+        return self == self.Unknown

@@ -1,0 +1,47 @@
+# Copyright 2017 Francesco Ceccon
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from convexity_detection.util import numeric_types, numeric_value
+from convexity_detection.convexity.convexity import Convexity
+
+
+def _product_convexity(handler, f, g):
+    assert(isinstance(g, numeric_types))
+    g = numeric_value(g)
+    cvx_f = handler.convexity(f)
+    if cvx_f.is_convex() and handler.is_nonnegative(g):
+        return Convexity.Convex
+    elif cvx_f.is_concave() and handler.is_nonpositive(g):
+        return Convexity.Convex
+    elif cvx_f.is_concave() and handler.is_nonnegative(g):
+        return Convexity.Concave
+    elif cvx_f.is_convex() and handler.is_nonpositive(g):
+        return Convexity.Concave
+    else:
+        return Convexity.Unknown
+
+
+def product_convexity(handler, expr):
+    assert(len(expr._args) == 2)
+    f = expr._args[0]
+    g = expr._args[1]
+    if isinstance(g, numeric_types):
+        return _product_convexity(handler, f, g)
+    elif isinstance(f, numeric_types):
+        return _product_convexity(handler, g, f)
+    else:
+        if handler.is_nonnegative(f) and handler.is_nonnegative(g):
+            return Convexity.Convex
+
+    return Convexity.Unknown

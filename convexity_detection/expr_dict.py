@@ -15,17 +15,12 @@
 from numbers import Number
 from functools import reduce
 from convexity_detection.expr_visitor import (
-    BottomUpExprVisitor,
-    expr_callback,
-    ProductExpression,
+    bottom_up_visit as visit_expression,
+    ExpressionHandler,
     LinearExpression,
-    EqualityExpression,
-    InequalityExpression,
-    DivisionExpression,
-    SumExpression,
     UnaryFunctionExpression,
-    AbsExpression,
 )
+from convexity_detection.util import (numeric_types, numeric_value)
 from convexity_detection.math import almosteq
 from pyomo.core.base import (
     _VarData,
@@ -34,18 +29,15 @@ from pyomo.core.base import (
 from pyomo.core.base.constraint import _GeneralConstraintData
 
 
-UNHASHABLE_TYPES = (Number, NumericConstant)
-
-
-class ExprHasher(BottomUpExprVisitor):
+class ExpressionHasherHandler(ExpressionHandler):
     def __init__(self, float_hasher=None):
         self.memo = {}
         self._float_hasher = float_hasher
 
     def hash(self, expr):
-        if isinstance(expr, UNHASHABLE_TYPES):
+        if isinstance(expr, numeric_types):
             if self._float_hasher is not None:
-                return self._float_hash(expr)
+                return self._float_hasher.hash(numeric_value(expr))
             else:
                 return 0
         else:
@@ -54,43 +46,34 @@ class ExprHasher(BottomUpExprVisitor):
     def set_hash(self, expr, h):
         self.memo[id(expr)] = h
 
-    def _float_hash(self, expr):
-        if isinstance(expr, Number):
-            return self._float_hasher.hash(expr)
-        elif isinstance(expr, NumericConstant):
-            return self._float_hasher.hash(expr.value)
-        else:
-            raise RuntimeError('unknown float {} of type {}'.format(
-                str(expr), type(expr)
-            ))
-
     def _type_xor_args(self, expr):
         hashes = [self.hash(e) for e in expr._args]
         return hash(type(expr)) ^ reduce(lambda x, y: x ^ y, hashes, 0)
 
-    @expr_callback((Number, NumericConstant))
     def visit_number(self, n):
         pass
 
-    @expr_callback(_VarData)
-    def visit_var_data(self, v):
+    def visit_numeric_constant(self, n):
+        pass
+
+    def visit_variable(self, v):
         self.set_hash(v, hash(_VarData) ^ id(v))
 
-    @expr_callback(InequalityExpression)
     def visit_inequality(self, expr):
         # TODO: handle a <= b <= c etc.
         # not associative
         h = self._type_xor_args(expr)
         self.set_hash(expr, h)
 
-    @expr_callback(UnaryFunctionExpression)
+    def visit_equality(self, expr):
+        self.visit_expr(expr)
+
     def visit_unary_function(self, expr):
         assert len(expr._args) == 1
         h = self._type_xor_args(expr) ^ hash(expr.name)
         self.set_hash(expr, h)
 
-    @expr_callback(LinearExpression)
-    def visit_linear_expr(self, expr):
+    def visit_linear(self, expr):
         coef = expr._coef
         hashes = [
             self.hash(e) ^ self.hash(coef[id(e)])
@@ -99,7 +82,24 @@ class ExprHasher(BottomUpExprVisitor):
         h = hash(type(expr)) ^ reduce(lambda x, y: x ^ y, hashes, 0)
         self.set_hash(expr, h)
 
-    @expr_callback(object)
+    def visit_product(self, expr):
+        self.visit_expr(expr)
+
+    def visit_division(self, expr):
+        self.visit_expr(expr)
+
+    def visit_sum(self, expr):
+        self.visit_expr(expr)
+
+    def visit_negation(self, expr):
+        self.visit_expr(expr)
+
+    def visit_abs(self, expr):
+        self.visit_expr(expr)
+
+    def visit_pow(self, expr):
+        self.visit_expr(expr)
+
     def visit_expr(self, expr):
         h = self._type_xor_args(expr)
         self.set_hash(expr, h)
@@ -108,9 +108,10 @@ class ExprHasher(BottomUpExprVisitor):
 def expr_hash(expr, float_hasher=None):
     if isinstance(expr, _GeneralConstraintData):
         expr = expr.expr
-    h = ExprHasher(float_hasher=float_hasher)
-    h.visit(expr)
-    return h.memo[id(expr)]
+
+    hasher = ExpressionHasherHandler(float_hasher=float_hasher)
+    visit_expression(hasher, expr)
+    return hasher.memo[id(expr)]
 
 
 def _is_leaf_node(expr):
@@ -166,8 +167,8 @@ class ExpressionDict(object):
         self._data = {}
 
     def _hash(self, expr):
-        hasher = ExprHasher(float_hasher=self._float_hasher)
-        hasher.visit(expr)
+        hasher = ExpressionHasherHandler(float_hasher=self._float_hasher)
+        visit_expression(hasher, expr)
         return hasher.memo[id(expr)]
 
     def set(self, expr, v):

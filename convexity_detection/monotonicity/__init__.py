@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import io
-import pyomo.environ as aml
+from .monotonicity import Monotonicity
+from .handler import (
+    MonotonicityHandler,
+    expression_monotonicity,
+    is_nondecreasing,
+    is_nonincreasing,
+    is_unknown,
+)
