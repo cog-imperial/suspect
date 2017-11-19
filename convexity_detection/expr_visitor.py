@@ -24,6 +24,8 @@ LinearExpression = omo._LinearExpression
 NegationExpression = omo._NegationExpression
 UnaryFunctionExpression = omo._UnaryFunctionExpression
 AbsExpression = omo._AbsExpression
+PowExpression = omo._PowExpression
+NumericConstant = omo.NumericConstant
 
 
 def expr_callback(expr_cls):

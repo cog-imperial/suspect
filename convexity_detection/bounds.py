@@ -23,7 +23,9 @@ from convexity_detection.expr_visitor import (
     LinearExpression,
     NegationExpression,
     AbsExpression,
+    PowExpression,
     UnaryFunctionExpression,
+    NumericConstant,
     expr_callback,
 )
 from convexity_detection.math import *
@@ -139,6 +141,8 @@ class BoundsVisitor(BottomUpExprVisitor):
     def bound(self, expr):
         if isinstance(expr, Number):
             return Bound(expr, expr)
+        elif isinstance(expr, NumericConstant):
+            return Bound(expr.value, expr.value)
         else:
             return self.memo[id(expr)]
 
@@ -153,6 +157,10 @@ class BoundsVisitor(BottomUpExprVisitor):
     @expr_callback(Number)
     def visit_number(self, n):
         pass  # do nothing
+
+    @expr_callback(NumericConstant)
+    def visit_numeric_constant(self, n):
+        pass
 
     @expr_callback(ProductExpression)
     def visit_product(self, expr):
@@ -199,6 +207,13 @@ class BoundsVisitor(BottomUpExprVisitor):
             lower_bound = min(abs(bound.l), abs(bound.u))
             abs_bound = Bound(lower_bound, upper_bound)
         self.set_bound(expr, abs_bound)
+
+    @expr_callback(PowExpression)
+    def visit_pow(self, expr):
+        assert len(expr._args) == 2
+        base, exponent = expr._args
+
+        self.set_bound(expr, Bound(None, None))
 
     @expr_callback(UnaryFunctionExpression)
     def visit_unary_function(self, expr):

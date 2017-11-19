@@ -33,7 +33,14 @@ from convexity_detection.expr_visitor import (
     NegationExpression,
     AbsExpression,
     UnaryFunctionExpression,
+    PowExpression,
+    NumericConstant,
     expr_callback,
+)
+from convexity_detection.math import (
+    almosteq,
+    almostlte,
+    almostgte,
 )
 from pyomo.core.base.var import SimpleVar
 
@@ -126,7 +133,7 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
         return super().visit(expr)
 
     def monotonicity(self, expr):
-        if isinstance(expr, Number):
+        if isinstance(expr, (Number, NumericConstant)):
             return Monotonicity.Constant
         else:
             return self.memo[id(expr)]
@@ -152,6 +159,10 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
 
     @expr_callback(Number)
     def visit_number(self, n):
+        pass
+
+    @expr_callback(NumericConstant)
+    def visit_numeric_constant(self, n):
         pass
 
     @expr_callback(SumExpression)
@@ -208,7 +219,7 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
             elif mono_g.is_constant():
                 if mono_f.is_nondecreasing() and self.is_nonnegative(g):
                     return Monotonicity.Nondecreasing
-                elif mono_f.is_nonincreasing() and self.is_nonpositve(g):
+                elif mono_f.is_nonincreasing() and self.is_nonpositive(g):
                     return Monotonicity.Nondecreasing
                 elif mono_f.is_nondecreasing() and self.is_nonpositive(g):
                     return Monotonicity.Nonincreasing
@@ -266,7 +277,7 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
             elif mono_g.is_constant():
                 if mono_f.is_nondecreasing() and self.is_nonnegative(g):
                     return Monotonicity.Nondecreasing
-                elif mono_f.is_nonincreasing() and self.is_nonpositve(g):
+                elif mono_f.is_nonincreasing() and self.is_nonpositive(g):
                     return Monotonicity.Nondecreasing
                 elif mono_f.is_nondecreasing() and self.is_nonpositive(g):
                     return Monotonicity.Nonincreasing
@@ -323,6 +334,99 @@ class MonotonicityExprVisitor(BottomUpExprVisitor):
                 self.set_monotonicity(expr, Monotonicity.Nonincreasing)
             else:
                 self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+        else:
+            self.set_monotonicity(expr, Monotonicity.Unknown)
+
+    @expr_callback(PowExpression)
+    def visit_pow(self, expr):
+        assert len(expr._args) == 2
+        base, exponent = expr._args
+
+        if isinstance(base, NumericConstant):
+            base = base.value
+        if isinstance(exponent, NumericConstant):
+            exponent = exponent.value
+
+        if isinstance(base, Number):
+            mono_f = self.monotonicity(exponent)
+            if base < 0:
+                self.set_monotonicity(expr, Monotonicity.Unknown)
+            elif almosteq(base, 0):
+                self.set_monotonicity(expr, Monotonicity.Constant)
+            elif 0 < base < 1:
+                if mono_f.is_nondecreasing() and self.is_nonpositive(exponent):
+                    self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                elif mono_f.is_nonincreasing() and self.is_nonnegative(exponent):
+                    self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                else:
+                    self.set_monotonicity(expr, Monotonicity.Unknown)
+            elif almostgte(base, 1):
+                if mono_f.is_nondecreasing() and self.is_nonnegative(exponent):
+                    self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                elif mono_f.is_nonincreasing() and self.is_nonpositive(exponent):
+                    self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                else:
+                    self.set_monotonicity(expr, Monotonicity.Unknown)
+            else:
+                self.set_monotonicity(expr, Monotonicity.Unknown)
+        elif isinstance(exponent, Number):
+            mono_f = self.monotonicity(base)
+            if almosteq(exponent, 1):
+                self.set_monotonicity(expr, mono_f)
+            elif almosteq(exponent, 0):
+                self.set_monotonicity(expr, Monotonicity.Constant)
+            else:
+                is_integer = almosteq(exponent, int(exponent))
+                is_even = almosteq(exponent % 2, 0)
+                if is_integer and is_even:
+                    if exponent > 0:
+                        if mono_f.is_nondecreasing() and self.is_nonnegative(base):
+                            self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                        elif mono_f.is_nonincreasing() and self.is_nonpositive(base):
+                            self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                        elif mono_f.is_nondecreasing() and self.is_nonpositive(base):
+                            self.set_monotonicity(expr, Monotonicity.Nonincreasing)
+                        elif mono_f.is_nonincreasing() and self.is_nonnegative(base):
+                            self.set_monotonicity(expr, Monotonicity.Nonincreasing)
+                        else:
+                            self.set_monotonicity(expr, Monotonicity.Unknown)
+                    else:
+                        if mono_f.is_nonincreasing() and self.is_nonnegative(base):
+                            self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                        elif mono_f.is_nondecreasing() and self.is_nonpositive(base):
+                            self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                        elif mono_f.is_nonincreasing() and self.is_nonpositive(base):
+                            self.set_monotonicity(expr, Monotonicity.Nonincreasing)
+                        elif mono_f.is_nondecreasing() and self.is_nonnegative(base):
+                            self.set_monotonicity(expr, Monotonicity.Nonincreasing)
+                        else:
+                            self.set_monotonicity(expr, Monotonicity.Unknown)
+
+                elif is_integer:  # is odd
+                    if exponent > 0 and mono_f.is_nondecreasing():
+                        self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                    elif exponent < 0 and mono_f.is_nonincreasing():
+                        self.set_monotonicity(expr, Monotonicity.Nondecreasing)
+                    elif exponent > 0 and mono_f.is_nonincreasing():
+                        self.set_monotonicity(expr, Monotonicity.Nonincreasing)
+                    elif exponent < 0 and mono_f.is_nondecreasing():
+                        self.set_monotonicity(expr, Monotonicity.Nonincreasing)
+                    else:
+                        self.set_monotonicity(expr, Monotonicity.Unknown)
+                else:  # not an integer
+                    if not self.is_nonpositive(base):
+                        self.set_monotonicity(expr, Monotonicity.Unknown)
+                    elif exponent > 0:
+                        self.set_monotonicity(expr, mono_f)
+                    elif exponent < 0:
+                        if mono_f.is_nondecreasing():
+                            self.set_montonicity(expr, Monotonicity.Nonincreasnig)
+                        elif mono_f.is_nonincreasing():
+                            self.set_montonicity(expr, Monotonicity.Nondecreasing)
+                        else:
+                            self.set_monotonicity(expr, Monotonicity.Unknown)
+                    else:
+                        self.set_monotonicity(expr, Monotonicity.Unknown)
         else:
             self.set_monotonicity(expr, Monotonicity.Unknown)
 

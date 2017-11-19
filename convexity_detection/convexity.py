@@ -39,7 +39,9 @@ from convexity_detection.expr_visitor import (
     LinearExpression,
     NegationExpression,
     AbsExpression,
+    PowExpression,
     UnaryFunctionExpression,
+    NumericConstant,
     expr_callback,
 )
 from convexity_detection.math import *
@@ -198,7 +200,7 @@ class ConvexityExprVisitor(BottomUpExprVisitor):
         return super().visit(expr)
 
     def convexity(self, expr):
-        if isinstance(expr, Number):
+        if isinstance(expr, (Number, NumericConstant)):
             return Convexity.Linear
         else:
             return self.memo[id(expr)]
@@ -207,44 +209,56 @@ class ConvexityExprVisitor(BottomUpExprVisitor):
         self.memo[id(expr)] = cvx
 
     def monotonicity(self, expr):
-        if isinstance(expr, Number):
+        if isinstance(expr, (Number, NumericConstant)):
             return Monotonicity.Constant
         else:
             return self.mono[id(expr)]
 
     def is_nonnegative(self, expr):
         if isinstance(expr, Number):
-            return expr >= 0
+            return almostgte(expr, 0)
+        elif isinstance(expr, NumericConstant):
+            return almostgte(expr.value, 0)
         else:
             return _is_nonnegative(self.bounds, expr)
 
     def is_nonpositive(self, expr):
         if isinstance(expr, Number):
-            return expr <= 0
+            return almostlte(expr, 0)
+        elif isinstance(expr, NumericConstant):
+            return almostlte(expr.value, 0)
         else:
             return _is_nonpositive(self.bounds, expr)
 
     def is_negative(self, expr):
         if isinstance(expr, Number):
             return expr < 0
+        elif isinstance(expr, NumericConstant):
+            return expr.value < 0
         else:
             return _is_negative(self.bounds, expr)
 
     def is_positive(self, expr):
         if isinstance(expr, Number):
             return expr > 0
+        elif isinstance(expr, NumericConstant):
+            return expr.value > 0
         else:
             return _is_positive(self.bounds, expr)
 
     def is_zero(self, expr):
         if isinstance(expr, Number):
             return almosteq(expr, 0)
+        elif isinstance(expr, NumericConstant):
+            return almosteq(expr.value, 0)
         else:
             return _is_zero(self.bounds, expr)
 
     def bound(self, expr):
         if isinstance(expr, Number):
             return Bound(expr, expr)
+        elif isinstance(expr, NumericConstant):
+            return Bound(expr.value, expr.value)
         else:
             return self.bounds[id(expr)]
 
@@ -254,6 +268,10 @@ class ConvexityExprVisitor(BottomUpExprVisitor):
 
     @expr_callback(Number)
     def visit_number(self, n):
+        pass
+
+    @expr_callback(NumericConstant)
+    def visit_numeric_constant(self, n):
         pass
 
     @expr_callback(SumExpression)
@@ -300,6 +318,81 @@ class ConvexityExprVisitor(BottomUpExprVisitor):
         else:
             self.set_convexity(expr, Convexity.Unknown)
 
+    def _product_convexity(self, f, g):
+        assert(isinstance(g, Number))
+        cvx_f = self.convexity(f)
+        if cvx_f.is_convex() and self.is_nonnegative(g):
+            return Convexity.Convex
+        elif cvx_f.is_concave() and self.is_nonpositive(g):
+            return Convexity.Convex
+        elif cvx_f.is_concave() and self.is_nonnegative(g):
+            return Convexity.Concave
+        elif cvx_f.is_convex() and self.is_nonpositive(g):
+            return Convexity.Concave
+        else:
+            return Convexity.Unknown
+
+    @expr_callback(ProductExpression)
+    def visit_product(self, expr):
+        assert(len(expr._args) == 2)
+        f = expr._args[0]
+        g = expr._args[1]
+        if isinstance(g, (Number, NumericConstant)):
+            self.set_convexity(
+                expr,
+                self._product_convexity(f, g)
+            )
+        elif isinstance(f, (Number, NumericConstant)):
+            self.set_convexity(
+                expr,
+                self._product_convexity(g, f)
+            )
+        else:
+            if self.is_nonnegative(f) and self.is_nonnegative(g):
+                self.set_convexity(expr, Convexity.Convex)
+            else:
+                self.set_convexity(expr, Convexity.Unknown)
+
+    @expr_callback(DivisionExpression)
+    def visit_division(self, expr):
+        assert(len(expr._args) == 2)
+        f, g = expr._args
+
+        if isinstance(g, NumericConstant):
+            g = g.value
+        if isinstance(f, NumericConstant):
+            f = f.value
+
+        if isinstance(g, Number):
+            cvx_f = self.convexity(f)
+            if cvx_f.is_convex() and self.is_nonnegative(g):
+                self.set_convexity(expr, Convexity.Convex)
+            elif cvx_f.is_concave() and self.is_nonpositive(g):
+                self.set_convexity(expr, Convexity.Convex)
+            elif cvx_f.is_concave() and self.is_nonnegative(g):
+                self.set_convexity(expr, Convexity.Concave)
+            elif cvx_f.is_convex() and self.is_nonpositive(g):
+                self.set_convexity(expr, Convexity.Concave)
+            else:
+                self.set_convexity(expr, Convexity.Unknown)
+        elif isinstance(f, Number):
+            # want to avoid g == 0
+            cvx_g = self.convexity(g)
+            if not self.is_positive(g) or not self.is_negative(g):
+                self.set_convexity(expr, Convexity.Unknown)
+            elif self.is_nonnegative(g) and cvx_g.is_concave():
+                self.set_convexity(expr, Convexity.Convex)
+            elif self.is_nonpositive(g) and cvx_g.is_convex():
+                self.set_convexity(expr, Convexity.Convex)
+            elif self.is_nonnegative(g) and cvx_g.is_convex():
+                self.set_convexity(expr, Convexity.Concave)
+            elif self.is_nonpositive(g) and cvx_g.is_concave():
+                self.set_convexity(expr, Convexity.Concave)
+            else:
+                self.set_convexity(expr, Convexity.Unknown)
+        else:
+            self.set_convexity(expr, Convexity.Unknown)
+
     @expr_callback(AbsExpression)
     def visit_abs(self, expr):
         assert len(expr._args) == 1
@@ -324,6 +417,91 @@ class ConvexityExprVisitor(BottomUpExprVisitor):
                 self.set_convexity(expr, Convexity.Concave)
             elif self.is_nonpositive(arg):
                 self.set_convexity(expr, Convexity.Convex)
+            else:
+                self.set_convexity(expr, Convexity.Unknown)
+        else:
+            self.set_convexity(expr, Convexity.Unknown)
+
+    @expr_callback(PowExpression)
+    def visit_pow(self, expr):
+        assert len(expr._args) == 2
+        base, exponent = expr._args
+
+        if isinstance(exponent, NumericConstant):
+            exponent = exponent.value
+
+        if isinstance(base, NumericConstant):
+            base = base.value
+
+        if isinstance(exponent, Number):
+            is_integer = almosteq(exponent, int(exponent))
+            is_even = almosteq(exponent % 2, 0)
+
+            cvx = self.convexity(base)
+
+            if is_integer and is_even and exponent > 0:
+                if cvx.is_linear():
+                    self.set_convexity(expr, Convexity.Convex)
+                elif cvx.is_convex() and self.is_nonnegative(base):
+                    self.set_convexity(expr, Convexity.Convex)
+                elif cvx.is_concave() and self.is_nonpositive(base):
+                    self.set_convexity(expr, Convexity.Convex)
+                else:
+                    self.set_convexity(expr, Convexity.Unknown)
+            elif is_integer and is_even and almostlte(exponent, 0):
+                if cvx.is_convex() and self.is_nonpositive(base):
+                    self.set_convexity(expr, Convexity.Convex)
+                elif cvx.is_concave() and self.is_nonnegative(base):
+                    self.set_convexity(expr, Convexity.Convex)
+                elif cvx.is_convex() and self.is_nonnegative(base):
+                    self.set_convexity(expr, Convexity.Concave)
+                elif cvx.is_concave() and self.is_nonpositive(base):
+                    self.set_convexity(expr, Convexity.Concave)
+                else:
+                    self.set_convexity(expr, Convexity.Unknown)
+            elif is_integer and exponent > 0:  # odd
+                if almosteq(exponent, 1):
+                    self.set_convexity(expr, cvx)
+                elif cvx.is_convex() and self.is_nonnegative(base):
+                    self.set_convexity(expr, Convexity.Convex)
+                elif cvx.is_concave() and self.is_nonpositive(base):
+                    self.set_convexity(expr, Convexity.Concave)
+                else:
+                    self.set_convexity(expr, Convexity.Unknown)
+            elif is_integer and almostlte(exponent, 0):  # odd negative
+                if cvx.is_concave() and self.is_nonnegative(base):
+                    self.set_convexity(expr, Convexity.Convex)
+                elif cvx.is_convex() and self.is_nonpositive(base):
+                    self.set_convexity(expr, Convexity.Concave)
+                else:
+                    self.set_convexity(expr, Convexity.Unknown)
+            else:
+                # not integral
+                if self.is_nonnegative(base):
+                    if cvx.is_convex() and exponent > 1:
+                        self.set_convexity(expr, Convexity.Convex)
+                    elif cvx.is_concave() and exponent < 0:
+                        self.set_convexity(expr, Convexity.Convex)
+                    elif cvx.is_concave() and 0 < exponent < 1:
+                        self.set_convexity(expr, Convexity.Concave)
+                    elif cvx.is_convex() and exponent < 0:
+                        self.set_convexity(expr, Convexity.Concave)
+                    else:
+                        self.set_convexity(expr, Convexity.Unknown)
+                else:
+                    self.set_convexity(expr, Convexity.Unknown)
+        elif isinstance(base, Number):
+            cvx = self.convexity(exponent)
+            if 0 < base < 1:
+                if cvx.is_concave():
+                    self.set_convexity(expr, Convexity.Convex)
+                else:
+                    self.set_convexity(expr, Convexity.Unknown)
+            elif almostgte(base, 1):
+                if cvx.is_convex():
+                    self.set_convexity(expr, Convexity.Convex)
+                else:
+                    self.set_convexity(expr, Convexity.Unknown)
             else:
                 self.set_convexity(expr, Convexity.Unknown)
         else:
