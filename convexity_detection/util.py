@@ -14,9 +14,44 @@
 
 from numbers import Number
 import pyomo.environ as aml
-
+from convexity_detection.expr_visitor import (
+    InequalityExpression,
+    EqualityExpression,
+)
+from convexity_detection.bound import Bound
 
 numeric_types = (int, Number, aml.NumericConstant)
+
+
+def bounds_and_expr(expr):
+    if isinstance(expr, InequalityExpression):
+        return _inequality_bounds_and_expr(expr)
+    elif isinstance(expr, EqualityExpression):
+        return _equality_bounds_and_expr(expr)
+    else:
+        raise ValueError('expr must be InequalityExpression or EqualityExpression')
+
+
+def _inequality_bounds_and_expr(expr):
+    if len(expr._args) == 2:
+        (lhs, rhs) = expr._args
+        if isinstance(lhs, aml.NumericConstant):
+            return Bound(lhs.value, None), rhs
+        else:
+            return Bound(None, rhs.value), lhs
+    elif len(expr._args) == 3:
+        (lhs, ex, rhs) = expr._args
+        return Bound(lhs.value, rhs.value), ex
+    else:
+        raise ValueError('Malformed InequalityExpression')
+
+
+def _equality_bounds_and_expr(expr):
+    if len(expr._args) == 2:
+        body, rhs = expr._args
+        return Bound(rhs.value, rhs.value), body
+    else:
+        raise ValueError('Malformed EqualityExpression')
 
 
 def numeric_value(n):

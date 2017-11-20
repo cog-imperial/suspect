@@ -23,23 +23,11 @@ from convexity_detection.expr_visitor import (
 from convexity_detection.util import (
     model_variables,
     model_constraints,
+    bounds_and_expr,
 )
 import pyomo.environ as aml
 import copy as pycopy
 
-
-def _bounds_and_expr(expr):
-    if len(expr._args) == 2:
-        (lhs, rhs) = expr._args
-        if isinstance(lhs, aml.NumericConstant):
-            return Bound(lhs.value, None), rhs
-        else:
-            return Bound(None, rhs.value), lhs
-    elif len(expr._args) == 3:
-        (lhs, ex, rhs) = expr._args
-        return Bound(lhs.value, rhs.value), ex
-    else:
-        raise ValueError('Malformed InequalityExpression')
 
 
 def inequality_bounds(expr):
@@ -47,7 +35,7 @@ def inequality_bounds(expr):
 
     Given constraint c^L <= g(x) <= c^U, returns Bound(c^L, c^U).
     """
-    (bounds, _) = _bounds_and_expr(expr)
+    (bounds, _) = bounds_and_expr(expr)
     return bounds
 
 
@@ -70,7 +58,7 @@ def linear_nonlinear_components(expr):
     """
     assert isinstance(expr, (InequalityExpression, EqualityExpression))
 
-    (_, expr) = _bounds_and_expr(expr)
+    (_, expr) = bounds_and_expr(expr)
 
     if isinstance(expr, SumExpression):
         linear = _join_expressions([

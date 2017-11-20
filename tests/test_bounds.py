@@ -226,6 +226,28 @@ def test_bound_negation():
     assert expression_bounds(e1) == Bound(None, 0)
 
 
+def test_bound_equality():
+    x = _var()
+    y = _var()
+    e0 = x - y == 0
+
+    handler = BoundsHandler()
+    visit_expression(handler, e0)
+    assert handler.bound((x-y)) == Bound(0, 0)
+
+
+def test_bound_inequality():
+    handler = BoundsHandler()
+    x = _var()
+    y = _var()
+    e0 = x - y <= 0
+    visit_expression(handler, e0)
+    assert handler.bound((x-y)) == Bound(-inf, 0)
+    e1 = x - y >= 0
+    visit_expression(handler, e1)
+    assert handler.bound((x-y)) == Bound(0, 0)
+
+
 def test_is_positive():
     e0 = _var() + 3
     assert not is_positive(e0)
