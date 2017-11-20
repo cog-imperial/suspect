@@ -26,7 +26,15 @@ from convexity_detection.util import (
     numeric_value,
 )
 from convexity_detection.expr_dict import ExpressionDict
-from convexity_detection.math import *
+from convexity_detection.math import (
+    inf,
+    mpf,
+    almostlte,
+    almostgte,
+    almosteq,
+    pi,
+)
+from convexity_detection.math import *  # all functions
 from convexity_detection.error import DomainError
 
 
@@ -62,6 +70,20 @@ class Bound(object):
 
     def is_nonpositive(self):
         return almostlte(self.u, 0)
+
+    def tighten(self, other):
+        """Returns a new bound which is the tightest intersection of bounds."""
+        if other.l < self.l:
+            new_l = self.l
+        else:
+            new_l = other.l
+
+        if other.u > self.u:
+            new_u = self.u
+        else:
+            new_u = other.u
+
+        return Bound(new_l, new_u)
 
     def __add__(self, other):
         l = self.l
@@ -122,7 +144,10 @@ class Bound(object):
         return almosteq(self.l, other.l) and almosteq(self.u, other.u)
 
     def __contains__(self, other):
-        return other.l >= self.l and other.u <= self.u
+        return (
+            almostgte(other.l, self.l) and
+            almostlte(other.u, self.u)
+        )
 
     def __repr__(self):
         return '<{} at {}>'.format(str(self), id(self))
@@ -152,7 +177,12 @@ class BoundsHandler(ExpressionHandler):
 
     def accumulate(self, expr, bound):
         if bound is not None:
-            self.memo[expr] = bound
+            old_bound = self.memo[expr]
+            if old_bound is None:
+                new_bound = bound
+            else:
+                new_bound = old_bound.tighten(bound)
+            self.memo[expr] = new_bound
 
     def bound(self, expr):
         if isinstance(expr, numeric_types):

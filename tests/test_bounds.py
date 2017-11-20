@@ -16,8 +16,12 @@ import pytest
 from mpmath import mpf, mp
 import mpmath
 import pyomo.environ as aml
+from convexity_detection.expr_visitor import (
+    bottom_up_visit as visit_expression
+)
 from convexity_detection.bounds import (
     Bound,
+    BoundsHandler,
     expression_bounds,
     is_positive,
     is_nonnegative,
@@ -53,6 +57,31 @@ def test_bounds_arithmetic():
     assert Bound('0.2', '1') in Bound(-1, 1)
     assert Bound('-1', '1') in Bound(-1, 1)
     assert Bound('-2', '1') not in Bound(-1, 1)
+
+
+def test_bound_tighten():
+    a = Bound('-1', '2')
+    b = Bound('0', '3')
+    assert a.tighten(b) == Bound('0', '2')
+    assert a.tighten(b) == b.tighten(a)
+
+    c = Bound('1', '1.2')
+    assert b.tighten(c) == Bound('1', '1.2')
+
+
+def test_bounds_handler_tightening():
+    handler = BoundsHandler()
+
+    v0 = _var()
+    e0 = v0 + 2
+    visit_expression(handler, e0)
+    assert handler.bound(e0) == Bound(-inf, inf)
+
+    v0.setlb(10)
+    v0.setub(20)
+    e1 = v0 + 2
+    visit_expression(handler, e1)
+    assert handler.bound(e0) == Bound(12, 22)
 
 
 def test_bound_simple_var():
@@ -209,3 +238,9 @@ def test_is_positive():
 
     assert is_nonnegative(aml.sin(_var((0, float(pi)))))
     # assert is_nonpositive(aml.cos(_var((float(0.5*pi), float(1.5*pi)))))
+
+
+def test_is_negative():
+    assert not Bound('-1', '2').is_negative()
+    assert not Bound(None, 0).is_negative()
+    assert Bound('-1', '-0.2').is_negative()
