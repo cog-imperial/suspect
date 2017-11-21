@@ -25,7 +25,7 @@ from convexity_detection.util import (
     numeric_value,
     bounds_and_expr,
 )
-from convexity_detection.expr_dict import ExpressionDict
+from convexity_detection.expr_dict import TightestExpressionDict
 from convexity_detection.math import (
     mpf,
     almosteq,
@@ -52,20 +52,16 @@ def _sin_bound(lower, upper):
 
 
 class BoundsHandler(ExpressionHandler):
-    def __init__(self):
-        self.memo = ExpressionDict()
+    def __init__(self, memo=None):
+        if memo is None:
+            memo = TightestExpressionDict()
+        self.memo = memo
 
     def accumulate(self, expr, bound):
         self.set_bound(expr, bound)
 
     def set_bound(self, expr, bound):
-        if bound is not None:
-            old_bound = self.memo[expr]
-            if old_bound is None:
-                new_bound = bound
-            else:
-                new_bound = old_bound.tighten(bound)
-            self.memo[expr] = new_bound
+        self.memo.tighten(expr, bound)
 
     def bound(self, expr):
         if isinstance(expr, numeric_types):
@@ -163,7 +159,7 @@ class BoundsHandler(ExpressionHandler):
             return Bound(sqrt(arg_bound.l), sqrt(arg_bound.u))
 
         elif name == 'log':
-            if arg_bound.l <= 0:
+            if arg_bound.l < 0:
                 raise DomainError('log')
             return Bound(log(arg_bound.l), log(arg_bound.u))
 
@@ -222,15 +218,15 @@ class BoundsHandler(ExpressionHandler):
             raise RuntimeError('unknown unary function {}'.format(name))
 
 
-def _expression_bounds(expr):
-    handler = BoundsHandler()
+def _expression_bounds(expr, bounds_dict):
+    handler = BoundsHandler(memo=bounds_dict)
     visit_expression(handler, expr)
     return handler
 
 
-def expression_bounds(expr):
+def expression_bounds(expr, bounds_dict=None):
     """Compute bounds of `expr`."""
-    return _expression_bounds(expr).bound(expr)
+    return _expression_bounds(expr, bounds_dict).bound(expr)
 
 
 def is_positive(expr):

@@ -206,3 +206,22 @@ class ExpressionDict(object):
 
     def __setitem__(self, expr, value):
         return self.set(expr, value)
+
+    def _dump(self):
+        print('Begin ExpressionDict Dump')
+        for _, values in self._data.items():
+            for expr, v in values:
+                print('[{}] -> {}'.format(expr, v))
+        print('End')
+
+
+class TightestExpressionDict(ExpressionDict):
+    """Like `ExpressionDict`, but when setting the bounds it will tighten them."""
+    def tighten(self, expr, value):
+        if value is not None:
+            old_bound = self.get(expr)
+            if old_bound is None:
+                new_bound = value
+            else:
+                new_bound = old_bound.tighten(value)
+            self.set(expr, new_bound)

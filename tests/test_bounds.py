@@ -145,7 +145,7 @@ def test_bound_sqrt():
 
 def test_bound_log():
     with pytest.raises(ValueError):
-        expression_bounds(aml.log(_var((0, None))))
+        expression_bounds(aml.log(_var((-0.1, None))))
     assert expression_bounds(aml.log(_var((1, None)))) == Bound(0, None)
     assert expression_bounds(aml.log(_var((1, 2)))) == Bound(0, mpmath.log(2))
 
@@ -246,6 +246,20 @@ def test_bound_inequality():
     e1 = x - y >= 0
     visit_expression(handler, e1)
     assert handler.bound((x-y)) == Bound(0, 0)
+
+
+def test_bound_inequality_2():
+    handler = BoundsHandler()
+    x = _var()
+    y = _var((0, 1))
+
+    e0 = x - y
+    visit_expression(handler, e0)
+    assert handler.bound(e0) == Bound(None, None)
+    e1 = 2 <= x <= 3
+    visit_expression(handler, e1)
+    visit_expression(handler, e0)  # visit again to update bound
+    assert handler.bound(e0) == Bound(1, 3)
 
 
 def test_is_positive():

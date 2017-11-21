@@ -14,14 +14,46 @@
 
 import pytest
 import pyomo.environ as aml
-from convexity_detection.bounds import Bound
+from convexity_detection.bounds import Bound, expression_bounds
 from convexity_detection.expr_visitor import (
     LinearExpression,
     SumExpression,
 )
+from convexity_detection.expr_dict import TightestExpressionDict
 from convexity_detection.tightening import *
 from convexity_detection.math import almosteq
 from fixtures import model
+
+
+def test_reverse_bound_tightening():
+    model = aml.ConcreteModel()
+    model.a = aml.Var()
+    model.b = aml.Var()
+    model.c = aml.Var()
+    model.co0 = aml.Constraint(
+        expr=0 <= model.a - model.b + 2 * aml.sqrt(model.c) <= 100
+    )
+    model.co1 = aml.Constraint(expr=0 <= model.a - model.b <= 10)
+    model.co2 = aml.Constraint(expr=0 <= model.b <= 1)
+
+    bounds = TightestExpressionDict()
+    expression_bounds(model.co1.expr, bounds)
+    # sanity check
+    assert bounds[model.a] == Bound(None, None)
+    assert bounds[model.b] == Bound(None, None)
+
+    has_changed = reverse_bound_tightening_step(model, bounds)
+    assert has_changed
+    assert bounds[model.b] == Bound(0, 1)
+    assert bounds[model.a] == Bound(None, None)
+    assert bounds[model.c] == Bound(0, None)
+    has_changed = reverse_bound_tightening_step(model, bounds)
+    assert has_changed
+    assert bounds[model.b] == Bound(0, 1)
+    assert bounds[model.a] == Bound(0, 11)
+
+    has_changed = reverse_bound_tightening_step(model, bounds)
+    assert not has_changed
 
 
 def test_tighten_variable_bounds_missing_var(model):
@@ -30,7 +62,8 @@ def test_tighten_variable_bounds_missing_var(model):
     )
 
     # Notice it's model.y not model.z!
-    bound = tighten_variable_bounds(model.test, model.y[1, 1])
+    memo = TightestExpressionDict()
+    bound = tighten_variable_bounds(model.test, model.y[1, 1], memo)
     expected_bound = Bound(0, 1)
     assert expected_bound == bound
 
@@ -39,8 +72,8 @@ def test_tighten_variable_bounds(model):
     model.test = aml.Constraint(
         rule=lambda m: -10 <= sum(2*m.z[i] for i in m.I) <= 10
     )
-
-    bound = tighten_variable_bounds(model.test, model.z[1])
+    memo = TightestExpressionDict()
+    bound = tighten_variable_bounds(model.test, model.z[1], memo)
     assert bound == Bound(0.0, 5.0)
 
 
@@ -49,6 +82,26 @@ def test_remove_var_from_linear_expr(model):
     test1_no_x0, coef = remove_var_from_linear_expr(test1, model.x[0])
     assert len(test1_no_x0._args) == len(model.I) - 1
     assert almosteq(coef, 1.0)
+
+
+def test_tighten_from_context(model):
+    model.c1 = aml.Constraint(expr=aml.sqrt(model.x[0]) >= -1)
+    model.c2 = aml.Constraint(expr=aml.log(model.x[1]) <= 1)
+    model.c3 = aml.Constraint(expr=aml.asin(model.x[2]) <= 1)
+    model.c4 = aml.Constraint(expr=aml.acos(model.x[3]) <= 1)
+
+    bounds = TightestExpressionDict()
+    tighten_bounds_from_context(model.c1, bounds)
+    assert bounds[model.x[0]] == Bound(0, None)
+
+    tighten_bounds_from_context(model.c2, bounds)
+    assert bounds[model.x[1]] == Bound(0, None)
+
+    tighten_bounds_from_context(model.c3, bounds)
+    assert bounds[model.x[2]] == Bound(-1, 1)
+
+    tighten_bounds_from_context(model.c4, bounds)
+    assert bounds[model.x[3]] == Bound(-1, 1)
 
 
 def test_inequality_bounds(model):
