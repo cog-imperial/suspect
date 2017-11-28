@@ -32,8 +32,8 @@ from convexity_detection.util import numeric_types
 
 
 class ConvexityHandler(ExpressionHandler):
-    def __init__(self):
-        self.mono_handler = MonotonicityHandler()
+    def __init__(self, bounds_memo=None):
+        self.mono_handler = MonotonicityHandler(bounds_memo=bounds_memo)
         self.memo = ExpressionDict()
 
     def accumulate(self, expr, cvx):
@@ -165,7 +165,7 @@ class ConvexityHandler(ExpressionHandler):
         return pow_convexity(self, expr)
 
 
-def expression_convexity(expr):
-    handler = ConvexityHandler()
+def expression_convexity(expr, bounds=None):
+    handler = ConvexityHandler(bounds_memo=bounds)
     visit_expression(handler, expr)
     return handler.convexity(expr)

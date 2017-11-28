@@ -31,8 +31,8 @@ import pyomo.environ as aml
 
 
 class MonotonicityHandler(ExpressionHandler):
-    def __init__(self):
-        self.bounds_handler = BoundsHandler()
+    def __init__(self, bounds_memo=None):
+        self.bounds_handler = BoundsHandler(memo=bounds_memo)
         self.memo = ExpressionDict()
 
     def accumulate(self, expr, mono):
