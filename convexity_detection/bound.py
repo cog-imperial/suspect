@@ -128,10 +128,16 @@ class Bound(object):
         return almosteq(self.l, other.l) and almosteq(self.u, other.u)
 
     def __contains__(self, other):
-        return (
-            almostgte(other.l, self.l) and
-            almostlte(other.u, self.u)
-        )
+        if isinstance(other, Number):
+            return (
+                almostgte(other, self.l) and
+                almostlte(other, self.u)
+            )
+        else:
+            return (
+                almostgte(other.l, self.l) and
+                almostlte(other.u, self.u)
+            )
 
     def __repr__(self):
         return '<{} at {}>'.format(str(self), id(self))
