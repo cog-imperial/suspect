@@ -76,7 +76,7 @@ class DotExpressionHandler(expr_visitor.ExpressionHandler):
             self.write_arc(e, a)
 
     def visit_linear(self, e):
-        self.write_node(e, '+')
+        self.write_node(e, '$\sum$')
 
         for node, coef in e._coef.items():
             node_id = self.write_coef_node(node, coef)
