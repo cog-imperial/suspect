@@ -11,5 +11,5 @@ setup(
     ],
     requires=['pyomo', 'numpy', 'mpmath'],
     setup_requires=['pytest-runner'],
-    tests_requires=['pytest', 'pytest-cov'],
+    tests_require=['pytest', 'pytest-cov'],
 )
