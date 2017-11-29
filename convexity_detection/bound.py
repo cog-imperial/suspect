@@ -35,7 +35,7 @@ class Bound(object):
             u = mpf(u)
 
         if l > u:
-            raise ValueError('l must be >= u')
+            raise ValueError('l must be <= u')
 
         self.l = l
         self.u = u
