@@ -68,13 +68,14 @@ class MonotonicityHandler(ExpressionHandler):
     @accumulated
     @visit_after('bounds_handler')
     def visit_equality(self, expr):
-        assert(len(expr._args) == 2)
-        body, _ = expr._args
-        return self.monotonicity(body)
+        raise RuntimeError('convexity_detection expects problems in standard form')
 
     @visit_after('bounds_handler')
     def visit_inequality(self, expr):
-        raise ValueError('visit_inequality not implemented')
+        assert(len(expr._args) == 2)
+        body, bound = expr._args
+        assert(isinstance(bound, numeric_types))
+        return self.monotonicity(body)
 
     @accumulated
     @visit_after('bounds_handler')

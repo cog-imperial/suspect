@@ -40,8 +40,5 @@ def product_convexity(handler, expr):
         return _product_convexity(handler, f, g)
     elif isinstance(f, numeric_types):
         return _product_convexity(handler, g, f)
-    else:
-        if handler.is_nonnegative(f) and handler.is_nonnegative(g):
-            return Convexity.Convex
 
     return Convexity.Unknown

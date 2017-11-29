@@ -82,14 +82,15 @@ class ConvexityHandler(ExpressionHandler):
     @accumulated
     @visit_after('mono_handler')
     def visit_equality(self, expr):
-        assert(len(expr._args) == 2)
-        body, _ = expr._args
-        return self.convexity(body)
+        raise RuntimeError('convexity_detection expects problems in standard form')
 
     @accumulated
     @visit_after('mono_handler')
     def visit_inequality(self, expr):
-        raise ValueError('visit_inequality not implemented')
+        assert(len(expr._args) == 2)
+        body, bound = expr._args
+        assert(isinstance(bound, numeric_types))
+        return self.convexity(body)
 
     @accumulated
     @visit_after('mono_handler')
