@@ -22,12 +22,34 @@ from convexity_detection.expr_visitor import (
     SumExpression,
     ProductExpression,
 )
+from convexity_detection.expr_dict import TightestExpressionDict
 from convexity_detection.util import (
     model_variables,
     model_constraints,
+    model_objectives,
     bounds_and_expr,
 )
 from convexity_detection.math import *
+
+
+def tighten_model_bounds(model):
+    """Find the tightest bounds for the model variables.
+
+    Parameters
+    ----------
+    model: Model
+        the Pyomo model
+
+    Returns
+    -------
+    bounds: ExpressionDict
+        the dictionary with the variables bounds
+    """
+    bounds = TightestExpressionDict()
+    for obj in model_objectives(model):
+        tighten_bounds_from_context(obj, bounds)
+    reverse_bound_tightening(model, bounds)
+    return bounds
 
 
 def inequality_bounds(expr):
@@ -78,7 +100,7 @@ def linear_nonlinear_components(expr):
         return None, expr
 
 
-def remove_var_from_linear_expr(expr, x):
+def _remove_var_from_linear_expr(expr, x):
     assert isinstance(expr, LinearExpression)
     args = [a for a in expr._args if a is not x]
     new_linear = sum(expr._coef[id(a)] * a for a in args)
@@ -151,7 +173,7 @@ def tighten_variable_bounds(constraint, x, bounds):
     (linear, nonlinear) = linear_nonlinear_components(expr)
 
     if linear is not None:
-        linear_no_x, x_coef = remove_var_from_linear_expr(linear, x)
+        linear_no_x, x_coef = _remove_var_from_linear_expr(linear, x)
         if x_coef is None:
             # var not found
             return var_bounds

@@ -32,3 +32,39 @@ class Convexity(Enum):
 
     def is_unknown(self):
         return self == self.Unknown
+
+    def negate(self):
+        if self.is_linear():
+            return self.Linear
+        elif self.is_convex():
+            return self.Concave
+        elif self.is_concave():
+            return self.Convex
+        else:
+            return self.Unknown
+
+    def combine(self, other):
+        """Combines two Convexity objects together.
+
+        If both objects are the same type (linear, convex, concave) then
+        the resulting object will be of the same type, otherwise it will
+        be Convexity.Unknown
+        """
+        if self.is_linear() and other.is_linear():
+            return self.Linear
+        elif self.is_convex() and other.is_convex():
+            return self.Convex
+        elif self.is_concave() and other.is_concave():
+            return self.Concave
+        else:
+            return self.Unknown
+
+    def __str__(self):
+        if self.is_linear():
+            return 'linear'
+        elif self.is_convex():
+            return 'convex'
+        elif self.is_concave():
+            return 'concave'
+        else:
+            return 'indefinite'
