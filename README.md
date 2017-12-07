@@ -12,7 +12,7 @@ This library implements methods to:
 Installation
 ------------
 
-Install by running ``python setup.py install``.
+Install by running `python setup.py install`.
 
 
 Usage
@@ -20,8 +20,8 @@ Usage
 
 The package contains an utility to display structure information about
 a single problem or, in batch mode, a list of problems. This utility
-requires the user to manually install ``pyomo_osil``, available `here
-<https://github.com/fracek/pyomo_osil>`.
+requires the user to manually install `pyomo_osil`, available
+[here](https://github.com/fracek/pyomo_osil).
 
 After that, you can run the utility as:
 
