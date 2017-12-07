@@ -77,13 +77,6 @@ def test_tighten_variable_bounds(model):
     assert bound == Bound(0.0, 5.0)
 
 
-def test_remove_var_from_linear_expr(model):
-    test1 = sum(model.x[i] for i in model.I)
-    test1_no_x0, coef = remove_var_from_linear_expr(test1, model.x[0])
-    assert len(test1_no_x0._args) == len(model.I) - 1
-    assert almosteq(coef, 1.0)
-
-
 def test_tighten_from_context(model):
     model.c1 = aml.Constraint(expr=aml.sqrt(model.x[0]) >= -1)
     model.c2 = aml.Constraint(expr=aml.log(model.x[1]) <= 1)

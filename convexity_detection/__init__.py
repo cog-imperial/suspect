@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from .pyomo_compat import set_pyomo4_expression_tree
+from .summary import detect_special_structure
 
 set_pyomo4_expression_tree()
