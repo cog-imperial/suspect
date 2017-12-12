@@ -17,16 +17,20 @@ import os
 import signal
 import sys
 import time
+import logging
 from terminaltables import SingleTable
 from mpmath import mpf
 from pyomo_osil import read_osil
-from convexity_detection import detect_special_structure
+from convexity_detection import (
+    set_pyomo4_expression_tree,
+    detect_special_structure,
+)
 
 
 HEADERS = [
     'name', 'status', 'nvars', 'nbinvars', 'nintvars', 'ncons',
     'conscurvature', 'objsense', 'objcurvature', 'objtype',
-    'wrong_bounds', 'obj_lower_bound', 'obj_upper_bound'
+    'wrong_bounds', 'obj_lower_bound', 'obj_upper_bound', 'runtime',
 ]
 
 
@@ -133,9 +137,12 @@ def summarize_problem_structure(info):
 
 def run_for_problem(filename, solution_filename, timeout_):
     # If we can't read a problem in, don't do anything.
+    logging.info('Starting {} / {}. timeout={}'.format(filename, solution_filename, timeout_))
     try:
-        model = read_problem(filename)
-    except:
+        with timeout(seconds=300):
+            model = read_problem(filename)
+    except Exception as err:
+        logging.error('{}: {}'.format(filename, str(err)))
         return None
 
     try:
@@ -158,7 +165,8 @@ def run_for_problem(filename, solution_filename, timeout_):
                     summary['obj_lower_bound'] = obj['lower_bound']
                     summary['obj_upper_bound'] = obj['upper_bound']
 
-    except:
+    except Exception as err:
+        logging.error('{}: {}'.format(model.name, str(err)))
         summary = {
             'name': model.name,
             'status': 'error',
@@ -185,6 +193,8 @@ def check_solution_bounds(variables, solution_filename):
 
 
 if __name__ == '__main__':
+    set_pyomo4_expression_tree()
+    logging.basicConfig(filename='model-summary.log', level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', '-i')
     parser.add_argument('--output', '-o', nargs='?')
@@ -214,7 +224,7 @@ if __name__ == '__main__':
             )
             if result is None:
                 continue
-            out = [str(result.get(k)) for k in HEADERS]
+            out = [str(result.get(k, '')) for k in HEADERS]
             output.write(','.join(out) + '\n')
             output.flush()
 
