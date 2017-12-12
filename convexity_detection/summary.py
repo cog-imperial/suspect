@@ -47,7 +47,7 @@ class ModelInformation(object):
         """Returns the number of integer variables in the problem."""
         integers = [
             v for v in self.variables.values()
-            if v['type'] == 'integers'
+            if v['type'] == 'integer'
         ]
         return len(integers)
 
