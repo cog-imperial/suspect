@@ -1,0 +1,22 @@
+{
+  "jobDefinitionName": "suspect-model-summary",
+  "jobDefinitionArn": "YOUR_ARN",
+  "revision": 1,
+  "status": "ACTIVE",
+  "type": "container",
+  "parameters": {},
+  "retryStrategy": {
+    "attempts": 1
+  },
+  "containerProperties": {
+    "image": "ECS_REGISTRY_SUSPECT_ARN",
+    "vcpus": 1,
+    "memory": 1000,
+    "command": [],
+    "jobRoleArn": "EXECUTION_ROLES",
+    "volumes": [],
+    "environment": [],
+    "mountPoints": [],
+    "ulimits": []
+  }
+}
