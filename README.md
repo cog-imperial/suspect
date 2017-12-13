@@ -19,11 +19,9 @@ Usage
 -----
 
 The package contains an utility to display structure information about
-a single problem or, in batch mode, a list of problems. This utility
-requires the user to manually install `pyomo_osil`, available
-[here](https://github.com/fracek/pyomo_osil).
+a single problem or, in batch mode, a list of problems.
 
-After that, you can run the utility as:
+You can run the utility as:
 
     model_summary.py -i /path/to/problem.osil
 
@@ -47,5 +45,5 @@ Where the input file is like:
 References
 ----------
 
-R Fourer, D Orban. DrAmpl: A meta solver for optimization problem analysis. Computational Management Science. 2010
-R Fourer et al. Convexity and Concavity Detection in Computational Graphs: Tree Walks for Convexity Assessment. INFORMS Journal on Computing. 2010
+ * R Fourer, D Orban. DrAmpl: A meta solver for optimization problem analysis. Computational Management Science. 2010
+ * R Fourer et al. Convexity and Concavity Detection in Computational Graphs: Tree Walks for Convexity Assessment. INFORMS Journal on Computing. 2010
