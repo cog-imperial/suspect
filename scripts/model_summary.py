@@ -20,7 +20,8 @@ import signal
 import sys
 import time
 import logging
-from terminaltables import SingleTable
+import json
+from contextlib import contextmanager
 from mpmath import mpf
 from convexity_detection.osil_reader import read_osil
 from convexity_detection import (
@@ -29,14 +30,7 @@ from convexity_detection import (
 )
 
 
-HEADERS = [
-    'name', 'status', 'nvars', 'nbinvars', 'nintvars', 'ncons',
-    'conscurvature', 'objsense', 'objcurvature', 'objtype',
-    'wrong_bounds', 'obj_lower_bound', 'obj_upper_bound', 'runtime',
-]
-
-
-class timeout(object):
+class Timeout(object):
     def __init__(self, seconds=1, error_message='Timeout'):
         self.seconds = seconds
         self.error_message = error_message
@@ -50,6 +44,22 @@ class timeout(object):
 
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
+
+
+@contextmanager
+def ScriptOutput(output):
+    try:
+        if output is None:
+            owned = False
+            output = sys.stdout
+        else:
+            owned = True
+            output = open(output, 'w')
+
+        yield output
+    finally:
+        if owned:
+            output.close()
 
 
 def read_problem(filename):
@@ -67,24 +77,6 @@ def read_problem(filename):
         return model
     else:
         raise RuntimeError('Unknown file type.')
-
-
-def parse_input(line):
-    parts = line.strip().split(':')
-    if len(parts) == 1:
-        return parts[0], None
-    elif len(parts) == 2:
-        return parts[0], parts[1]
-    else:
-        raise RuntimeError((
-            'Expected input line in the form: ' +
-            'problem_file:solution_file'))
-
-
-def read_batch_input(filename):
-    with open(filename) as f:
-        problems = [parse_input(line) for line in f]
-    return sorted(problems, key=lambda x: x[0])
 
 
 def _conscurvature(info):
@@ -141,100 +133,96 @@ def run_for_problem(filename, solution_filename, timeout_):
     # If we can't read a problem in, don't do anything.
     logging.info('Starting {} / {}. timeout={}'.format(filename, solution_filename, timeout_))
     try:
-        with timeout(seconds=300):
+        with Timeout(seconds=300):
             model = read_problem(filename)
     except Exception as err:
-        logging.error('{}: {}'.format(filename, str(err)))
+        logging.error('{}: Error reading: {}'.format(filename, str(err)))
         return None
 
     try:
-        with timeout(seconds=timeout_):
+        with Timeout(seconds=timeout_):
             start_t = time.time()
             info = detect_special_structure(model)
             end_t = time.time()
 
-            summary = summarize_problem_structure(info)
-            summary['runtime'] = end_t - start_t
-            summary['status'] = 'ok'
-
-            if solution_filename is not None:
-                wrong_bounds = check_solution_bounds(
-                    info.variables, solution_filename
-                )
-                summary['wrong_bounds'] = len(wrong_bounds)
-                if len(info.objectives) == 1:
-                    obj = list(info.objectives.values())[0]
-                    summary['obj_lower_bound'] = obj['lower_bound']
-                    summary['obj_upper_bound'] = obj['upper_bound']
-
     except Exception as err:
         logging.error('{}: {}'.format(model.name, str(err)))
-        summary = {
+        return {
             'name': model.name,
             'status': 'error',
+            'error': str(err),
         }
+
+    summary = summarize_problem_structure(info)
+    summary['runtime'] = end_t - start_t
+    summary['status'] = 'ok'
+
+    if solution_filename is not None:
+        try:
+            var_bounds_ok, obj_bounds_ok = check_solution_bounds(
+                info.variables, info.objectives, solution_filename
+            )
+            summary['bounds_var_ok'] = var_bounds_ok
+            summary['bounds_obj_ok'] = obj_bounds_ok
+        except Exception as err:
+            logging.error('{}: Solution bounds: {}'.format(model.name, str(err)))
 
     return summary
 
 
-def check_solution_bounds(variables, solution_filename):
+def check_solution_bounds(variables, objectives, solution_filename):
     wrong_bounds = []
+    objvar_value = None
     with open(solution_filename) as f:
         for line in f:
             parts = line.split()
             var_name = parts[0]
             sol = mpf(parts[1])
+
+            if var_name == 'objvar':
+                objvar_value = sol
             if var_name not in variables:
                 continue
+
             v = variables[var_name]
 
             if sol < v['lower_bound'] or sol > v['upper_bound']:
                 wrong_bounds.append(var_name)
 
-    return wrong_bounds
+    var_bounds_ok = len(wrong_bounds) == 0
+    if len(objectives) != 1 or objvar_value is None:
+        return var_bounds_ok, None
+
+    for obj in objectives.values():
+        lower_bound = obj['lower_bound']
+        upper_bound = obj['upper_bound']
+        obj_bounds_ok = (
+            objvar_value >= lower_bound and objvar_value <= upper_bound
+        )
+        return var_bounds_ok, obj_bounds_ok
 
 
 if __name__ == '__main__':
     set_pyomo4_expression_tree()
-    logging.basicConfig(filename='model-summary.log', level=logging.INFO)
+    logging.basicConfig(level=logging.INFO)
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', '-i')
+    parser.add_argument('--problem', '-p')
+    parser.add_argument('--solution', '-s')
     parser.add_argument('--output', '-o', nargs='?')
-    parser.add_argument('--batch', action='store_true')
     parser.add_argument('--timeout', type=int, default=300,
                         help='Timeout in seconds')
     args = parser.parse_args()
 
-    if args.input is None:
+    if args.problem is None:
         parser.print_help()
         sys.exit(1)
 
-    if args.batch:
-        # batch mode
-        problems = read_batch_input(args.input)
-        if args.output is None:
-            output = sys.stdout
-        else:
-            output = open(args.output, 'w')
+    result = run_for_problem(args.problem, args.solution, args.timeout)
+    if result is None:
+        sys.exit(1)
 
-        output.write(','.join(HEADERS) + '\n')
-        for problem_filename, solution_filename in problems:
-            result = run_for_problem(
-                problem_filename,
-                solution_filename,
-                args.timeout,
-            )
-            if result is None:
-                continue
-            out = [str(result.get(k, '')) for k in HEADERS]
-            output.write(','.join(out) + '\n')
-            output.flush()
-
-        if args.output is not None:
-            output.close()
-    else:
-        # single file mode
-        filename, solution_name = parse_input(args.input)
-        result = run_for_problem(filename, solution_name, args.timeout)
-        table = SingleTable([(k, v) for k, v in result.items()])
-        print(table.table)
+    result_str = json.dumps(result, sort_keys=True)
+    with ScriptOutput(args.output) as output:
+        output.write(result_str + '\n')
+        output.flush()
