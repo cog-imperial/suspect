@@ -21,8 +21,9 @@ import sys
 import time
 import logging
 import json
-from contextlib import contextmanager
+import tempfile
 from mpmath import mpf
+import boto3
 from convexity_detection.osil_reader import read_osil
 from convexity_detection import (
     set_pyomo4_expression_tree,
@@ -46,20 +47,82 @@ class Timeout(object):
         signal.alarm(0)
 
 
-@contextmanager
-def ScriptOutput(output):
-    try:
-        if output is None:
-            owned = False
-            output = sys.stdout
-        else:
-            owned = True
-            output = open(output, 'w')
+class S3Storage(object):
+    PREFIX = 's3://'
 
-        yield output
-    finally:
-        if owned:
-            output.close()
+    def __init__(self):
+        self.s3 = boto3.resource('s3')
+
+    def download_to_temp(self, resource, prefix=None):
+        bucket = self._bucket(resource)
+        path = self._path(resource)
+        temp_dir = tempfile.TemporaryDirectory(prefix=prefix)
+        filename = os.path.basename(path)
+        dest_file = os.path.join(temp_dir.name, filename)
+        bucket.download_file(path, dest_file)
+        logging.info('Downloaded {} to {}'.format(resource, dest_file))
+        return dest_file, temp_dir
+
+    def upload_file(self, orig, dest):
+        bucket = self._bucket(dest)
+        path = self._path(dest)
+        logging.info('Uploading {} to {}'.format(orig, dest))
+        bucket.upload_file(orig, path)
+
+    def _bucket(self, resource):
+        resource = resource[len(self.PREFIX):]
+        parts = resource.split('/')
+        return self.s3.Bucket(parts[0])
+
+    def _path(self, resource):
+        resource = resource[len(self.PREFIX):]
+        parts = resource.split('/')
+        return '/'.join(parts[1:])
+
+
+class RunResources(object):
+    """Context Manager to provide uniform interface for local and S3 objects"""
+    def __init__(self, problem, solution, output):
+        s3 = S3Storage()
+        self.s3 = s3
+
+        if problem.startswith(s3.PREFIX):
+            # keep a ref to problem dir so it does not get cleaned self
+            self.problem, self.problem_dir = \
+              s3.download_to_temp(problem, prefix='problem')
+        else:
+            self.problem = problem
+
+        if solution is not None and solution.startswith(s3.PREFIX):
+            # keep a ref to solution dir so it does not get cleaned self
+            self.solution, self.solution_dir = \
+              s3.download_to_temp(solution, prefix='solution')
+        else:
+            self.solution = solution
+
+        self.output_type = None
+        if output is None:
+            self.output_owned = False
+            self.output = sys.stdout
+        else:
+            self.output_owned = True
+            if output.startswith(s3.PREFIX):
+                self.output = tempfile.NamedTemporaryFile('w', prefix='output')
+                self.output_dest = output
+                self.output_type = 's3'
+            else:
+                self.output = open(output, 'w')
+                self.output_type = 'fs'
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self.output_type == 'fs':
+            self.output.close()
+        elif self.output_type == 's3':
+            self.output.flush()
+            self.s3.upload_file(self.output.name, self.output_dest)
 
 
 def read_problem(filename):
@@ -218,11 +281,11 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    result = run_for_problem(args.problem, args.solution, args.timeout)
-    if result is None:
-        sys.exit(1)
+    with RunResources(args.problem, args.solution, args.output) as r:
+        result = run_for_problem(r.problem, r.solution, args.timeout)
 
-    result_str = json.dumps(result, sort_keys=True)
-    with ScriptOutput(args.output) as output:
-        output.write(result_str + '\n')
-        output.flush()
+        if result is None:
+            sys.exit(1)
+
+        result_str = json.dumps(result, sort_keys=True)
+        r.output.write(result_str + '\n')

@@ -3,3 +3,4 @@ pytest-cov
 Pyomo>=5.2
 numpy>=1.13.1
 mpmath==1.0.0
+boto3>=1.4.8
