@@ -14,6 +14,7 @@
 
 from convexity_detection.util import numeric_types, numeric_value
 from convexity_detection.convexity.convexity import Convexity
+from convexity_detection.expr_visitor import LinearExpression, Variable
 
 
 def _product_convexity(handler, f, g):
@@ -40,5 +41,20 @@ def product_convexity(handler, expr):
         return _product_convexity(handler, f, g)
     elif isinstance(f, numeric_types):
         return _product_convexity(handler, g, f)
+
+    # Try to detected convexity of expression like x*x or
+    # (x + a)*(x + b), where a and b are constants
+    if isinstance(f, LinearExpression) and len(f._args) == 1:
+        if isinstance(f._args[0], Variable):
+            f = f._args[0]
+
+    if isinstance(g, LinearExpression) and len(g._args) == 1:
+        if isinstance(g._args[0], Variable):
+            g = g._args[0]
+
+    if isinstance(f, Variable) and isinstance(g, Variable):
+        if f is g:
+            # x^2
+            return Convexity.Convex
 
     return Convexity.Unknown
