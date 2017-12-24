@@ -15,7 +15,7 @@ def problem_name_from_path(path):
 
 def list_input_problems(bucket):
     paginator = s3.get_paginator('list_objects')
-    for page in paginator.paginate(Bucket=args.input_bucket, Prefix='osil/'):
+    for page in paginator.paginate(Bucket=bucket, Prefix='osil/'):
         for input_problem in page['Contents']:
             name = input_problem['Key']
             if name.endswith('.osil'):
