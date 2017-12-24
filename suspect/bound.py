@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from numbers import Number
-from convexity_detection.math import (
+from suspect.math import (
     inf,
     mpf,
     almostlte,

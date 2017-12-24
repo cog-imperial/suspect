@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.bounds import Bound, expression_bounds
-from convexity_detection.expr_visitor import (
+from suspect.bounds import Bound, expression_bounds
+from suspect.expr_visitor import (
     ExpressionHandler,
     bottom_up_visit as visit_expression,
     EqualityExpression,
@@ -22,14 +22,14 @@ from convexity_detection.expr_visitor import (
     SumExpression,
     ProductExpression,
 )
-from convexity_detection.expr_dict import TightestExpressionDict
-from convexity_detection.util import (
+from suspect.expr_dict import TightestExpressionDict
+from suspect.util import (
     model_variables,
     model_constraints,
     model_objectives,
     bounds_and_expr,
 )
-from convexity_detection.math import *
+from suspect.math import *
 
 
 def tighten_model_bounds(model):

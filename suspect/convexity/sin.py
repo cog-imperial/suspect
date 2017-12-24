@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.bounds import expression_bounds
-from convexity_detection.convexity.convexity import Convexity
-from convexity_detection.math import (
+from suspect.bounds import expression_bounds
+from suspect.convexity.convexity import Convexity
+from suspect.math import (
     sin, pi, almosteq, almostlte, mpf
 )
 import pyomo.environ as aml

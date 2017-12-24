@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.convexity.convexity import Convexity
-from convexity_detection.math import (
+from suspect.convexity.convexity import Convexity
+from suspect.math import (
     tan, pi, almosteq, almostlte, almostgte
 )
 

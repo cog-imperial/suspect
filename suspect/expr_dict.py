@@ -14,14 +14,14 @@
 
 from numbers import Number
 from functools import reduce
-from convexity_detection.expr_visitor import (
+from suspect.expr_visitor import (
     bottom_up_visit as visit_expression,
     ExpressionHandler,
     LinearExpression,
     UnaryFunctionExpression,
 )
-from convexity_detection.util import (numeric_types, numeric_value)
-from convexity_detection.math import almosteq
+from suspect.util import (numeric_types, numeric_value)
+from suspect.math import almosteq
 from pyomo.core.base import (
     _VarData,
     NumericConstant,

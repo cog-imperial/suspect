@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.convexity.convexity import Convexity
-from convexity_detection.convexity.sin import (
+from suspect.convexity.convexity import Convexity
+from suspect.convexity.sin import (
     sin_convexity,
     asin_convexity,
 )
-from convexity_detection.convexity.cos import (
+from suspect.convexity.cos import (
     cos_convexity,
     acos_convexity,
 )
-from convexity_detection.convexity.tan import (
+from suspect.convexity.tan import (
     tan_convexity,
     atan_convexity,
 )

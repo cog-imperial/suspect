@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='convexity_detection',
+    name='suspect',
     author='Francesco Ceccon',
     author_email='francesco@ceccon.me',
     packages=[
-        'convexity_detection',
-        'convexity_detection.monotonicity',
-        'convexity_detection.convexity'
+        'suspect',
+        'suspect.monotonicity',
+        'suspect.convexity'
     ],
     scripts=[
         'scripts/model_summary.py'

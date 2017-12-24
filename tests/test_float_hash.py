@@ -13,11 +13,8 @@
 # limitations under the License.
 
 import pytest
-from convexity_detection.math import mpf
-from convexity_detection.float_hash import (
-    BTreeFloatHasher,
-    RoundFloatHasher,
-)
+from suspect.math import mpf
+from suspect.float_hash import BTreeFloatHasher, RoundFloatHasher
 
 
 def test_btree_float_hasher():

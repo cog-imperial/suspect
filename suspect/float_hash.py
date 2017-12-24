@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import abc
-from convexity_detection.math import (
+from suspect.math import (
     mpf,
     almosteq,
     almostlte,

@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.monotonicity import MonotonicityHandler
-from convexity_detection.expr_dict import ExpressionDict
-from convexity_detection.expr_visitor import (
+from suspect.monotonicity import MonotonicityHandler
+from suspect.expr_dict import ExpressionDict
+from suspect.expr_visitor import (
     ExpressionHandler,
     bottom_up_visit as visit_expression,
     visit_after,
     accumulated,
 )
-from convexity_detection.convexity.convexity import Convexity
-from convexity_detection.convexity.product import product_convexity
-from convexity_detection.convexity.division import division_convexity
-from convexity_detection.convexity.pow import pow_convexity
-from convexity_detection.convexity.unary_function import (
+from suspect.convexity.convexity import Convexity
+from suspect.convexity.product import product_convexity
+from suspect.convexity.division import division_convexity
+from suspect.convexity.pow import pow_convexity
+from suspect.convexity.unary_function import (
     unary_function_convexity
 )
-from convexity_detection.convexity.linear import linear_convexity
-from convexity_detection.util import numeric_types
+from suspect.convexity.linear import linear_convexity
+from suspect.util import numeric_types
 
 
 class ConvexityHandler(ExpressionHandler):
@@ -82,7 +82,7 @@ class ConvexityHandler(ExpressionHandler):
     @accumulated
     @visit_after('mono_handler')
     def visit_equality(self, expr):
-        raise RuntimeError('convexity_detection expects problems in standard form')
+        raise RuntimeError('suspect expects problems in standard form')
 
     @accumulated
     @visit_after('mono_handler')

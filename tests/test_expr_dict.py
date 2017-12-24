@@ -14,8 +14,8 @@
 
 import pytest
 import pyomo.environ as aml
-from convexity_detection.expr_dict import *
-from convexity_detection.float_hash import RoundFloatHasher
+from suspect.expr_dict import *
+from suspect.float_hash import RoundFloatHasher
 from fixtures import model
 
 

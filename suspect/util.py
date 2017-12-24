@@ -14,11 +14,11 @@
 
 from numbers import Number
 import pyomo.environ as aml
-from convexity_detection.expr_visitor import (
+from suspect.expr_visitor import (
     InequalityExpression,
     EqualityExpression,
 )
-from convexity_detection.bound import Bound
+from suspect.bound import Bound
 
 numeric_types = (int, Number, aml.NumericConstant)
 

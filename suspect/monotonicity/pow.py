@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.monotonicity.monotonicity import Monotonicity
-from convexity_detection.util import numeric_types, numeric_value
-from convexity_detection.math import almosteq, almostgte
+from suspect.monotonicity.monotonicity import Monotonicity
+from suspect.util import numeric_types, numeric_value
+from suspect.math import almosteq, almostgte
 
 
 def pow_monotonicity(mono_handler, expr):

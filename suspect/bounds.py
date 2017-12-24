@@ -15,25 +15,25 @@
 import operator
 from functools import reduce
 import warnings
-from convexity_detection.expr_visitor import (
+from suspect.expr_visitor import (
     bottom_up_visit as visit_expression,
     ExpressionHandler,
     accumulated,
 )
-from convexity_detection.util import (
+from suspect.util import (
     numeric_types,
     numeric_value,
     bounds_and_expr,
 )
-from convexity_detection.expr_dict import TightestExpressionDict
-from convexity_detection.math import (
+from suspect.expr_dict import TightestExpressionDict
+from suspect.math import (
     mpf,
     almosteq,
     pi,
 )
-from convexity_detection.math import *  # all functions
-from convexity_detection.bound import Bound
-from convexity_detection.error import DomainError
+from suspect.math import *  # all functions
+from suspect.bound import Bound
+from suspect.error import DomainError
 
 
 def _sin_bound(lower, upper):

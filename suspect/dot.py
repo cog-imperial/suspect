@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from numbers import Number
-import convexity_detection.expr_visitor as expr_visitor
+import suspect.expr_visitor as expr_visitor
 from pyomo.core.base.var import SimpleVar
 import numpy as np
 

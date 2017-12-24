@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import warnings
-from convexity_detection.bounds import expression_bounds
-from convexity_detection.convexity import expression_convexity
-from convexity_detection.tightening import tighten_model_bounds
-from convexity_detection.util import (
+from suspect.bounds import expression_bounds
+from suspect.convexity import expression_convexity
+from suspect.tightening import tighten_model_bounds
+from suspect.util import (
     model_variables,
     model_constraints,
     model_objectives,

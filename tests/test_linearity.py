@@ -14,8 +14,8 @@
 
 import pytest
 import pyomo.environ as aml
-from convexity_detection.monotonicity import *
-from convexity_detection.math import pi
+from suspect.monotonicity import *
+from suspect.math import pi
 from util import _var
 
 

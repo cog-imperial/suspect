@@ -24,8 +24,8 @@ import json
 import tempfile
 from mpmath import mpf
 import boto3
-from convexity_detection.osil_reader import read_osil
-from convexity_detection import (
+from suspect.osil_reader import read_osil
+from suspect import (
     set_pyomo4_expression_tree,
     detect_special_structure,
 )

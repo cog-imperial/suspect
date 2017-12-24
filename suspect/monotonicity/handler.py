@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.bounds import BoundsHandler, expression_bounds
-from convexity_detection.expr_dict import ExpressionDict
-from convexity_detection.expr_visitor import (
+from suspect.bounds import BoundsHandler, expression_bounds
+from suspect.expr_dict import ExpressionDict
+from suspect.expr_visitor import (
     ExpressionHandler,
     bottom_up_visit as visit_expression,
     visit_after,
     accumulated,
 )
-from convexity_detection.monotonicity.monotonicity import Monotonicity
-from convexity_detection.monotonicity.product import product_monotonicity
-from convexity_detection.monotonicity.division import division_monotonicity
-from convexity_detection.monotonicity.pow import pow_monotonicity
-from convexity_detection.monotonicity.linear import linear_monotonicity
-from convexity_detection.util import numeric_types
+from suspect.monotonicity.monotonicity import Monotonicity
+from suspect.monotonicity.product import product_monotonicity
+from suspect.monotonicity.division import division_monotonicity
+from suspect.monotonicity.pow import pow_monotonicity
+from suspect.monotonicity.linear import linear_monotonicity
+from suspect.util import numeric_types
 
 import pyomo.environ as aml
 
@@ -68,7 +68,7 @@ class MonotonicityHandler(ExpressionHandler):
     @accumulated
     @visit_after('bounds_handler')
     def visit_equality(self, expr):
-        raise RuntimeError('convexity_detection expects problems in standard form')
+        raise RuntimeError('suspect expects problems in standard form')
 
     @visit_after('bounds_handler')
     def visit_inequality(self, expr):

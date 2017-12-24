@@ -16,17 +16,17 @@ import pytest
 from mpmath import mpf, mp
 import mpmath
 import pyomo.environ as aml
-from convexity_detection.expr_visitor import (
+from suspect.expr_visitor import (
     bottom_up_visit as visit_expression
 )
-from convexity_detection.bounds import (
+from suspect.bounds import (
     Bound,
     BoundsHandler,
     expression_bounds,
     is_positive,
     is_nonnegative,
 )
-from convexity_detection.math import inf
+from suspect.math import inf
 from util import _var
 
 pi = mpmath.pi

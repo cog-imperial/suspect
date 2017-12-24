@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.pyomo_compat import set_pyomo4_expression_tree
+from suspect.pyomo_compat import set_pyomo4_expression_tree
 
 
 def pytest_sessionstart(session):

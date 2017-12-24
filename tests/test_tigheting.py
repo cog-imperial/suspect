@@ -14,14 +14,14 @@
 
 import pytest
 import pyomo.environ as aml
-from convexity_detection.bounds import Bound, expression_bounds
-from convexity_detection.expr_visitor import (
+from suspect.bounds import Bound, expression_bounds
+from suspect.expr_visitor import (
     LinearExpression,
     SumExpression,
 )
-from convexity_detection.expr_dict import TightestExpressionDict
-from convexity_detection.tightening import *
-from convexity_detection.math import almosteq
+from suspect.expr_dict import TightestExpressionDict
+from suspect.tightening import *
+from suspect.math import almosteq
 from fixtures import model
 
 

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.util import numeric_types, numeric_value
-from convexity_detection.convexity.convexity import Convexity
+from suspect.util import numeric_types, numeric_value
+from suspect.convexity.convexity import Convexity
 
 
 def division_convexity(handler, expr):

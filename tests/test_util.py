@@ -14,7 +14,7 @@
 
 import pytest
 import pyomo.environ as aml
-from convexity_detection.util import *
+from suspect.util import *
 from fixtures import model
 
 

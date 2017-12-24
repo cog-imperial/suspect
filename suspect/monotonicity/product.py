@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from convexity_detection.monotonicity.monotonicity import Monotonicity
+from suspect.monotonicity.monotonicity import Monotonicity
 
 
-def division_monotonicity(mono_handler, expr):
+def product_monotonicity(mono_handler, expr):
     assert len(expr._args) == 2
 
-    def _division_mono(f, g):
-        # Rules taken from Appendix
-        # Notice that it's very similar to product, with the difference
-        # being in the quotient
+    def _product_mono(f, g):
         mono_f = mono_handler.monotonicity(f)
         mono_g = mono_handler.monotonicity(g)
 
@@ -38,6 +35,8 @@ def division_monotonicity(mono_handler, expr):
                 return Monotonicity.Nonincreasing
             else:
                 return Monotonicity.Unknown
+        elif mono_f.is_constant():
+            return _product_mono(g, f)
         else:
             nondec_cond1 = (
                 mono_f.is_nondecreasing() and mono_handler.is_nonnegative(g)
@@ -45,9 +44,9 @@ def division_monotonicity(mono_handler, expr):
                 mono_f.is_nonincreasing() and mono_handler.is_nonpositive(g)
             )
             nondec_cond2 = (
-                mono_handler.is_nonnegative(f) and mono_g.is_nonincreasing()
+                mono_handler.is_nonnegative(f) and mono_g.is_nondecreasing()
             ) or (
-                mono_handler.is_nonpositive(f) and mono_g.is_nondecreasing()
+                mono_handler.is_nonpositive(f) and mono_g.is_nonincreasing()
             )
             noninc_cond1 = (
                 mono_f.is_nonincreasing() and mono_handler.is_nonnegative(g)
@@ -55,9 +54,9 @@ def division_monotonicity(mono_handler, expr):
                 mono_f.is_nondecreasing() and mono_handler.is_nonpositive(g)
             )
             noninc_cond2 = (
-                mono_handler.is_nonnegative(f) and mono_g.is_nondecreasing()
+                mono_handler.is_nonnegative(f) and mono_g.is_nonincreasing()
             ) or (
-                mono_handler.is_nonpositive(f) and mono_g.is_nonincreasing()
+                mono_handler.is_nonpositive(f) and mono_g.is_nondecreasing()
             )
 
             if nondec_cond1 and nondec_cond2:
@@ -68,4 +67,4 @@ def division_monotonicity(mono_handler, expr):
                 return Monotonicity.Unknown
 
     f, g = expr._args
-    return _division_mono(f, g)
+    return _product_mono(f, g)

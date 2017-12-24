@@ -14,8 +14,8 @@
 
 import pytest
 import pyomo.environ as aml
-from convexity_detection.convexity import *
-from convexity_detection.math import pi
+from suspect.convexity import *
+from suspect.math import pi
 from util import _var
 
 
