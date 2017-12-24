@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .arbitrary_precision_bound import ArbitraryPrecisionBound
 
-class DomainError(ValueError):
-    pass
+# TODO: remove and fix errors
+Bound = ArbitraryPrecisionBound

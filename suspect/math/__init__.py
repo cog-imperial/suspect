@@ -12,6 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-class DomainError(ValueError):
-    pass
+from .arbitrary_precision import *

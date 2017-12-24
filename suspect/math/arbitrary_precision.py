@@ -29,6 +29,9 @@ for sym in _EXPORTED_SYMBOLS:
     setattr(_module, sym, getattr(mpmath, sym))
 
 
+isnan = mpmath.isnan
+
+
 def almosteq(a, b):
     """Floating point equality check between `a` and `b`."""
     if abs(a) == inf and abs(b) == inf:
