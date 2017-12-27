@@ -4,15 +4,17 @@ setup(
     name='suspect',
     author='Francesco Ceccon',
     author_email='francesco@ceccon.me',
-    packages=[
-        'suspect',
-        'suspect.monotonicity',
-        'suspect.convexity'
-    ],
+    packages=find_packages(exclude=['tests']),
     scripts=[
         'scripts/model_summary.py'
     ],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Science/Research',
+        'Programming Language :: Python :: 3.6',
+        'Topic :: Scientific/Engineering :: Mathematics',
+    ],
     requires=['pyomo', 'numpy', 'mpmath'],
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-cov'],
+    tests_require=['pytest', 'pytest-cov', 'hypothesis'],
 )
