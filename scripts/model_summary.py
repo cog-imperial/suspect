@@ -24,7 +24,9 @@ import json
 import tempfile
 from mpmath import mpf
 import boto3
-from suspect.osil_reader import read_osil
+import suspect.dag.dot as dot
+from suspect.pyomo.osil_reader import read_osil
+from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect import (
     set_pyomo4_expression_tree,
     detect_special_structure,
@@ -281,11 +283,17 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    with RunResources(args.problem, args.solution, args.output) as r:
-        result = run_for_problem(r.problem, r.solution, args.timeout)
+    model = read_problem(args.problem)
+    dag = dag_from_pyomo_model(model)
+    with open('/tmp/dag.dot', 'w') as f:
+        dot.dump(dag, f)
 
-        if result is None:
-            sys.exit(1)
+    if False:
+        with RunResources(args.problem, args.solution, args.output) as r:
+            result = run_for_problem(r.problem, r.solution, args.timeout)
 
-        result_str = json.dumps(result, sort_keys=True)
-        r.output.write(result_str + '\n')
+            if result is None:
+                sys.exit(1)
+
+                result_str = json.dumps(result, sort_keys=True)
+                r.output.write(result_str + '\n')

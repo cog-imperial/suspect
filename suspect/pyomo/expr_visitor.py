@@ -17,7 +17,6 @@ from numbers import Number
 from pyomo.core.base import Var
 from pyomo.core.base.var import (_GeneralVarData, SimpleVar)
 import pyomo.core.base.expr_pyomo4 as omo
-import functools
 
 
 Variable = Var
@@ -73,33 +72,6 @@ def try_callback(handler, expr):
         callback(expr)
 
 
-class accumulated(object):
-    def __init__(self, fun):
-        self._fun = fun
-
-    def __get__(self, obj, objtype):
-        return functools.partial(self.__call__, obj)
-
-    def __call__(self, obj, expr):
-        value = self._fun(obj, expr)
-        obj.accumulate(expr, value)
-
-
-class visit_after(object):
-    def __init__(self, other):
-        self.other_name = other
-
-    def __call__(self, fun):
-        fun_name = fun.__name__
-
-        def new_fun(obj, *args, **kwargs):
-            other_handler = getattr(obj, self.other_name)
-            other_fun = getattr(other_handler, fun_name)
-            other_fun(*args, **kwargs)
-            return fun(obj, *args, **kwargs)
-        return new_fun
-
-
 class ExpressionHandler(ABC):
     @abstractmethod
     def visit_number(self, n):
@@ -152,27 +124,6 @@ class ExpressionHandler(ABC):
     @abstractmethod
     def visit_pow(self, expr):
         pass
-
-
-def visit(handler, expr):
-    """Visit the expression from root to leaves.
-
-    Parameters
-    ----------
-    handler: ExpressionHandler
-        handler that will handle each sub-expression callback
-    expr:
-        the expression to visit
-    """
-    with omo.bypass_clone_check():
-        stack = [(0, expr)]
-        while len(stack) > 0:
-            (lvl, expr) = stack.pop()
-            if isinstance(expr, omo._ExpressionBase):
-                for arg in expr._args:
-                    stack.append((lvl+1, arg))
-
-            try_callback(handler, expr)
 
 
 def bottom_up_visit(handler, expr):

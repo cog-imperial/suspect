@@ -15,7 +15,7 @@
 import operator
 from functools import reduce
 import warnings
-from suspect.expr_visitor import (
+from suspect.pyomo.expr_visitor import (
     bottom_up_visit as visit_expression,
     ExpressionHandler,
     accumulated,

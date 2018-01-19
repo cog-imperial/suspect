@@ -51,10 +51,10 @@ class ExpressionHasherHandler(ExpressionHandler):
         return hash(type(expr)) ^ reduce(lambda x, y: x ^ y, hashes, 0)
 
     def visit_number(self, n):
-        pass
+        self.set_hash(n, self._float_hasher.hash(n))
 
     def visit_numeric_constant(self, n):
-        pass
+        self.set_hash(n, self._float_hasher.hash(numeric_value(n)))
 
     def visit_variable(self, v):
         self.set_hash(v, hash(_VarData) ^ id(v))
