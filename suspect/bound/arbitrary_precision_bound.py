@@ -64,7 +64,6 @@ class ArbitraryPrecisionBound(Bound):
     def is_nonnegative(self):
         return almostgte(self.lower, 0)
 
-
     def tighten(self, other):
         if not isinstance(other, ArbitraryPrecisionBound):
             raise ValueError('other must be ArbitraryPrecisionBound')
@@ -94,6 +93,8 @@ class ArbitraryPrecisionBound(Bound):
         if isinstance(other, ArbitraryPrecisionBound):
             return ArbitraryPrecisionBound(l + other.lower, u + other.upper)
         elif isinstance(other, Number):
+            if mpf(other) == inf:
+                raise RuntimeError('Infinity constants are not allowed')
             return ArbitraryPrecisionBound(l + other, u + other)
         else:
             raise TypeError(
@@ -106,6 +107,8 @@ class ArbitraryPrecisionBound(Bound):
         if isinstance(other, ArbitraryPrecisionBound):
             return ArbitraryPrecisionBound(l - other.upper, u - other.lower)
         elif isinstance(other, Number):
+            if mpf(other) == inf:
+                raise RuntimeError('Infinity constants are not allowed')
             return ArbitraryPrecisionBound(l - other, u - other)
         else:
             raise TypeError(
@@ -132,6 +135,8 @@ class ArbitraryPrecisionBound(Bound):
             new_u = max(candidates)
             return ArbitraryPrecisionBound(new_l, new_u)
         elif isinstance(other, Number):
+            if mpf(other) == inf:
+                raise RuntimeError('Infinity constants are not allowed')
             return self.__mul__(ArbitraryPrecisionBound(other, other))
         else:
             raise TypeError(
@@ -147,6 +152,8 @@ class ArbitraryPrecisionBound(Bound):
             else:
                 return self.__mul__(ArbitraryPrecisionBound(1/ou, 1/ol))
         elif isinstance(other, Number):
+            if mpf(other) == inf:
+                raise RuntimeError('Infinity constants are not allowed')
             return self.__truediv__(ArbitraryPrecisionBound(other, other))
         else:
             raise TypeError(
@@ -181,3 +188,8 @@ class ArbitraryPrecisionBound(Bound):
 
     def zero(self):
         return ArbitraryPrecisionBound(0, 0)
+
+    def size(self):
+        if self.lower == -inf or self.upper == inf:
+            return inf
+        return self.upper - self.lower
