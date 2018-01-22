@@ -21,6 +21,14 @@ from suspect.math.arbitrary_precision import (
     almostlte,
     almostgte,
     almosteq,
+    pi,
+    sin,
+    tan,
+    asin,
+    acos,
+    log,
+    exp,
+    sqrt,
 )
 from suspect.bound.bound import Bound
 
@@ -193,3 +201,69 @@ class ArbitraryPrecisionBound(Bound):
         if self.lower == -inf or self.upper == inf:
             return inf
         return self.upper - self.lower
+
+    def negation(self):
+        return -self
+
+    def abs(self):
+        new_upper = max(abs(self.lower), abs(self.upper))
+        if 0 in self:
+            new_lower = 0.0
+        else:
+            new_lower = min(abs(self.lower), abs(self.upper))
+        return ArbitraryPrecisionBound(new_lower, new_upper)
+
+    def sqrt(self):
+        return ArbitraryPrecisionBound(sqrt(self.lower), sqrt(self.upper))
+
+    def exp(self):
+        return ArbitraryPrecisionBound(exp(self.lower), exp(self.upper))
+
+    def log(self):
+        return ArbitraryPrecisionBound(log(self.lower), log(self.upper))
+
+    def sin(self):
+        if almostgte(self.size(), 2*pi):
+            return ArbitraryPrecisionBound(-1, 1)
+        else:
+            l = self.lower % (2 * pi)
+            u = l + (self.upper - self.lower)
+            new_u = max(sin(l), sin(u))
+            new_l = min(sin(l), sin(u))
+            if 0.5*pi in self:
+                new_u = 1
+            if 1.5*pi in self:
+                new_l = -1
+            return ArbitraryPrecisionBound(new_l, new_u)
+
+    def cos(self):
+        if almostgte(self.size(), 2*pi):
+            return ArbitraryPrecisionBound(-1, 1)
+        else:
+            # translate left by pi/2
+            pi_2 = pi / mpf('2')
+            return (self + pi_2).sin()
+
+    def tan(self):
+        if almostgte(self.size(), 2*pi):
+            return ArbitraryPrecisionBound(-1, 1)
+        else:
+            l = self.lower_bound % pi
+            u = l + (self.upper - self.lower)
+            tan_l = tan(l)
+            tan_u = tan(u)
+            new_l = min(tan_l, tan_u)
+            new_u = max(tan_l, tan_u)
+            if almosteq(l, 0.5 * pi):
+                new_l = None
+
+            if almosteq(u, 0.5 * pi):
+                new_u = None
+
+            return ArbitraryPrecisionBound(new_l, new_u)
+
+    def asin(self):
+        return ArbitraryPrecisionBound(asin(self.lower), asin(self.upper))
+
+    def acos(self):
+        return ArbitraryPrecisionBound(acos(self.lower), acos(self.upper))

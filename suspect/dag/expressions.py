@@ -82,10 +82,13 @@ class PowExpression(Expression):
 
 
 class LinearExpression(Expression):
-    def __init__(self, coefficients=None, children=None):
+    def __init__(self, coefficients=None, children=None, constant_term=None):
         super().__init__(children)
         if coefficients is None:
             coefficients = []
+        if constant_term is None:
+            constant_term = 0.0
+        self.constant_term = constant_term
         self.coefficients = coefficients
         self._check_coefficients()
 
@@ -100,47 +103,47 @@ class UnaryFunctionExpression(Expression):
 
 
 class NegationExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'neg'
 
 
 class AbsExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'abs'
 
 
 class SqrtExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'sqrt'
 
 
 class ExpExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'exp'
 
 
 class LogExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'log'
 
 
 class SinExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'sin'
 
 
 class CosExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'cos'
 
 
 class TanExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'tan'
 
 
 class AsinExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'asin'
 
 
 class AcosExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'acos'
 
 
 class AtanExpression(UnaryFunctionExpression):
-    pass
+    func_name = 'atan'
 
 
 class Objective(Expression):
@@ -199,3 +202,7 @@ class Constant(BoundedExpression):
 
     def __init__(self, value):
         super().__init__(value, value, None)
+
+    @property
+    def value(self):
+        return self.lower_bound

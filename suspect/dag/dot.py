@@ -48,7 +48,7 @@ def node_label(expr):
         return NODE_SYMBOLS.get(type(expr))
 
 
-def dump(dag, f):
+def dump(dag, f, metadata=None):
     f.write('digraph G {\n')
     f.write('  rankdir = TB;\n')
     f.write('  rank = same;\n')
@@ -76,17 +76,22 @@ def dump(dag, f):
             cur_depth += 1
             f.write('  }{ rankdir=same;\n')
 
+        if metadata is None or metadata.get(id(vertex)) is None:
+            label = node_label(vertex)
+        elif metadata is not None and metadata.get(id(vertex)) is not None:
+            label = node_label(vertex) + '\\n' + str(metadata[id(vertex)])
         f.write('  {} [label="{}"];\n'.format(
             node_name(vertex),
-            node_label(vertex),
+            label,
         ))
     f.write('}\n')
 
     for vertex in dag.vertices:
-        for child in vertex.children:
-            f.write('  {} -> {};\n'.format(
+        for i, child in enumerate(vertex.children):
+            f.write('  {} -> {} [taillabel="{}"];\n'.format(
                 node_name(vertex),
                 node_name(child),
+                i,
             ))
 
     f.write('}\n')

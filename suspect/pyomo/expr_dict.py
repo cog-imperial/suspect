@@ -14,7 +14,7 @@
 
 from numbers import Number
 from functools import reduce
-from suspect.expr_visitor import (
+from suspect.pyomo.expr_visitor import (
     bottom_up_visit as visit_expression,
     ExpressionHandler,
     LinearExpression,

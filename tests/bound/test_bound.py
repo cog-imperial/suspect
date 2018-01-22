@@ -16,7 +16,9 @@ import pytest
 from hypothesis import given, assume
 import hypothesis.strategies as st
 from suspect.bound import ArbitraryPrecisionBound
-from suspect.math.arbitrary_precision import inf, almostlte, almostgte
+from suspect.math.arbitrary_precision import (
+    inf, almostlte, almostgte, almosteq, pi,
+)
 
 
 @st.composite
@@ -264,3 +266,63 @@ class TestSize(object):
     def test_finite_bounds_1(self, a, f):
         b = a * f
         assert almostgte(a.size(), b.size())
+
+
+class TestAbs(object):
+    @given(reals(max_value=0), reals(min_value=0))
+    def test_bound_include_zero(self, l, u):
+        b = ArbitraryPrecisionBound(l, u)
+
+        assert almosteq(b.abs().lower_bound, 0)
+        assert almosteq(
+            b.abs().upper_bound,
+            max(abs(l), abs(u)),
+        )
+
+    @given(reals(min_value=0), reals(min_value=0))
+    def test_bound_not_include_zero(self, x, y):
+        l = min(x, y)
+        u = max(x, y)
+        b = ArbitraryPrecisionBound(l, u)
+        assert almosteq(b.abs().lower_bound, l)
+        assert almosteq(b.abs().upper_bound, u)
+
+        a = ArbitraryPrecisionBound(-u, -l)
+        assert almosteq(a.abs().lower_bound, l)
+        assert almosteq(a.abs().upper_bound, u)
+
+
+class TestSin(object):
+    def test_sin_over_2pi(self):
+        b = ArbitraryPrecisionBound(-10, 10)
+        assert b.sin() == ArbitraryPrecisionBound(-1, 1)
+
+    def test_sin_contains_pi_2(self):
+        b = ArbitraryPrecisionBound(0.0, 0.7*pi)
+        assert b.sin() == ArbitraryPrecisionBound(0, 1)
+
+    def test_sin_contains_3pi_2(self):
+        b = ArbitraryPrecisionBound(0.7*pi, 1.7*pi)
+        assert almosteq(b.sin().lower_bound, -1)
+
+    def test_sin_contains_pi_2_and_3pi_2(self):
+        b = ArbitraryPrecisionBound(0.3*pi, 1.7*pi)
+        assert b.sin() == ArbitraryPrecisionBound(-1, 1)
+
+
+class TestCos(object):
+    def test_cos_over_2pi(self):
+        b = ArbitraryPrecisionBound(-10, 10)
+        assert b.cos() == ArbitraryPrecisionBound(-1, 1)
+
+    def test_cos_contains_0(self):
+        b = ArbitraryPrecisionBound(-0.2*pi, 0.7*pi)
+        assert almosteq(b.cos().upper_bound, 1)
+
+    def test_cos_contains_pi(self):
+        b = ArbitraryPrecisionBound(0.7*pi, 1.2*pi)
+        assert almosteq(b.cos().lower_bound, -1)
+
+    def test_cos_contains_0_pi(self):
+        b = ArbitraryPrecisionBound(-0.1*pi, 1.1*pi)
+        assert b.cos() == ArbitraryPrecisionBound(-1, 1)

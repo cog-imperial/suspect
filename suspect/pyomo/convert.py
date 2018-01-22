@@ -65,7 +65,7 @@ class ExpressionConverterHandler(ExpressionHandler):
     def visit_numeric_constant(self, expr):
         if self.memo[expr] is not None:
             return self.memo[expr]
-        const = dex.Constant(expr)
+        const = dex.Constant(expr.value)
         self.set(expr, const)
 
     def visit_variable(self, expr):
@@ -112,7 +112,10 @@ class ExpressionConverterHandler(ExpressionHandler):
         self._check_children(expr)
         children = [self.get(a) for a in expr._args]
         coeffs = [expr._coef[id(a)] for a in expr._args]
-        new_expr = dex.LinearExpression(coeffs, children)
+        const = expr._const
+        new_expr = dex.LinearExpression(
+            coeffs, children, const
+        )
         self.set(expr, new_expr)
 
     def visit_negation(self, expr):

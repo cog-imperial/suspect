@@ -14,7 +14,7 @@
 
 from numbers import Number
 import pyomo.environ as aml
-from suspect.expr_visitor import (
+from suspect.pyomo.expr_visitor import (
     InequalityExpression,
     EqualityExpression,
 )
