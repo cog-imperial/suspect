@@ -12,5 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .monotonicity import Monotonicity
-from .propagation import propagate_monotonicity
+
+def tighten_bounds(dag, ctx):
+    """Tighten bounds from sinks to sources.
+
+    Parameters
+    ----------
+    dag: ProblemDag
+      the problem
+    ctx: dict-like
+      the context containing each node bounds
+    """
+    pass

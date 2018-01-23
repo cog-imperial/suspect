@@ -16,14 +16,14 @@ from suspect.monotonicity.monotonicity import Monotonicity
 
 
 def division_monotonicity(mono_handler, expr):
-    assert len(expr._args) == 2
+    assert len(expr.children) == 2
 
     def _division_mono(f, g):
         # Rules taken from Appendix
         # Notice that it's very similar to product, with the difference
         # being in the quotient
-        mono_f = mono_handler.monotonicity(f)
-        mono_g = mono_handler.monotonicity(g)
+        mono_f = mono_handler.get(f)
+        mono_g = mono_handler.get(g)
 
         if mono_f.is_constant() and mono_g.is_constant():
             return Monotonicity.Constant
@@ -67,5 +67,5 @@ def division_monotonicity(mono_handler, expr):
             else:
                 return Monotonicity.Unknown
 
-    f, g = expr._args
+    f, g = expr.children
     return _division_mono(f, g)

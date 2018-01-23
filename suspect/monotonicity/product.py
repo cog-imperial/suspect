@@ -16,11 +16,11 @@ from suspect.monotonicity.monotonicity import Monotonicity
 
 
 def product_monotonicity(mono_handler, expr):
-    assert len(expr._args) == 2
+    assert len(expr.children) == 2
 
     def _product_mono(f, g):
-        mono_f = mono_handler.monotonicity(f)
-        mono_g = mono_handler.monotonicity(g)
+        mono_f = mono_handler.get(f)
+        mono_g = mono_handler.get(g)
 
         if mono_f.is_constant() and mono_g.is_constant():
             return Monotonicity.Constant
@@ -66,5 +66,5 @@ def product_monotonicity(mono_handler, expr):
             else:
                 return Monotonicity.Unknown
 
-    f, g = expr._args
+    f, g = expr.children
     return _product_mono(f, g)

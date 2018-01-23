@@ -14,6 +14,7 @@
 
 from enum import Enum
 import abc
+from suspect.math.arbitrary_precision import inf
 
 
 class Domain(Enum):
@@ -103,7 +104,7 @@ class UnaryFunctionExpression(Expression):
 
 
 class NegationExpression(UnaryFunctionExpression):
-    func_name = 'neg'
+    func_name = 'negation'
 
 
 class AbsExpression(UnaryFunctionExpression):
@@ -162,6 +163,12 @@ class BoundedExpression(Expression):
         super().__init__(children)
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+
+    def bounded_below(self):
+        return self.lower_bound is not None and self.lower_bound != -inf
+
+    def bounded_above(self):
+        return self.upper_bound is not None and self.upper_bound != inf
 
 
 class Constraint(BoundedExpression):

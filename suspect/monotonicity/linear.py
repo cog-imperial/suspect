@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from suspect.monotonicity.monotonicity import Monotonicity
-from collections import defaultdict
 
 
 def linear_monotonicity(handler, expr):
@@ -24,22 +23,19 @@ def linear_monotonicity(handler, expr):
         if coef > 0:
             return mono
         elif coef < 0:
-            if mono.is_nondecreasing():
-                return Monotonicity.Nonincreasing
-            else:
-                return Monotonicity.Nondecreasing
+            return mono.negate()
         else:
             # if coef == 0, it's a constant with value 0.0
             return Monotonicity.Constant
 
-    if hasattr(expr, '_coef'):
-        coefs = expr._coef
+    if hasattr(expr, 'coefficients'):
+        coefs = expr.coefficients
     else:
-        coefs = defaultdict(lambda: 1.0)
+        coefs = [1.0] * len(expr.children)
 
     monos = [
-        _adjust_monotonicity(handler.monotonicity(a), coefs[id(a)])
-        for a in expr._args
+        _adjust_monotonicity(handler.get(a), coef)
+        for a, coef in zip(expr.children, coefs)
     ]
     all_nondec = all([m.is_nondecreasing() for m in monos])
     all_noninc = all([m.is_nonincreasing() for m in monos])

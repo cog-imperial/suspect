@@ -32,3 +32,18 @@ class Monotonicity(Enum):
 
     def is_unknown(self):
         return self == self.Unknown
+
+    def negate(self):
+        """Return monotonicity of the negated expression.
+
+        * If the function is constant, the negation will be constant
+        * If the function is unknown, the negation will be unknown
+        * If the function is nondecreasing, the negation will be nonincreasing
+        * If the function is nonincreasing, the negation will be nondecreasing
+        """
+        if self.is_constant() or self.is_unknown():
+            return self
+        if self.is_nondecreasing():
+            return Monotonicity.Nonincreasing
+        else:
+            return Monotonicity.Nondecreasing
