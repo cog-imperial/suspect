@@ -6,3 +6,7 @@
 __pycache__
 .cache
 .eggs
+.hypothesis
+.tox
+htmlcov
+venv
