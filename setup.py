@@ -6,7 +6,8 @@ setup(
     author_email='francesco@ceccon.me',
     packages=find_packages(exclude=['tests']),
     scripts=[
-        'scripts/model_summary.py'
+        'scripts/model_summary.py',
+        'scripts/osil_to_dot.py',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
