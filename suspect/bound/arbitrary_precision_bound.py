@@ -194,7 +194,8 @@ class ArbitraryPrecisionBound(Bound):
                 "comparing ArbitraryPrecisionBound by incompatible type"
             )
 
-    def zero(self):
+    @staticmethod
+    def zero():
         return ArbitraryPrecisionBound(0, 0)
 
     def size(self):

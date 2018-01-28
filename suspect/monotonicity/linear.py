@@ -37,10 +37,13 @@ def linear_monotonicity(handler, expr):
         _adjust_monotonicity(handler.get(a), coef)
         for a, coef in zip(expr.children, coefs)
     ]
+    all_const = all([m.is_constant() for m in monos])
     all_nondec = all([m.is_nondecreasing() for m in monos])
     all_noninc = all([m.is_nonincreasing() for m in monos])
 
-    if all_nondec:
+    if all_const:
+        return Monotonicity.Constant
+    elif all_nondec:
         return Monotonicity.Nondecreasing
     elif all_noninc:
         return Monotonicity.Nonincreasing

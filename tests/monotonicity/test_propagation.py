@@ -13,33 +13,63 @@
 # limitations under the License.
 
 import pytest
-from suspect.dag import ProblemDag
+from hypothesis import given, assume
+import hypothesis.strategies as st
 import suspect.dag.expressions as dex
+from suspect.math.arbitrary_precision import pi
+from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.monotonicity.propagation import (
     MonotonicityPropagationVisitor,
-    propagate_monotonicity,
 )
-from suspect.bound.propagation import propagate_bounds
-import suspect.dag.dot as dot
-from suspect.pyomo import dag_from_pyomo_model
-import pyomo.environ as aml
+
+
+class PlaceholderExpression(object):
+    depth = 0
 
 
 class MockMonotonicityPropagationVisitor(MonotonicityPropagationVisitor):
-    def __init__(self, bounds, mono):
-        super().__init__(bounds)
-        self._mono = mono
+    def __init__(self):
+        super().__init__({})
+        self._mono = {}
+
+    def add_bound(self, expr, bound_str):
+        if isinstance(bound_str, str):
+            bound = {
+                'zero': Bound.zero(),
+                'nonpositive': Bound(None, 0),
+                'nonnegative': Bound(0, None),
+                'positive': Bound(1, None),
+                'negative': Bound(None, -1),
+                'unbounded': Bound(None, None),
+                }[bound_str]
+        elif isinstance(bound_str, Bound):
+            bound = bound_str
+        else:
+            bound = Bound(bound_str, bound_str)
+        self._bounds[id(expr)] = bound
+
+    def add_mono(self, mono_str):
+        node = PlaceholderExpression()
+        mono = {
+            'nondecreasing': Monotonicity.Nondecreasing,
+            'nonincreasing': Monotonicity.Nonincreasing,
+            'constant': Monotonicity.Constant,
+            'unknown': Monotonicity.Unknown,
+        }[mono_str]
+        self._mono[id(node)] = mono
+        return node
 
 
 def test_variable_is_increasing():
-    v = MockMonotonicityPropagationVisitor({}, {})
+    v = MockMonotonicityPropagationVisitor()
     var = dex.Variable('x0', None, None)
     v(var)
     assert v.get(var).is_nondecreasing()
 
 
 def test_constant_is_constant():
-    v = MockMonotonicityPropagationVisitor({}, {})
+    v = MockMonotonicityPropagationVisitor()
     const = dex.Constant(2.0)
     v(const)
     assert v.get(const).is_constant()
@@ -50,7 +80,7 @@ class TestConstraint(object):
         self.x0 = dex.Variable('x0', None, None)
         self.x1 = dex.NegationExpression([self.x0])
         self.const = dex.Constant(1.0)
-        self.v = MockMonotonicityPropagationVisitor({}, {})
+        self.v = MockMonotonicityPropagationVisitor()
         self.v(self.x0)
         self.v(self.x1)
         self.v(self.const)
@@ -91,128 +121,456 @@ class TestConstraint(object):
         assert self.v.get(c2).is_nonincreasing()
 
 
+@pytest.fixture
+def mock_objective_visitor():
+    def _f(sense, children_mono):
+        v = MockMonotonicityPropagationVisitor()
+        c = v.add_mono(children_mono)
+        obj = dex.Objective('obj', sense, [c])
+        v(obj)
+        return v.get(obj)
+    return _f
+
+
 class TestObjective(object):
-    def setup_method(self, _func):
-        self.x0 = dex.Variable('x0', None, None)
-        self.x1 = dex.NegationExpression([self.x0])
-        self.const = dex.Constant(1.0)
-        self.v = MockMonotonicityPropagationVisitor({}, {})
-        self.v(self.x0)
-        self.v(self.x1)
-        self.v(self.const)
+    @pytest.mark.parametrize("children, expected", [
+        ('nondecreasing', Monotonicity.Nondecreasing),
+        ('nonincreasing', Monotonicity.Nonincreasing),
+        ('constant', Monotonicity.Constant),
+        ('unknown', Monotonicity.Unknown),
+    ])
+    def test_min(self, mock_objective_visitor, children, expected):
+        mono = mock_objective_visitor(dex.Sense.MINIMIZE, children)
+        assert mono == expected
 
-    def test_min(self):
-        o0 = dex.Objective('o0', dex.Sense.MINIMIZE, [self.x0])
-        self.v(o0)
-        assert self.v.get(o0).is_nondecreasing()
-
-        o1 = dex.Objective('o1', dex.Sense.MINIMIZE, [self.x1])
-        self.v(o1)
-        assert self.v.get(o1).is_nonincreasing()
-
-        o2 = dex.Objective('o2', dex.Sense.MINIMIZE, [self.const])
-        self.v(o2)
-        assert self.v.get(o2).is_constant()
-
-    def test_max(self):
-        o0 = dex.Objective('o0', dex.Sense.MAXIMIZE, [self.x0])
-        self.v(o0)
-        assert self.v.get(o0).is_nonincreasing()
-
-        o1 = dex.Objective('o1', dex.Sense.MAXIMIZE, [self.x1])
-        self.v(o1)
-        assert self.v.get(o1).is_nondecreasing()
-
-        o2 = dex.Objective('o2', dex.Sense.MAXIMIZE, [self.const])
-        self.v(o2)
-        assert self.v.get(o2).is_constant()
+    @pytest.mark.parametrize("children, expected", [
+        ('nondecreasing', Monotonicity.Nonincreasing),
+        ('nonincreasing', Monotonicity.Nondecreasing),
+        ('constant', Monotonicity.Constant),
+        ('unknown', Monotonicity.Unknown),
+    ])
+    def test_max(self, mock_objective_visitor, children, expected):
+        mono = mock_objective_visitor(dex.Sense.MAXIMIZE, children)
+        assert mono == expected
 
 
 @pytest.fixture
-def product_dag():
-    m = aml.ConcreteModel()
-    m.x = aml.Var(bounds=(0, None))
-    m.y = aml.Var(bounds=(None, 0))
-
-    # positive increasing
-    pi = m.x
-    # negative increasing
-    ni = m.y
-    # positive decreasing
-    pd = -ni
-    # negative decreasing
-    nd = -pi
-
-    # mul by positive constant
-    m.pi_c = aml.Constraint(expr=pi*2.0 <= 100)
-    m.ni_c = aml.Constraint(expr=ni*2.0 <= 100)
-    m.pd_c = aml.Constraint(expr=pd*2.0 <= 100)
-    m.nd_c = aml.Constraint(expr=nd*2.0 <= 100)
-
-    # mul by negative constant
-    m.pi_nc = aml.Constraint(expr=pi*-2.0 <= 100)
-    m.ni_nc = aml.Constraint(expr=ni*-2.0 <= 100)
-    m.pd_nc = aml.Constraint(expr=pd*-2.0 <= 100)
-    m.nd_nc = aml.Constraint(expr=nd*-2.0 <= 100)
-
-    # other cases
-    m.pi_pi = aml.Constraint(expr=pi*pi <= 100)
-    m.pi_ni = aml.Constraint(expr=pi*ni <= 100)
-    m.pi_pd = aml.Constraint(expr=pi*pd <= 100)
-    m.pi_nd = aml.Constraint(expr=pi*nd <= 100)
-
-    m.ni_pi = aml.Constraint(expr=ni*pi <= 100)
-    m.ni_ni = aml.Constraint(expr=ni*ni <= 100)
-    m.ni_pd = aml.Constraint(expr=ni*pd <= 100)
-    m.ni_nd = aml.Constraint(expr=ni*nd <= 100)
-
-    m.pd_pi = aml.Constraint(expr=pd*pi <= 100)
-    m.pd_ni = aml.Constraint(expr=pd*ni <= 100)
-    m.pd_pd = aml.Constraint(expr=pd*pd <= 100)
-    m.pd_nd = aml.Constraint(expr=pd*nd <= 100)
-
-    m.nd_pi = aml.Constraint(expr=nd*pi <= 100)
-    m.nd_ni = aml.Constraint(expr=nd*ni <= 100)
-    m.nd_pd = aml.Constraint(expr=nd*pd <= 100)
-    m.nd_nd = aml.Constraint(expr=nd*nd <= 100)
-
-    return dag_from_pyomo_model(m)
+def mock_product_visitor():
+    def _f(mono_f, bound_f, mono_g, bound_g):
+        v = MockMonotonicityPropagationVisitor()
+        f = v.add_mono(mono_f)
+        v.add_bound(f, bound_f)
+        g = v.add_mono(mono_g)
+        v.add_bound(g, bound_g)
+        prod_fg = dex.ProductExpression([f, g])
+        prod_gf = dex.ProductExpression([g, f])
+        v(prod_fg)
+        v(prod_gf)
+        # product is commutative
+        assert v.get(prod_fg) == v.get(prod_gf)
+        return v.get(prod_fg)
+    return _f
 
 
-def test_product(product_dag):
-    bounds = {}
-    dag = product_dag
-    propagate_bounds(dag, bounds)
-    mono = propagate_monotonicity(dag, bounds)
+@pytest.mark.parametrize("mono_f,bound_f,mono_g,bound_g,expected", [
+    # mono_f           bound_f      mono_g      bound_g
+    ('nondecreasing', 'unbounded', 'constant', 'nonnegative', Monotonicity.Nondecreasing),
+    ('nonincreasing', 'unbounded', 'constant', 'nonpositive', Monotonicity.Nondecreasing),
 
-    c = dag.constraints
+    ('nondecreasing', 'unbounded', 'constant', 'nonpositive', Monotonicity.Nonincreasing),
+    ('nonincreasing', 'unbounded', 'constant', 'nonnegative', Monotonicity.Nonincreasing),
 
-    assert mono[id(c['pi_c'])].is_nondecreasing()
-    assert mono[id(c['ni_c'])].is_nondecreasing()
-    assert mono[id(c['pd_c'])].is_nonincreasing()
-    assert mono[id(c['nd_c'])].is_nonincreasing()
+    ('constant', 'nonnegative', 'nondecreasing', 'unbounded', Monotonicity.Nondecreasing),
+    ('constant', 'nonpositive', 'nonincreasing', 'unbounded', Monotonicity.Nondecreasing),
 
-    assert mono[id(c['pi_nc'])].is_nonincreasing()
-    assert mono[id(c['ni_nc'])].is_nonincreasing()
-    assert mono[id(c['pd_nc'])].is_nondecreasing()
-    assert mono[id(c['nd_nc'])].is_nondecreasing()
+    ('constant', 'unbounded', 'constant', 'unbounded', Monotonicity.Constant),
 
-    assert mono[id(c['pi_pi'])].is_nondecreasing()
-    assert mono[id(c['pi_ni'])].is_unknown()
-    assert mono[id(c['pi_pd'])].is_unknown()
-    assert mono[id(c['pi_nd'])].is_nonincreasing()
+    ('constant', 'nonpositive', 'nondecreasing', 'unbounded', Monotonicity.Nonincreasing),
+    ('constant', 'nonnegative', 'nonincreasing', 'unbounded', Monotonicity.Nonincreasing),
 
-    assert mono[id(c['ni_pi'])].is_unknown()
-    assert mono[id(c['ni_ni'])].is_nonincreasing()
-    assert mono[id(c['ni_pd'])].is_nondecreasing()
-    assert mono[id(c['ni_nd'])].is_unknown()
+    ('nondecreasing', 'nonnegative', 'nondecreasing', 'nonnegative', Monotonicity.Nondecreasing),
+    ('nondecreasing', 'nonpositive', 'nonincreasing', 'nonnegative', Monotonicity.Nondecreasing),
+    ('nonincreasing', 'nonnegative', 'nondecreasing', 'nonpositive', Monotonicity.Nondecreasing),
+    ('nonincreasing', 'nonpositive', 'nonincreasing', 'nonpositive', Monotonicity.Nondecreasing),
 
-    assert mono[id(c['pd_pi'])].is_unknown()
-    assert mono[id(c['pd_ni'])].is_nondecreasing()
-    assert mono[id(c['pd_pd'])].is_nonincreasing()
-    assert mono[id(c['pd_nd'])].is_unknown()
+    ('nonincreasing', 'nonnegative', 'nonincreasing', 'nonnegative', Monotonicity.Nonincreasing),
+    ('nonincreasing', 'nonpositive', 'nondecreasing', 'nonnegative', Monotonicity.Nonincreasing),
+    ('nondecreasing', 'nonnegative', 'nonincreasing', 'nonpositive', Monotonicity.Nonincreasing),
+    ('nondecreasing', 'nonpositive', 'nondecreasing', 'nonpositive', Monotonicity.Nonincreasing),
+])
+def test_product(mock_product_visitor, mono_f, bound_f, mono_g, bound_g, expected):
+    mono = mock_product_visitor(mono_f, bound_f, mono_g, bound_g)
+    assert mono == expected
 
-    assert mono[id(c['nd_pi'])].is_nonincreasing()
-    assert mono[id(c['nd_ni'])].is_unknown()
-    assert mono[id(c['nd_pd'])].is_unknown()
-    assert mono[id(c['nd_nd'])].is_nondecreasing()
+
+@pytest.fixture
+def mock_division_visitor():
+    def _f(mono_f, bound_f, mono_g, bound_g):
+        v = MockMonotonicityPropagationVisitor()
+        f = v.add_mono(mono_f)
+        v.add_bound(f, bound_f)
+        g = v.add_mono(mono_g)
+        v.add_bound(g, bound_g)
+        div = dex.DivisionExpression([f, g])
+        v(div)
+        return v.get(div)
+    return _f
+
+
+@pytest.mark.parametrize("mono_f,bound_f,mono_g,bound_g,expected", [
+    # mono_f           bound_f      mono_g      bound_g
+    ('constant', 1.0, 'constant', 2.0, Monotonicity.Constant),
+    ('constant', 1.0, 'constant', 0.0, Monotonicity.Unknown),
+
+    ('nondecreasing', 'unbounded', 'constant', 'nonnegative', Monotonicity.Nondecreasing),
+    ('nonincreasing', 'unbounded', 'constant', 'nonpositive', Monotonicity.Nondecreasing),
+
+    ('nondecreasing', 'unbounded', 'constant', 'nonpositive', Monotonicity.Nonincreasing),
+    ('nonincreasing', 'unbounded', 'constant', 'nonnegative', Monotonicity.Nonincreasing),
+
+    ('nondecreasing', 'nonnegative', 'nonincreasing', 'nonnegative', Monotonicity.Nondecreasing),
+    ('nondecreasing', 'nonpositive', 'nondecreasing', 'nonnegative', Monotonicity.Nondecreasing),
+    ('nonincreasing', 'nonnegative', 'nonincreasing', 'nonpositive', Monotonicity.Nondecreasing),
+    ('nonincreasing', 'nonpositive', 'nondecreasing', 'nonpositive', Monotonicity.Nondecreasing),
+
+    ('nonincreasing', 'nonnegative', 'nondecreasing', 'nonnegative', Monotonicity.Nonincreasing),
+    ('nonincreasing', 'nonpositive', 'nonincreasing', 'nonnegative', Monotonicity.Nonincreasing),
+    ('nondecreasing', 'nonnegative', 'nondecreasing', 'nonpositive', Monotonicity.Nonincreasing),
+    ('nondecreasing', 'nonpositive', 'nonincreasing', 'nonpositive', Monotonicity.Nonincreasing),
+
+])
+def test_division(mock_division_visitor, mono_f, bound_f, mono_g, bound_g, expected):
+    mono = mock_division_visitor(mono_f, bound_f, mono_g, bound_g)
+    assert mono == expected
+
+
+@pytest.fixture
+def mock_linear_visitor():
+    def _f(terms):
+        v = MockMonotonicityPropagationVisitor()
+        coefs = [c for c, _ in terms]
+        children = [v.add_mono(m) for _, m in terms]
+        linear = dex.LinearExpression(coefs, children)
+        v(linear)
+        return v.get(linear)
+    return _f
+
+
+@st.composite
+def coefficients(draw, min_value=None, max_value=None):
+    return draw(st.floats(
+        min_value=min_value, max_value=max_value,
+        allow_nan=False, allow_infinity=False,
+    ))
+
+
+@st.composite
+def nondecreasing_terms(draw):
+    coef = draw(coefficients())
+    if coef > 0:
+        return (coef, 'nondecreasing')
+    else:
+        return (coef, 'nonincreasing')
+
+
+@st.composite
+def nonincreasing_terms(draw):
+    coef = draw(coefficients())
+    if coef < 0:
+        return (coef, 'nondecreasing')
+    else:
+        return (coef, 'nonincreasing')
+
+
+@st.composite
+def constant_terms(draw):
+    coef = draw(coefficients())
+    return (coef, 'constant')
+
+
+class TestLinear(object):
+    @given(
+        st.lists(
+            st.one_of(nondecreasing_terms(), constant_terms()),
+            min_size=1)
+    )
+    def test_nondecreasing(self, mock_linear_visitor, terms):
+        mono = mock_linear_visitor(terms)
+        assert mono.is_nondecreasing()
+
+    @given(
+        st.lists(
+            st.one_of(nonincreasing_terms(), constant_terms()),
+            min_size=1)
+    )
+    def test_nonincreasing(self, mock_linear_visitor, terms):
+        mono = mock_linear_visitor(terms)
+        assert mono.is_nonincreasing()
+
+    @given(st.lists(constant_terms(), min_size=1))
+    def test_constant(self, mock_linear_visitor, terms):
+        mono = mock_linear_visitor(terms)
+        assert mono.is_constant()
+
+    @given(
+        st.lists(nondecreasing_terms(), min_size=1),
+        st.lists(nonincreasing_terms(), min_size=1),
+    )
+    def test_unknown(self, mock_linear_visitor, a, b):
+        terms = a + b
+        for c, _ in terms:
+            assume(c != 0.0)
+        mono = mock_linear_visitor(terms)
+        assert mono.is_unknown()
+
+
+@pytest.fixture
+def mock_sum_visitor():
+    def _f(terms):
+        v = MockMonotonicityPropagationVisitor()
+        children = [v.add_mono(m) for m in terms]
+        sum_ = dex.SumExpression(children)
+        v(sum_)
+        return v.get(sum_)
+    return _f
+
+
+class TestSum(object):
+    @given(
+        st.lists(st.just('nondecreasing'), min_size=1),
+        st.lists(st.one_of(st.just('nondecreasing'), st.just('constant'))),
+    )
+    def test_nondecreasing(self, mock_sum_visitor, a, b):
+        mono = mock_sum_visitor(a + b)
+        assert mono.is_nondecreasing()
+
+    @given(
+        st.lists(st.just('nonincreasing'), min_size=1),
+        st.lists(st.one_of(st.just('nonincreasing'), st.just('constant'))),
+    )
+    def test_nonincreasing(self, mock_sum_visitor, a, b):
+        mono = mock_sum_visitor(a + b)
+        assert mono.is_nonincreasing()
+
+    @given(st.lists(st.just('constant'), min_size=1))
+    def test_constant(self, mock_sum_visitor, a):
+        mono = mock_sum_visitor(a)
+        assert mono.is_constant()
+
+    @given(
+        st.lists(st.just('nonincreasing'), min_size=1),
+        st.lists(st.just('nondecreasing'), min_size=1),
+        st.lists(st.just('constant')),
+    )
+    def test_unknown(self, mock_sum_visitor, a, b, c):
+        mono = mock_sum_visitor(a + b + c)
+        assert mono.is_unknown()
+
+
+@pytest.fixture
+def mock_abs_visitor():
+    def _f(mono, bound):
+        v = MockMonotonicityPropagationVisitor()
+        g = v.add_mono(mono)
+        v.add_bound(g, bound)
+        abs_ = dex.AbsExpression([g])
+        v(abs_)
+        return v.get(abs_)
+    return _f
+
+
+@pytest.mark.parametrize('mono_g,bound_g,expected', [
+    ('nondecreasing', 'nonnegative', Monotonicity.Nondecreasing),
+    ('nonincreasing', 'nonnegative', Monotonicity.Nonincreasing),
+    ('nonincreasing', 'nonpositive', Monotonicity.Nondecreasing),
+    ('nondecreasing', 'nonpositive', Monotonicity.Nonincreasing),
+    ('nondecreasing', 'unbounded', Monotonicity.Unknown),
+])
+def test_abs(mock_abs_visitor, mono_g, bound_g, expected):
+    mono = mock_abs_visitor(mono_g, bound_g)
+    assert mono == expected
+
+
+@pytest.fixture
+def mock_nondecreasing_visitor():
+    def _f(mono, bound, func):
+        v = MockMonotonicityPropagationVisitor()
+        g = v.add_mono(mono)
+        v.add_bound(g, bound)
+        f = func([g])
+        v(f)
+        return v.get(f)
+    return _f
+
+
+@pytest.mark.parametrize('func', [
+    dex.SqrtExpression, dex.ExpExpression, dex.LogExpression,
+    dex.AsinExpression, dex.AtanExpression
+])
+@given(
+    mono_arg=st.one_of(
+        st.just('constant'), st.just('nondecreasing'),
+        st.just('nonincreasing'), st.just('unknown')
+    ),
+    bound_arg=st.one_of(
+        st.just('zero'), st.just('nonpositive'), st.just('nonnegative')
+    )
+)
+def test_nondecreasing_function(mock_nondecreasing_visitor, mono_arg,
+                                bound_arg, func):
+    mono = mock_nondecreasing_visitor(mono_arg, bound_arg, func)
+    expected = {
+        'nondecreasing': Monotonicity.Nondecreasing,
+        'nonincreasing': Monotonicity.Nonincreasing,
+        'constant': Monotonicity.Constant,
+        'unknown': Monotonicity.Unknown,
+    }[mono_arg]
+    assert mono == expected
+
+
+@st.composite
+def nonnegative_cos_bounds(draw):
+    start = draw(st.floats(
+        min_value=1.6*pi,
+        max_value=1.9*pi,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    end = draw(st.floats(
+        min_value=0,
+        max_value=1.9*pi-start,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    mul = draw(st.integers(min_value=-100, max_value=100)) * 2 * pi
+    b = Bound(start + mul, start + end + mul)
+    assume(b.size() > 0)
+    return b
+
+
+@st.composite
+def nonpositive_cos_bounds(draw):
+    start = draw(st.floats(
+        min_value=0.6*pi,
+        max_value=1.5*pi,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    end = draw(st.floats(
+        min_value=0,
+        max_value=1.5*pi-start,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    mul = draw(st.integers(min_value=-10, max_value=10)) * 2 * pi
+    b = Bound(start + mul, start + end + mul)
+    assume(b.size() > 0)
+    return b
+
+
+@pytest.fixture
+def mock_sin_visitor():
+    def _f(mono, bound):
+        v = MockMonotonicityPropagationVisitor()
+        g = v.add_mono(mono)
+        v.add_bound(g, bound)
+        sin_ = dex.SinExpression([g])
+        v(sin_)
+        return v.get(sin_)
+    return _f
+
+
+class TestSin(object):
+    @given(bound_g=nonnegative_cos_bounds())
+    def test_nondecreasing_nonnegative_cos(self, mock_sin_visitor, bound_g):
+        mono = mock_sin_visitor('nondecreasing', bound_g)
+        assert mono.is_nondecreasing()
+
+    @given(bound_g=nonnegative_cos_bounds())
+    def test_nonincreasing_nonnegative_cos(self, mock_sin_visitor, bound_g):
+        mono = mock_sin_visitor('nonincreasing', bound_g)
+        assert mono.is_nonincreasing()
+
+    @given(bound_g=nonpositive_cos_bounds())
+    def test_decreasing_nonpositive_cos(self, mock_sin_visitor, bound_g):
+        mono = mock_sin_visitor('nondecreasing', bound_g)
+        assert mono.is_nonincreasing()
+
+    @given(bound_g=nonpositive_cos_bounds())
+    def test_nonincreasing_nonpositive_cos(self, mock_sin_visitor, bound_g):
+        mono = mock_sin_visitor('nonincreasing', bound_g)
+        assert mono.is_nondecreasing()
+
+
+@st.composite
+def nonnegative_sin_bounds(draw):
+    start = draw(st.floats(
+        min_value=0.1*pi,
+        max_value=0.9*pi,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    end = draw(st.floats(
+        min_value=0,
+        max_value=0.9*pi-start,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    mul = draw(st.integers(min_value=-100, max_value=100)) * 2 * pi
+    b = Bound(start + mul, start + end + mul)
+    assume(b.size() > 0)
+    return b
+
+
+@st.composite
+def nonpositive_sin_bounds(draw):
+    start = draw(st.floats(
+        min_value=1.1*pi,
+        max_value=1.9*pi,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    end = draw(st.floats(
+        min_value=0,
+        max_value=1.9*pi-start,
+        allow_nan=False,
+        allow_infinity=False,
+    ))
+    mul = draw(st.integers(min_value=-10, max_value=10)) * 2 * pi
+    b = Bound(start + mul, start + end + mul)
+    assume(b.size() > 0)
+    return b
+
+
+@pytest.fixture
+def mock_cos_visitor():
+    def _f(mono, bound):
+        v = MockMonotonicityPropagationVisitor()
+        g = v.add_mono(mono)
+        v.add_bound(g, bound)
+        cos_ = dex.CosExpression([g])
+        v(cos_)
+        return v.get(cos_)
+    return _f
+
+
+class TestCos(object):
+    @given(bound_g=nonnegative_sin_bounds())
+    def test_nonincreasing_nonnegative_sin(self, mock_cos_visitor, bound_g):
+        mono = mock_cos_visitor('nonincreasing', bound_g)
+        assert mono.is_nondecreasing()
+
+    @given(bound_g=nonnegative_sin_bounds())
+    def test_nondecreasing_nonnegative_sin(self, mock_cos_visitor, bound_g):
+        mono = mock_cos_visitor('nondecreasing', bound_g)
+        assert mono.is_nonincreasing()
+
+    @given(bound_g=nonpositive_sin_bounds())
+    def test_nondecreasing_nonpositive_sin(self, mock_cos_visitor, bound_g):
+        mono = mock_cos_visitor('nondecreasing', bound_g)
+        assert mono.is_nondecreasing()
+
+    @given(bound_g=nonpositive_sin_bounds())
+    def test_nonincreasing_nonpositive_sin(self, mock_cos_visitor, bound_g):
+        mono = mock_cos_visitor('nonincreasing', bound_g)
+        assert mono.is_nonincreasing()

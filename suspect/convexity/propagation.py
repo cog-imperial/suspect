@@ -12,5 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .convexity import Convexity
-from .propagation import ConvexityPropagationVisitor
+
+class ConvexityPropagationVisitor(object):
+    def __init__(self, bounds, mono):
+        self._bounds = bounds
+        self._mono = mono
+
+    def bound(self, expr):
+        return self._bounds[id(expr)]
+
+    def is_nonnegative(self, expr):
+        return self.bound(expr).is_nonnegative()
+
+    def is_nonpositive(self, expr):
+        return self.bound(expr).is_nonpositive()
+
+    def monotonicity(self, expr):
+        return self._mono[id(expr)]

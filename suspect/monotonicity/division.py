@@ -26,6 +26,8 @@ def division_monotonicity(mono_handler, expr):
         mono_g = mono_handler.get(g)
 
         if mono_f.is_constant() and mono_g.is_constant():
+            if mono_handler.is_zero(g):
+                return Monotonicity.Unknown
             return Monotonicity.Constant
         elif mono_g.is_constant():
             if mono_f.is_nondecreasing() and mono_handler.is_nonnegative(g):

@@ -80,11 +80,18 @@ class MonotonicityPropagationVisitor(object):
     def is_nonpositive(self, expr):
         return self.bound(expr).is_nonpositive()
 
+    def is_zero(self, expr):
+        return self.bound(expr).is_zero()
+
     def get(self, expr):
         return self._mono[id(expr)]
 
     def set(self, expr, mono):
         self._mono[id(expr)] = mono
+
+    @property
+    def mono(self):
+        return self._mono
 
     def result(self):
         return self._mono
@@ -164,8 +171,9 @@ class MonotonicityPropagationVisitor(object):
         return self.get(expr.children[0]).negate()
 
     def visit_sin(self, expr):
-        arg = self.children[0]
-        cos_bound = arg.cos()
+        arg = expr.children[0]
+        bound = self.bound(arg)
+        cos_bound = bound.cos()
         mono = self.get(arg)
 
         if mono.is_nondecreasing() and cos_bound.is_nonnegative():
@@ -180,9 +188,11 @@ class MonotonicityPropagationVisitor(object):
             return Monotonicity.Unknown
 
     def visit_cos(self, expr):
-        arg = self.children[0]
-        sin_bound = arg.sin()
+        arg = expr.children[0]
+        bound = self.bound(arg)
+        sin_bound = bound.sin()
         mono = self.get(arg)
+
         if mono.is_nonincreasing() and sin_bound.is_nonnegative():
             return Monotonicity.Nondecreasing
         elif mono.is_nondecreasing() and sin_bound.is_nonpositive():

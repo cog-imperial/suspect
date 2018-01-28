@@ -12,5 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .convexity import Convexity
-from .propagation import ConvexityPropagationVisitor
+from suspect.monotonicity import MonotonicityPropagationVisitor
+from suspect.convexity import ConvexityPropagationVisitor
+
+
+class ConvexityMonotonicityPropagationVisitor(object):
+    def __init__(self, bounds):
+        self._mono = MonotonicityPropagationVisitor(bounds)
+        self._cvx = ConvexityPropagationVisitor(bounds, self._mono.mono)
+
+    def __call__(self, expr):
+        self._mono(expr)
+        self._cvx(expr)
