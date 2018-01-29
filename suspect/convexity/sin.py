@@ -12,73 +12,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from suspect.bounds import expression_bounds
+from suspect.math.arbitrary_precision import pi
 from suspect.convexity.convexity import Convexity
-from suspect.math import (
-    sin, pi, almosteq, almostlte, mpf
-)
-import pyomo.environ as aml
+from suspect.bound import ArbitraryPrecisionBound
 
 
-def sin_convexity(bound, cvx, arg):
-    # if bound is like [0, pi], we need to be extra carefull
-    diff = bound.u - bound.l
-    if diff > pi:
+def sin_convexity(handler, expr):
+    arg = expr.children[0]
+    bound = handler.bound(arg)
+    cvx = handler.convexity(arg)
+
+    if bound.size() > pi:
         return Convexity.Unknown
 
-    sin_l = sin(bound.l)
-    sin_u = sin(bound.u)
-    if sin_l * sin_u < 0 and not almosteq(sin_l*sin_u, 0):
+    sin_bound = bound.sin()
+    if sin_bound.lower_bound * sin_bound.upper_bound < 0:
         return Convexity.Unknown
 
-    l = bound.l % (2 * pi)
-    u = l + diff
+    cos_bound = bound.cos()
 
-    cos_bound = expression_bounds(aml.cos(arg))
-
-    # l <= pi/2 <= u
-    if almostlte(l, mpf('1/2')*pi) and almostlte(mpf('1/2')*pi, u):
-        cond_linear = cvx.is_linear()
-        cond_convex = (
-            cvx.is_convex() and cos_bound.is_nonpositive()
-        )
-        cond_concave = (
-            cvx.is_concave() and cos_bound.is_nonnegative()
-        )
-
-        if cond_linear or cond_convex or cond_concave:
+    if sin_bound.is_nonnegative():
+        if cvx.is_linear():
             return Convexity.Concave
-
-    elif l <= 1.5 * pi <= u:
-        cond_linear = cvx.is_linear()
-        cond_concave = (
-            cvx.is_concave() and cos_bound.is_nonpositive()
-        )
-        cond_convex = (
-            cvx.is_convex() and cos_bound.is_nonnegative()
-        )
-
-        if cond_linear or cond_concave or cond_convex:
+        if cvx.is_convex() and cos_bound.is_nonpositive():
+            return Convexity.Concave
+        if cvx.is_concave() and cos_bound.is_nonnegative():
+            return Convexity.Concave
+    elif sin_bound.is_nonpositive():
+        if cvx.is_linear():
+            return Convexity.Convex
+        if cvx.is_concave() and cos_bound.is_nonpositive():
+            return Convexity.Convex
+        if cvx.is_convex() and cos_bound.is_nonnegative():
             return Convexity.Convex
 
-    return Convexity.Uknown
+    return Convexity.Unknown
 
 
-def asin_convexity(bound, cvx):
-    bound_in_neg_1_0 = (
-        almostlte(-1, bound.l) and
-        almostlte(bound.l, bound.u) and
-        almostlte(bound.u, 0)
-    )
-    if bound_in_neg_1_0 and cvx.is_concave():
+def asin_convexity(handler, expr):
+    arg = expr.children[0]
+    bound = handler.bound(arg)
+    cvx = handler.convexity(arg)
+
+    concave_domain = ArbitraryPrecisionBound(-1, 0)
+    if bound in concave_domain and cvx.is_concave():
         return Convexity.Concave
 
-    bound_in_0_1 = (
-        almostlte(0, bound.l) and
-        almostlte(bound.l, bound.u) and
-        almostlte(bound.u, 1)
-    )
-    if bound_in_0_1 and cvx.is_convex():
+    convex_domain = ArbitraryPrecisionBound(0, 1)
+    if bound in convex_domain and cvx.is_convex():
         return Convexity.Convex
 
     return Convexity.Unknown

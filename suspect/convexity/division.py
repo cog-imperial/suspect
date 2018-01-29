@@ -17,37 +17,48 @@ from suspect.convexity.convexity import Convexity
 
 
 def division_convexity(handler, expr):
-    assert(len(expr._args) == 2)
-    f, g = expr._args
+    assert(len(expr.children) == 2)
+    f, g = expr.children
 
-    if isinstance(g, numeric_types):
-        g = numeric_value(g)
+    mono_f = handler.monotonicity(f)
+    mono_g = handler.monotonicity(g)
+    bound_f = handler.bound(f)
+    bound_g = handler.bound(g)
+
+    if mono_g.is_constant():
         cvx_f = handler.convexity(f)
 
-        if cvx_f.is_convex() and handler.is_nonnegative(g):
+        if cvx_f.is_convex() and bound_g.is_positive():
             return Convexity.Convex
-        elif cvx_f.is_concave() and handler.is_nonpositive(g):
+        elif cvx_f.is_concave() and bound_g.is_negative():
             return Convexity.Convex
-        elif cvx_f.is_concave() and handler.is_nonnegative(g):
+        elif cvx_f.is_concave() and bound_g.is_positive():
             return Convexity.Concave
-        elif cvx_f.is_convex() and handler.is_nonpositive(g):
+        elif cvx_f.is_convex() and bound_g.is_negative():
             return Convexity.Concave
 
-    elif isinstance(f, numeric_types):
-        f = numeric_value(f)
+    elif mono_f.is_constant():
         cvx_g = handler.convexity(g)
 
         # want to avoid g == 0
-        if not handler.is_positive(g) or not handler.is_negative(g):
+        if 0 in bound_g:
             return Convexity.Unknown
 
-        elif handler.is_nonnegative(g) and cvx_g.is_concave():
-            return Convexity.Convex
-        elif handler.is_nonpositive(g) and cvx_g.is_convex():
-            return Convexity.Convex
-        elif handler.is_nonnegative(g) and cvx_g.is_convex():
-            return Convexity.Concave
-        elif handler.is_nonpositive(g) and cvx_g.is_concave():
-            return Convexity.Concave
+        if bound_f.is_nonnegative():
+            if bound_g.is_positive() and cvx_g.is_concave():
+                return Convexity.Convex
+            elif bound_g.is_negative() and cvx_g.is_convex():
+                return Convexity.Concave
+            else:
+                return Convexity.Unknown
+        elif bound_f.is_nonpositive():
+            if bound_g.is_negative() and cvx_g.is_convex():
+                return Convexity.Convex
+            elif bound_g.is_positive() and cvx_g.is_concave():
+                return Convexity.Concave
+            else:
+                return Convexity.Unknown
+        else:
+            return Convexity.Unknown
 
     return Convexity.Unknown

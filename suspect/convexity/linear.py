@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from suspect.convexity.convexity import Convexity
-from collections import defaultdict
 
 
 def linear_convexity(handler, expr):
@@ -24,28 +23,24 @@ def linear_convexity(handler, expr):
         if coef > 0:
             return cvx
         elif coef < 0:
-            if cvx.is_convex():
-                return Convexity.Concave
-            else:
-                return Convexity.Convex
+            return cvx.negate()
         else:
             # if coef == 0, it's a constant with value 0.0
             return Convexity.Linear
 
-    if hasattr(expr, '_coef'):
-        coefs = expr._coef
+    if hasattr(expr, 'coefficients'):
+        coefs = expr.coefficients
     else:
-        coefs = defaultdict(lambda: 1.0)
+        coefs = [1.0] * len(expr.children)
 
     cvxs = [
-        _adjust_convexity(handler.convexity(a), coefs[id(a)])
-        for a in expr._args
+        _adjust_convexity(handler.convexity(a), coef)
+        for a, coef in zip(expr.children, coefs)
     ]
     all_linear = all([c.is_linear() for c in cvxs])
     all_convex = all([c.is_convex() for c in cvxs])
     all_concave = all([c.is_concave() for c in cvxs])
 
-    # is it true that if all args are linear then the expr is linear?
     if all_linear:
         return Convexity.Linear
     elif all_convex:

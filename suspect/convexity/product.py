@@ -14,14 +14,14 @@
 
 from suspect.util import numeric_types, numeric_value
 from suspect.convexity.convexity import Convexity
-from suspect.expr_visitor import LinearExpression, Variable
+# from suspect.expr_visitor import LinearExpression, Variable
 
 
 def _product_convexity(handler, f, g):
-    assert(isinstance(g, numeric_types))
-    g = numeric_value(g)
     cvx_f = handler.convexity(f)
-    if cvx_f.is_convex() and handler.is_nonnegative(g):
+    if cvx_f.is_linear():
+        return cvx_f
+    elif cvx_f.is_convex() and handler.is_nonnegative(g):
         return Convexity.Convex
     elif cvx_f.is_concave() and handler.is_nonpositive(g):
         return Convexity.Convex
@@ -34,27 +34,31 @@ def _product_convexity(handler, f, g):
 
 
 def product_convexity(handler, expr):
-    assert(len(expr._args) == 2)
-    f = expr._args[0]
-    g = expr._args[1]
-    if isinstance(g, numeric_types):
+    assert(len(expr.children) == 2)
+    f = expr.children[0]
+    g = expr.children[1]
+    mono_f = handler.monotonicity(f)
+    mono_g = handler.monotonicity(g)
+    if mono_g.is_constant():
         return _product_convexity(handler, f, g)
-    elif isinstance(f, numeric_types):
+    elif mono_f.is_constant():
         return _product_convexity(handler, g, f)
 
-    # Try to detected convexity of expression like x*x or
-    # (x + a)*(x + b), where a and b are constants
-    if isinstance(f, LinearExpression) and len(f._args) == 1:
-        if isinstance(f._args[0], Variable):
-            f = f._args[0]
+    if False:
+        # Try to detected convexity of expression like x*x or
+        # (x + a)*(x + b), where a and b are constants
+        if isinstance(f, LinearExpression) and len(f._args) == 1:
+            if isinstance(f._args[0], Variable):
+                f = f._args[0]
 
-    if isinstance(g, LinearExpression) and len(g._args) == 1:
-        if isinstance(g._args[0], Variable):
-            g = g._args[0]
+        if isinstance(g, LinearExpression) and len(g._args) == 1:
+            if isinstance(g._args[0], Variable):
+                g = g._args[0]
 
-    if isinstance(f, Variable) and isinstance(g, Variable):
-        if f is g:
-            # x^2
-            return Convexity.Convex
+        if isinstance(f, Variable) and isinstance(g, Variable):
+            if f is g:
+                # x^2
+                return Convexity.Convex
+
 
     return Convexity.Unknown

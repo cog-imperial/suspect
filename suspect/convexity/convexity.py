@@ -58,13 +58,3 @@ class Convexity(Enum):
             return self.Concave
         else:
             return self.Unknown
-
-    def __str__(self):
-        if self.is_linear():
-            return 'linear'
-        elif self.is_convex():
-            return 'convex'
-        elif self.is_concave():
-            return 'concave'
-        else:
-            return 'indefinite'

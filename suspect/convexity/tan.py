@@ -12,36 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from suspect.math.arbitrary_precision import pi
 from suspect.convexity.convexity import Convexity
-from suspect.math import (
-    tan, pi, almosteq, almostlte, almostgte
-)
+from suspect.bound import ArbitraryPrecisionBound
 
 
-def tan_convexity(bound, cvx):
-    diff = bound.u - bound.l
-    if diff > 0.5 * pi:
+def tan_convexity(handler, expr):
+    arg = expr.children[0]
+    bound = handler.bound(arg)
+    cvx = handler.convexity(arg)
+
+    if 2.0*bound.size() > pi:
         return Convexity.Unknown
 
-    tan_l = tan(bound.l)
-    tan_u = tan(bound.u)
-    if tan_l * tan_u < 0 and not almosteq(tan_l*tan_u, 0):
+    tan_bound = bound.tan()
+    if tan_bound.lower_bound * tan_bound.upper_bound < 0:
         return Convexity.Unknown
 
-    if almostgte(tan_u, 0) and almostgte(tan_l, 0) and cvx.is_convex():
+    if tan_bound.is_nonnegative() and cvx.is_convex():
         return Convexity.Convex
 
-    if almostlte(tan_u, 0) and almostlte(tan_l, 0) and cvx.is_concave():
+    if tan_bound.is_nonpositive() and cvx.is_concave():
         return Convexity.Concave
 
     return Convexity.Unknown
 
 
-def atan_convexity(bound, cvx):
-    if almostlte(bound.u, 0) and cvx.is_convex():
+def atan_convexity(handler, expr):
+    arg = expr.children[0]
+    bound = handler.bound(arg)
+    cvx = handler.convexity(arg)
+
+    if bound.is_nonpositive() and cvx.is_convex():
         return Convexity.Convex
 
-    if almostgte(bound.l, 0) and cvx.is_concave():
+    if bound.is_nonnegative() and cvx.is_concave():
         return Convexity.Concave
 
     return Convexity.Unknown

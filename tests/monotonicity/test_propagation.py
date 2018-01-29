@@ -15,6 +15,12 @@
 import pytest
 from hypothesis import given, assume
 import hypothesis.strategies as st
+from tests.conftest import (
+    PlaceholderExpression,
+    bound_description_to_bound,
+    mono_description_to_mono,
+    coefficients,
+)
 import suspect.dag.expressions as dex
 from suspect.math.arbitrary_precision import pi
 from suspect.bound import ArbitraryPrecisionBound as Bound
@@ -24,40 +30,17 @@ from suspect.monotonicity.propagation import (
 )
 
 
-class PlaceholderExpression(object):
-    depth = 0
-
-
 class MockMonotonicityPropagationVisitor(MonotonicityPropagationVisitor):
     def __init__(self):
         super().__init__({})
         self._mono = {}
 
     def add_bound(self, expr, bound_str):
-        if isinstance(bound_str, str):
-            bound = {
-                'zero': Bound.zero(),
-                'nonpositive': Bound(None, 0),
-                'nonnegative': Bound(0, None),
-                'positive': Bound(1, None),
-                'negative': Bound(None, -1),
-                'unbounded': Bound(None, None),
-                }[bound_str]
-        elif isinstance(bound_str, Bound):
-            bound = bound_str
-        else:
-            bound = Bound(bound_str, bound_str)
-        self._bounds[id(expr)] = bound
+        self._bounds[id(expr)] = bound_description_to_bound(bound_str)
 
     def add_mono(self, mono_str):
         node = PlaceholderExpression()
-        mono = {
-            'nondecreasing': Monotonicity.Nondecreasing,
-            'nonincreasing': Monotonicity.Nonincreasing,
-            'constant': Monotonicity.Constant,
-            'unknown': Monotonicity.Unknown,
-        }[mono_str]
-        self._mono[id(node)] = mono
+        self._mono[id(node)] = mono_description_to_mono(mono_str)
         return node
 
 
@@ -254,14 +237,6 @@ def mock_linear_visitor():
         v(linear)
         return v.get(linear)
     return _f
-
-
-@st.composite
-def coefficients(draw, min_value=None, max_value=None):
-    return draw(st.floats(
-        min_value=min_value, max_value=max_value,
-        allow_nan=False, allow_infinity=False,
-    ))
 
 
 @st.composite
