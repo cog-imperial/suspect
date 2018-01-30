@@ -40,5 +40,3 @@ def test_propagation():
 
     bound_ctx = {}
     propagate_bounds(dag, bound_ctx)
-
-    assert False

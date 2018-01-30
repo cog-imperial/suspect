@@ -22,6 +22,7 @@ from suspect.pyomo.expr_visitor import (
 )
 from suspect.util import (numeric_types, numeric_value)
 from suspect.math import almosteq
+from suspect.float_hash import RoundFloatHasher
 from pyomo.core.base import (
     _VarData,
     NumericConstant,
@@ -32,6 +33,8 @@ from pyomo.core.base.constraint import _GeneralConstraintData
 class ExpressionHasherHandler(ExpressionHandler):
     def __init__(self, float_hasher=None):
         self.memo = {}
+        if float_hasher is None:
+            float_hasher = RoundFloatHasher()
         self._float_hasher = float_hasher
 
     def hash(self, expr):

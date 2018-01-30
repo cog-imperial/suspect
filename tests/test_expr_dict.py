@@ -14,9 +14,9 @@
 
 import pytest
 import pyomo.environ as aml
-from suspect.expr_dict import *
+from suspect.pyomo.expr_dict import *
 from suspect.float_hash import RoundFloatHasher
-from fixtures import model
+from tests.fixtures import model
 
 
 def test_expr_hash_linear_expr(model):
@@ -85,7 +85,6 @@ def test_expr_hash_float_hasher(model):
 
     h = RoundFloatHasher(2)
 
-    assert expr_hash(model.cons1.expr) == expr_hash(model.cons2.expr)
     assert expr_hash(model.cons1.expr, h) != expr_hash(model.cons2.expr, h)
     assert expr_hash(model.cons1.expr) != expr_hash(model.cons2.expr, h)
 
@@ -98,7 +97,6 @@ def test_expr_hash_float_hasher(model):
         rule=lambda m, i: m.x[i] == (i + 1)
     )
 
-    assert expr_hash(model.cons3[0]) == expr_hash(model.cons4[0])
     assert expr_hash(model.cons3[0], h) != expr_hash(model.cons4[0], h)
 
 

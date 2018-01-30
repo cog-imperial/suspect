@@ -15,7 +15,7 @@
 import pytest
 import pyomo.environ as aml
 from suspect.util import *
-from fixtures import model
+from tests.fixtures import model
 
 
 def test_model_variables(model):
