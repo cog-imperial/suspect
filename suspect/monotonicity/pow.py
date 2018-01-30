@@ -17,36 +17,42 @@ from suspect.util import numeric_types, numeric_value
 from suspect.math import almosteq, almostgte
 
 
-def pow_monotonicity(mono_handler, expr):
-    assert len(expr._args) == 2
-    base, exponent = expr._args
+def pow_monotonicity(handler, expr):
+    assert len(expr.children) == 2
+    base, exponent = expr.children
 
-    if isinstance(base, numeric_types):
-        base = numeric_value(base)
-        mono_f = mono_handler.monotonicity(exponent)
+    mono_base = handler.monotonicity(base)
+    mono_exponent = handler.monotonicity(exponent)
+
+    bound_base = handler.bound(base)
+    bound_exponent = handler.bound(exponent)
+
+    if mono_base.is_constant():
+        mono_f = mono_exponent
+        base = base.value
         if base < 0:
             return Monotonicity.Unknown
         elif almosteq(base, 0):
             return Monotonicity.Constant
         elif 0 < base < 1:
-            if mono_f.is_nondecreasing() and mono_handler.is_nonpositive(exponent):
+            if mono_f.is_nondecreasing() and bound_exponent.is_nonpositive():
                 return Monotonicity.Nondecreasing
-            elif mono_f.is_nonincreasing() and mono_handler.is_nonnegative(exponent):
+            elif mono_f.is_nonincreasing() and bound_exponent.is_nonnegative():
                 return Monotonicity.Nondecreasing
             else:
                 return Monotonicity.Unknown
         elif almostgte(base, 1):
-            if mono_f.is_nondecreasing() and mono_handler.is_nonnegative(exponent):
+            if mono_f.is_nondecreasing() and bound_exponent.is_nonnegative():
                 return Monotonicity.Nondecreasing
-            elif mono_f.is_nonincreasing() and mono_handler.is_nonpositive(exponent):
+            elif mono_f.is_nonincreasing() and bound_exponent.is_nonpositive():
                 return Monotonicity.Nondecreasing
             else:
                 return Monotonicity.Unknown
 
         return Monotonicity.Unknown
-    elif isinstance(exponent, numeric_types):
-        exponent = numeric_value(exponent)
-        mono_f = mono_handler.monotonicity(base)
+    elif mono_exponent.is_constant():
+        exponent = exponent.value
+        mono_f = mono_base
         if almosteq(exponent, 1):
             return mono_f
         elif almosteq(exponent, 0):
@@ -56,24 +62,24 @@ def pow_monotonicity(mono_handler, expr):
             is_even = almosteq(exponent % 2, 0)
             if is_integer and is_even:
                 if exponent > 0:
-                    if mono_f.is_nondecreasing() and mono_handler.is_nonnegative(base):
+                    if mono_f.is_nondecreasing() and bound_base.is_nonnegative():
                         return Monotonicity.Nondecreasing
-                    elif mono_f.is_nonincreasing() and mono_handler.is_nonpositive(base):
+                    elif mono_f.is_nonincreasing() and bound_base.is_nonpositive():
                         return Monotonicity.Nondecreasing
-                    elif mono_f.is_nondecreasing() and mono_handler.is_nonpositive(base):
+                    elif mono_f.is_nondecreasing() and bound_base.is_nonpositive():
                         return Monotonicity.Nonincreasing
-                    elif mono_f.is_nonincreasing() and mono_handler.is_nonnegative(base):
+                    elif mono_f.is_nonincreasing() and bound_base.is_nonnegative():
                         return Monotonicity.Nonincreasing
                     else:
                         return Monotonicity.Unknown
                 else:
-                    if mono_f.is_nonincreasing() and mono_handler.is_nonnegative(base):
+                    if mono_f.is_nonincreasing() and bound_base.is_nonnegative():
                         return Monotonicity.Nondecreasing
-                    elif mono_f.is_nondecreasing() and mono_handler.is_nonpositive(base):
+                    elif mono_f.is_nondecreasing() and bound_base.is_nonpositive():
                         return Monotonicity.Nondecreasing
-                    elif mono_f.is_nonincreasing() and mono_handler.is_nonpositive(base):
+                    elif mono_f.is_nonincreasing() and bound_base.is_nonpositive():
                         return Monotonicity.Nonincreasing
-                    elif mono_f.is_nondecreasing() and mono_handler.is_nonnegative(base):
+                    elif mono_f.is_nondecreasing() and bound_base.is_nonnegative():
                         return Monotonicity.Nonincreasing
                     else:
                         return Monotonicity.Unknown
@@ -90,7 +96,7 @@ def pow_monotonicity(mono_handler, expr):
                 else:
                     return Monotonicity.Unknown
             else:  # not an integer
-                if not mono_handler.is_nonpositive(base):
+                if not bound_base.is_nonpositive():
                     return Monotonicity.Unknown
                 elif exponent > 0:
                     return mono_f

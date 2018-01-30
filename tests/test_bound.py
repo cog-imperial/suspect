@@ -19,16 +19,7 @@ from suspect.bound import ArbitraryPrecisionBound
 from suspect.math.arbitrary_precision import (
     inf, almostlte, almostgte, almosteq, pi, log, exp, cos
 )
-
-
-@st.composite
-def reals(draw, min_value=None, max_value=None, allow_infinity=True):
-    if min_value is not None and max_value is not None:
-        allow_infinity = False
-    return draw(st.floats(
-        min_value=min_value, max_value=max_value,
-        allow_nan=False, allow_infinity=allow_infinity
-    ))
+from tests.conftest import reals
 
 
 @st.composite

@@ -90,6 +90,9 @@ class MonotonicityPropagationVisitor(object):
         assert isinstance(mono, Monotonicity)
         self._mono[id(expr)] = mono
 
+    def monotonicity(self, expr):
+        return self.get(expr)
+
     def result(self):
         return self._mono
 

@@ -212,4 +212,5 @@ class Constant(BoundedExpression):
 
     @property
     def value(self):
+        assert self.lower_bound == self.upper_bound
         return self.lower_bound

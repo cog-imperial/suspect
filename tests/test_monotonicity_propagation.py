@@ -15,11 +15,13 @@
 import pytest
 from hypothesis import given, assume
 import hypothesis.strategies as st
+import itertools
 from tests.conftest import (
     PlaceholderExpression,
     bound_description_to_bound,
     mono_description_to_mono,
     coefficients,
+    reals,
 )
 import suspect.dag.expressions as dex
 from suspect.math.arbitrary_precision import pi
@@ -202,8 +204,8 @@ def mock_division_visitor():
 
 @pytest.mark.parametrize("mono_f,bound_f,mono_g,bound_g,expected", [
     # mono_f           bound_f      mono_g      bound_g
-    ('constant', 1.0, 'constant', 2.0, Monotonicity.Constant),
-    ('constant', 1.0, 'constant', 0.0, Monotonicity.Unknown),
+    ('constant',         1.0,       'constant',    2.0,       Monotonicity.Constant),
+    ('constant',         1.0,       'constant',    0.0,       Monotonicity.Unknown),
 
     ('nondecreasing', 'unbounded', 'constant', 'nonnegative', Monotonicity.Nondecreasing),
     ('nonincreasing', 'unbounded', 'constant', 'nonpositive', Monotonicity.Nondecreasing),
@@ -549,3 +551,162 @@ class TestCos(object):
     def test_nonincreasing_nonpositive_sin(self, mock_cos_visitor, bound_g):
         mono = mock_cos_visitor('nonincreasing', bound_g)
         assert mono.is_nonincreasing()
+
+
+@pytest.fixture
+def mock_pow_constant_base_visitor():
+    def _f(base, mono_e, bound_e):
+        v = MockMonotonicityPropagationVisitor()
+        base = dex.Constant(base)
+        v(base)
+        v.add_bound(base, Bound(base.value, base.value))
+        expo = v.add_mono(mono_e)
+        v.add_bound(expo, bound_e)
+        p = dex.PowExpression([base, expo])
+        v(p)
+        return v.get(p)
+    return _f
+
+
+class TestPowConstantBase(object):
+    @pytest.mark.parametrize(
+        'mono_e,bound_e',
+        itertools.product(
+            ['nondecreasing', 'nonincreasing', 'unknown'],
+            ['nonpositive', 'nonnegative', 'unbounded']
+        )
+    )
+    @given(base=reals(max_value=-0.01, allow_infinity=False))
+    def test_negative_base(self, mock_pow_constant_base_visitor, base, mono_e, bound_e):
+        mono = mock_pow_constant_base_visitor(base, mono_e, bound_e)
+        assert mono == Monotonicity.Unknown
+
+    @pytest.mark.parametrize('mono_e,bound_e,expected', [
+        ('nondecreasing', 'nonpositive', Monotonicity.Nondecreasing),
+        ('nondecreasing', 'nonnegative', Monotonicity.Unknown),
+        ('nonincreasing', 'nonnegative', Monotonicity.Nondecreasing),
+        ('nonincreasing', 'nonpositive', Monotonicity.Unknown),
+    ])
+    @given(base=reals(min_value=0.01, max_value=0.999))
+    def test_base_between_0_and_1(self, mock_pow_constant_base_visitor, base,
+                                  mono_e, bound_e, expected):
+        mono = mock_pow_constant_base_visitor(base, mono_e, bound_e)
+        assert mono == expected
+
+    @pytest.mark.parametrize('mono_e,bound_e,expected', [
+        ('nondecreasing', 'nonnegative', Monotonicity.Nondecreasing),
+        ('nondecreasing', 'nonpositive', Monotonicity.Unknown),
+        ('nonincreasing', 'nonpositive', Monotonicity.Nondecreasing),
+        ('nonincreasing', 'nonnegative', Monotonicity.Unknown),
+    ])
+    @given(base=reals(min_value=1.01, allow_infinity=False))
+    def test_base_gt_1(self, mock_pow_constant_base_visitor, base,
+                       mono_e, bound_e, expected):
+        mono = mock_pow_constant_base_visitor(base, mono_e, bound_e)
+        assert mono == expected
+
+
+@pytest.fixture
+def mock_pow_constant_exponent_visitor():
+    def _f(mono_b, bound_b, expo):
+        v = MockMonotonicityPropagationVisitor()
+        expo = dex.Constant(expo)
+        v(expo)
+        v.add_bound(expo, Bound(expo.value, expo.value))
+        base = v.add_mono(mono_b)
+        v.add_bound(base, bound_b)
+        p = dex.PowExpression([base, expo])
+        v(p)
+        return v.get(p)
+    return _f
+
+
+class TestPowConstantExponent(object):
+    @pytest.mark.parametrize(
+        'mono_b,bound_b',
+        itertools.product(['nonincreasing', 'nondecreasing'],
+                          ['nonpositive', 'nonnegative', 'unbounded'])
+    )
+    def test_exponent_equals_1(self, mock_pow_constant_exponent_visitor, mono_b, bound_b):
+        mono = mock_pow_constant_exponent_visitor(mono_b, bound_b, 1.0)
+        assert mono == mono_description_to_mono(mono_b)
+
+    @pytest.mark.parametrize(
+        'mono_b,bound_b',
+        itertools.product(['nonincreasing', 'nondecreasing'],
+                          ['nonpositive', 'nonnegative', 'unbounded'])
+    )
+    def test_exponent_equals_0(self, mock_pow_constant_exponent_visitor, mono_b, bound_b):
+        mono = mock_pow_constant_exponent_visitor(mono_b, bound_b, 0.0)
+        assert mono == Monotonicity.Constant
+
+    @pytest.mark.parametrize('mono_b,bound_b,expected', [
+        ('nondecreasing', 'nonnegative', Monotonicity.Nondecreasing),
+        ('nonincreasing', 'nonpositive', Monotonicity.Nondecreasing),
+
+        ('nondecreasing', 'nonpositive', Monotonicity.Nonincreasing),
+        ('nonincreasing', 'nonnegative', Monotonicity.Nonincreasing),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_positive_even_integer(self, mock_pow_constant_exponent_visitor, expo, mono_b, bound_b, expected):
+        mono = mock_pow_constant_exponent_visitor(mono_b, bound_b, expo*2)
+        assert mono == expected
+
+    @pytest.mark.parametrize('mono_b,bound_b,expected', [
+        ('nondecreasing', 'nonnegative', Monotonicity.Nonincreasing),
+        ('nonincreasing', 'nonpositive', Monotonicity.Nonincreasing),
+
+        ('nondecreasing', 'nonpositive', Monotonicity.Nondecreasing),
+        ('nonincreasing', 'nonnegative', Monotonicity.Nondecreasing),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_negative_even_integer(self, mock_pow_constant_exponent_visitor, expo, mono_b, bound_b, expected):
+        mono = mock_pow_constant_exponent_visitor(mono_b, bound_b, -expo*2)
+        assert mono == expected
+
+    @pytest.mark.parametrize('mono_b,expected', [
+        ('nondecreasing', Monotonicity.Nondecreasing),
+        ('nonincreasing', Monotonicity.Nonincreasing),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_positive_odd_integer(self, mock_pow_constant_exponent_visitor,
+                                  expo, mono_b, expected):
+        mono = mock_pow_constant_exponent_visitor(mono_b, 'unbounded', expo*2+1)
+        assert mono == expected
+
+    @pytest.mark.parametrize('mono_b,expected', [
+        ('nondecreasing', Monotonicity.Nonincreasing),
+        ('nonincreasing', Monotonicity.Nondecreasing),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_negative_odd_integer(self, mock_pow_constant_exponent_visitor,
+                                  expo, mono_b, expected):
+        mono = mock_pow_constant_exponent_visitor(mono_b, 'unbounded', -expo*2+1)
+        assert mono == expected
+
+
+@pytest.fixture
+def mock_pow_visitor():
+    def _f(mono_b, bound_b, mono_e, bound_e):
+        v = MockMonotonicityPropagationVisitor()
+        b = v.add_mono(mono_b)
+        v.add_bound(b, bound_b)
+        e = v.add_mono(mono_e)
+        v.add_bound(e, bound_e)
+        p = dex.PowExpression([b, e])
+        v(p)
+        return v.get(p)
+    return _f
+
+
+@pytest.mark.parametrize('mono_b,bound_b,mono_e,bound_e',
+    itertools.product(
+        ['nonincreasing', 'nondecreasing', 'unknown'],
+        ['nonpositive', 'nonnegative', 'unbounded'],
+        ['nonincreasing', 'nondecreasing', 'unknown'],
+        ['nonpositive', 'nonnegative', 'unbounded']
+    )
+)
+def test_pow(mock_pow_visitor, mono_b, bound_b, mono_e, bound_e):
+    mono = mock_pow_visitor(mono_b, bound_b, mono_e, bound_e)
+    assert mono == Monotonicity.Unknown
