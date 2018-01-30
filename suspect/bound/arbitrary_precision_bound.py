@@ -74,7 +74,7 @@ class ArbitraryPrecisionBound(Bound):
 
     def tighten(self, other):
         if not isinstance(other, ArbitraryPrecisionBound):
-            raise ValueError('other must be ArbitraryPrecisionBound')
+            raise AssertionError('other must be ArbitraryPrecisionBound')
 
         if other.lower < self.lower:
             new_l = self.lower
@@ -102,7 +102,7 @@ class ArbitraryPrecisionBound(Bound):
             return ArbitraryPrecisionBound(l + other.lower, u + other.upper)
         elif isinstance(other, Number):
             if mpf(other) == inf:
-                raise RuntimeError('Infinity constants are not allowed')
+                raise AssertionError('Infinity constants are not allowed')
             return ArbitraryPrecisionBound(l + other, u + other)
         else:
             raise TypeError(
@@ -116,7 +116,7 @@ class ArbitraryPrecisionBound(Bound):
             return ArbitraryPrecisionBound(l - other.upper, u - other.lower)
         elif isinstance(other, Number):
             if mpf(other) == inf:
-                raise RuntimeError('Infinity constants are not allowed')
+                raise AssertionError('Infinity constants are not allowed')
             return ArbitraryPrecisionBound(l - other, u - other)
         else:
             raise TypeError(
@@ -144,7 +144,7 @@ class ArbitraryPrecisionBound(Bound):
             return ArbitraryPrecisionBound(new_l, new_u)
         elif isinstance(other, Number):
             if mpf(other) == inf:
-                raise RuntimeError('Infinity constants are not allowed')
+                raise AssertionError('Infinity constants are not allowed')
             return self.__mul__(ArbitraryPrecisionBound(other, other))
         else:
             raise TypeError(
@@ -161,14 +161,12 @@ class ArbitraryPrecisionBound(Bound):
                 return self.__mul__(ArbitraryPrecisionBound(1/ou, 1/ol))
         elif isinstance(other, Number):
             if mpf(other) == inf:
-                raise RuntimeError('Infinity constants are not allowed')
+                raise AssertionError('Infinity constants are not allowed')
             return self.__truediv__(ArbitraryPrecisionBound(other, other))
         else:
             raise TypeError(
                 "dividing AribtraryPrecisionBound by incompatible type"
             )
-
-        pass
 
     def equals(self, other):
         if not isinstance(other, ArbitraryPrecisionBound):
@@ -231,9 +229,10 @@ class ArbitraryPrecisionBound(Bound):
             u = l + (self.upper - self.lower)
             new_u = max(sin(l), sin(u))
             new_l = min(sin(l), sin(u))
-            if 0.5*pi in self:
+            b = ArbitraryPrecisionBound(l, u)
+            if 0.5*pi in b:
                 new_u = 1
-            if 1.5*pi in self:
+            if 1.5*pi in b:
                 new_l = -1
             return ArbitraryPrecisionBound(new_l, new_u)
 
@@ -246,8 +245,8 @@ class ArbitraryPrecisionBound(Bound):
             return (self + pi_2).sin()
 
     def tan(self):
-        if almostgte(self.size(), 2*pi):
-            return ArbitraryPrecisionBound(-1, 1)
+        if almostgte(self.size(), pi):
+            return ArbitraryPrecisionBound(None, None)
         else:
             l = self.lower_bound % pi
             u = l + (self.upper - self.lower)
@@ -255,11 +254,18 @@ class ArbitraryPrecisionBound(Bound):
             tan_u = tan(u)
             new_l = min(tan_l, tan_u)
             new_u = max(tan_l, tan_u)
+
+
             if almosteq(l, 0.5 * pi):
                 new_l = None
 
             if almosteq(u, 0.5 * pi):
                 new_u = None
+
+            if new_l is not None and new_u is not None:
+                b = ArbitraryPrecisionBound(l, u)
+                if 0.5*pi in b or pi in b:
+                    return ArbitraryPrecisionBound(None, None)
 
             return ArbitraryPrecisionBound(new_l, new_u)
 
@@ -267,4 +273,4 @@ class ArbitraryPrecisionBound(Bound):
         return ArbitraryPrecisionBound(asin(self.lower), asin(self.upper))
 
     def acos(self):
-        return ArbitraryPrecisionBound(acos(self.lower), acos(self.upper))
+        return ArbitraryPrecisionBound(acos(self.upper), acos(self.lower))

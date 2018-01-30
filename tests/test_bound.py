@@ -17,12 +17,14 @@ from hypothesis import given, assume
 import hypothesis.strategies as st
 from suspect.bound import ArbitraryPrecisionBound
 from suspect.math.arbitrary_precision import (
-    inf, almostlte, almostgte, almosteq, pi,
+    inf, almostlte, almostgte, almosteq, pi, log, exp, cos
 )
 
 
 @st.composite
 def reals(draw, min_value=None, max_value=None, allow_infinity=True):
+    if min_value is not None and max_value is not None:
+        allow_infinity = False
     return draw(st.floats(
         min_value=min_value, max_value=max_value,
         allow_nan=False, allow_infinity=allow_infinity
@@ -326,3 +328,42 @@ class TestCos(object):
     def test_cos_contains_0_pi(self):
         b = ArbitraryPrecisionBound(-0.1*pi, 1.1*pi)
         assert b.cos() == ArbitraryPrecisionBound(-1, 1)
+
+
+class TestTan(object):
+    def test_tan_over_pi(self):
+        b = ArbitraryPrecisionBound(-0.5*pi, 0.5*pi)
+        assert b.tan() == ArbitraryPrecisionBound(None, None)
+
+    def test_tan_contains_pi_half(self):
+        b = ArbitraryPrecisionBound(0.45*pi, 0.55*pi)
+        assert b.tan() == ArbitraryPrecisionBound(None, None)
+
+    def test_tan_upper_is_pi_half(self):
+        b = ArbitraryPrecisionBound(0.45*pi, 0.5*pi)
+        assert b.tan().lower_bound != -inf
+        assert b.tan().upper_bound == inf
+
+    def test_tan_lower_is_pi_half(self):
+        b = ArbitraryPrecisionBound(0.5*pi, 0.6*pi)
+        assert b.tan().lower_bound == -inf
+        assert b.tan().upper_bound != inf
+
+
+class TestMonotonicFunctions(object):
+    @given(reals(min_value=0.0), reals(min_value=0.0))
+    def test_sqrt(self, a, b):
+        b = ArbitraryPrecisionBound(min(a, b), max(a, b))
+        assert almosteq(b.sqrt().lower_bound**2, b.lower_bound)
+        assert almosteq(b.sqrt().upper_bound**2, b.upper_bound)
+
+    @given(reals(min_value=0.0), reals(min_value=0.0))
+    def test_exp(self, a, b):
+        b = ArbitraryPrecisionBound(min(a, b), max(a, b))
+        assert almosteq(log(b.exp().lower_bound), b.lower_bound)
+        assert almosteq(log(b.exp().upper_bound), b.upper_bound)
+
+    @given(reals(min_value=-1, max_value=1), reals(min_value=-1, max_value=1))
+    def test_acos(self, a, b):
+        b = ArbitraryPrecisionBound(min(a, b), max(a, b))
+        assert almosteq(cos(b.acos().upper_bound), b.lower_bound)
