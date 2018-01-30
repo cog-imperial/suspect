@@ -18,6 +18,7 @@ from suspect.convexity.convexity import Convexity
 from suspect.convexity.product import product_convexity
 from suspect.convexity.division import division_convexity
 from suspect.convexity.linear import linear_convexity
+from suspect.convexity.pow import pow_convexity
 from suspect.convexity.sin import (
     sin_convexity,
     asin_convexity,

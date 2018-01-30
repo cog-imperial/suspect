@@ -575,7 +575,7 @@ class TestTan(object):
         assert cvx == Convexity.Unknown
 
     def test_negative_tan_concave_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.TanExpression, 'concave', 'unknown', Bound(-0.49*pi, 0))
+        cvx = mock_unary_function_visitor(dex.TanExpression, 'concave', 'unknown', Bound(-0.49*pi, -0.1))
         assert cvx == Convexity.Concave
 
 
