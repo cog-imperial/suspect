@@ -51,7 +51,12 @@ class BoundsPropagationVisitor(object):
 
     def visit_constraint(self, constr):
         arg = constr.children[0]
-        return self.get(arg)
+        inner = self.get(arg)
+        new_lb = max(inner.lower_bound, constr.lower_bound)
+        new_ub = min(inner.upper_bound, constr.upper_bound)
+        if not new_lb <= new_ub:
+            raise RuntimeError('Infeasible bound.')
+        return Bound(new_lb, new_ub)
 
     def visit_objective(self, obj):
         arg = obj.children[0]

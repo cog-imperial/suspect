@@ -13,30 +13,65 @@
 # limitations under the License.
 
 import pytest
-from suspect.dag import *
-from suspect.bound.propagation import propagate_bounds
-import suspect.dag.dot as dot
-from suspect.pyomo import dag_from_pyomo_model
-import pyomo.environ as aml
+from unittest.mock import MagicMock
+from hypothesis import given, assume
+import hypothesis.strategies as st
+from suspect.bound.propagation import BoundsPropagationVisitor
+import suspect.dag.expressions as dex
+from suspect.bound import ArbitraryPrecisionBound as Bound
+from tests.conftest import (
+    PlaceholderExpression,
+    bound_description_to_bound,
+    mono_description_to_mono,
+    coefficients,
+    reals,
+)
+
+class MockBoundsPropagationVisitor(BoundsPropagationVisitor):
+    pass
 
 
-def model():
-    m = aml.ConcreteModel()
-    m.x0 = aml.Var(bounds=(None, None))
-    m.x1 = aml.Var(bounds=(0, None))
-    m.x2 = aml.Var(bounds=(None, 0))
-    m.x3 = aml.Var(bounds=(-10, 10))
-
-    m.c0 = aml.Constraint(expr=2*m.x3 + aml.sqrt(m.x1) >= 0)
-    m.c1 = aml.Constraint(expr=m.x0**2 <= 5)
-    m.c2 = aml.Constraint(expr=5 <= aml.log(m.x1) + aml.sin(m.x2) <= 100)
-
-    m.obj = aml.Objective(expr=m.x0 + m.x1**2 + m.x2**3 + m.x3**4)
-    return dag_from_pyomo_model(m)
+@pytest.fixture
+def mock_bounds_visitor(ctx=None):
+    if ctx is None:
+        ctx = {}
+    return MockBoundsPropagationVisitor(ctx)
 
 
-def test_propagation():
-    dag = model()
+@given(reals(), reals())
+def test_variable_bound(mock_bounds_visitor, a, b):
+    lb = min(a, b)
+    ub = max(a, b)
+    var = dex.Variable('x0', lower_bound=lb, upper_bound=ub)
+    mock_bounds_visitor(var)
+    assert mock_bounds_visitor.get(var) == Bound(lb, ub)
 
-    bound_ctx = {}
-    propagate_bounds(dag, bound_ctx)
+
+@given(reals())
+def test_constant_bound(mock_bounds_visitor, c):
+    const = dex.Constant(c)
+    mock_bounds_visitor(const)
+    assert mock_bounds_visitor.get(const) == Bound(c, c)
+
+
+@given(reals(), reals(), reals(), reals())
+def test_constraint_bound(mock_bounds_visitor, a, b, c, d):
+    e_lb, e_ub = min(a, b), max(a, b)
+    c_lb, c_ub = min(c, d), max(c, d)
+    assume(max(e_lb, c_lb) <= min(e_ub, c_ub))
+    p = PlaceholderExpression()
+    mock_bounds_visitor.set(p, Bound(e_lb, e_ub))
+    cons = dex.Constraint('c0', lower_bound=c_lb, upper_bound=c_ub, children=[p])
+    mock_bounds_visitor(cons)
+    expected = Bound(max(e_lb, c_lb), min(c_ub, e_ub))
+    assert mock_bounds_visitor.get(cons) == expected
+
+
+@given(reals(), reals())
+def test_objective_bound(mock_bounds_visitor, a, b):
+    lb, ub = min(a, b), max(a, b)
+    p = PlaceholderExpression()
+    mock_bounds_visitor.set(p, Bound(lb, ub))
+    o = dex.Objective('obj', children=[p])
+    mock_bounds_visitor(o)
+    assert mock_bounds_visitor.get(o) == Bound(lb, ub)
