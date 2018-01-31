@@ -179,10 +179,34 @@ class Constraint(BoundedExpression):
         self.name = name
 
     def linear_component(self):
-        pass
+        linear, _ = self._split_linear_nonlinear()
+        return linear
 
     def nonlinear_component(self):
-        pass
+        _, nonlinear = self._split_linear_nonlinear()
+        return nonlinear
+
+    def _split_linear_nonlinear(self):
+        child = self.children[0]
+
+        if isinstance(child, LinearExpression):
+            return child, None
+
+        if not isinstance(child, SumExpression):
+            return None, [child]
+
+        linear = None
+        nonlinear = []
+        for arg in child.children:
+            if isinstance(arg, LinearExpression):
+                if linear is not None:
+                    raise AssertionError(
+                        'Constraint root should have only one LinearExpression child'
+                    )
+                linear = arg
+            else:
+                nonlinear.append(arg)
+        return linear, nonlinear
 
     def __str__(self):
         return 'Constraint(name={}, lower_bound={}, upper_bound={}, children={})'.format(
