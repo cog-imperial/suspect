@@ -50,6 +50,21 @@ def tighten_variables_in_constraint(constraint, bounds, maxiter=10):
             logging.info('No change in iteration {}. Exit'.format(it))
             break
 
+    linear_bound = Bound.zero()
+    for coef, arg in linear.children:
+        linear_bound += coef * bounds[id(arg)]
+
+    constraint_bound = bounds[id(constraint)]
+
+    for expr in nonlinear:
+        nonlinear_bound = Bound.zero()
+        for arg in nonlinear:
+            if arg is not expr:
+                nonlinear_bound += bounds[id(arg)]
+        tighten_nonlinear_component(expr, linear_bound, nonlinear_bound, constraint_bound, bounds)
+
+
+
 
 def tighten_variable_in_linear_component(linear, nonlinear, variable, constraint, bounds):
     """Tightens the bounds of `variable` based on the bounds of the linear and nonlinear components.
@@ -105,4 +120,7 @@ def _nonlinear_bound(nonlinear, bounds):
     for expr in nonlinear:
         nonlinear_bound += bounds[id(expr)]
     return nonlinear_bound
+
+
+def tighten_nonlinear_components(expr, linear_bound, nonlinear_bound, constraint_bound, bounds):
     pass
