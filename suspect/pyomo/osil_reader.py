@@ -169,7 +169,6 @@ class OsilParser(object):
                 assert len(cs) == 1
                 return - _eval(cs[0])
             elif name == 'number':
-                assert node.attrib['type'] == 'real'
                 return float(node.attrib['value'])
             elif name == 'variable':
                 c = float(node.attrib.get('coef', 1))

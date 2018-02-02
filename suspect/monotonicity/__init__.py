@@ -13,4 +13,4 @@
 # limitations under the License.
 
 from .monotonicity import Monotonicity
-from .propagation import propagate_monotonicity
+from .propagation import MonotonicityPropagationVisitor, propagate_monotonicity

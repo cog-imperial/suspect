@@ -16,7 +16,8 @@ import bisect
 
 
 class ProblemDag(object):
-    def __init__(self):
+    def __init__(self, name=None):
+        self.name = name
         # The DAG vertices sorted by depth
         self.vertices = []
         # Precompute depth of vertices to use in bisect

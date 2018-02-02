@@ -13,15 +13,8 @@
 # limitations under the License.
 
 import warnings
-from suspect.bounds import expression_bounds
-from suspect.convexity import expression_convexity
-from suspect.tightening import tighten_model_bounds
-from suspect.util import (
-    model_variables,
-    model_constraints,
-    model_objectives,
-    bounds_and_expr,
-)
+from suspect.bound import propagate_bounds
+from suspect.propagation import propagate_special_structure
 
 
 class ModelInformation(object):
@@ -90,92 +83,83 @@ class ModelInformation(object):
         )
 
 
-def detect_special_structure(model):
-    """Detect special structure in the model.
+def detect_special_structure(problem):
+    """Detect special structure in the problem.
 
     Parameters
     ----------
-    model: Model
-        a Pyomo model
+    model: ProblemDag
+        the problem DAG.
 
     Returns
     -------
     ModelInformation
         an object containing the detected infomation about the problem
     """
-    bounds = tighten_model_bounds(model)
+    bounds = {}
+    propagate_bounds(problem, bounds)
+    # TODO: do real bound propagation and tightening
+    monotonicity, convexity = propagate_special_structure(problem, bounds)
 
     variables = {}
-    for variable in model_variables(model):
+    for variable_name, variable in problem.variables.items():
         if variable.is_binary():
             variable_type = 'binary'
         elif variable.is_integer():
             variable_type = 'integer'
         else:
             variable_type = 'continuous'
-        var_bounds = bounds[variable]
+        var_bounds = bounds[id(variable)]
 
         if variable.name in variables:
             warnings.warn('Duplicate variable {}'.format(variable.name))
 
-        variables[variable.name] = {
-            'name': variable.name,
+        variables[variable_name] = {
+            'name': variable_name,
             'type': variable_type,
-            'lower_bound': var_bounds.l,
-            'upper_bound': var_bounds.u,
+            'lower_bound': var_bounds.lower_bound,
+            'upper_bound': var_bounds.upper_bound,
         }
 
     objectives = {}
-    for obj in model_objectives(model):
-        if obj.name in objectives:
-            warnings.warn('Duplicate objective {}'.format(obj.name))
+    for obj_name, obj in problem.objectives.items():
+        if obj_name in objectives:
+            warnings.warn('Duplicate objective {}'.format(obj_name))
 
         if obj.is_minimizing():
             sense = 'min'
-            expr = obj.expr
-            cvx = expression_convexity(expr, bounds)
         else:
             sense = 'max'
-            expr = -obj.expr
-            cvx = expression_convexity(expr, bounds)
-            cvx = cvx.negate()
-
-        obj_bounds = expression_bounds(obj.expr, bounds)
-
+        obj_bounds = bounds[id(obj)]
+        cvx = convexity[id(obj)]
         objectives[obj.name] = {
             'sense': sense,
             'convexity': cvx,
-            'polynomial_degree': obj.expr.polynomial_degree(),
-            'lower_bound': obj_bounds.l,
-            'upper_bound': obj_bounds.u,
+            'polynomial_degree': None,
+            'lower_bound': obj_bounds.lower_bound,
+            'upper_bound': obj_bounds.upper_bound,
         }
 
     constraints = {}
-    for cons in model_constraints(model):
-        if cons.name in constraints:
-            warnings.warn('Duplicate constraint {}'.format(cons.name))
+    for cons_name, cons in problem.constraints.items():
+        if cons_name in constraints:
+            warnings.warn('Duplicate constraint {}'.format(cons_name))
 
-        cons_bounds, expr = bounds_and_expr(cons.expr)
-        if cons.equality:
+        if cons.is_equality():
             type_ = 'equality'
-            bound = cons_bounds.u
-            cvx1 = expression_convexity(expr <= bound, bounds)
-            cvx2 = expression_convexity(-expr <= - bound, bounds)
-            cvx = cvx1.combine(cvx2)
         else:
             type_ = 'inequality'
-            cvx1 = expression_convexity(expr <= cons_bounds.u, bounds)
-            cvx2 = expression_convexity(-expr <= -cons_bounds.l, bounds)
-            cvx = cvx1.combine(cvx2)
 
-        constraints[cons.name] = {
+        cvx = convexity[id(cons)]
+
+        constraints[cons_name] = {
             'type': type_,
             'convexity': cvx,
-            'polynomial_degree': cons.body.polynomial_degree(),
+            'polynomial_degree': None,
         }
 
     return ModelInformation(
-        name=model.name,
+        name=problem.name,
         variables=variables,
         objectives=objectives,
         constraints=constraints,

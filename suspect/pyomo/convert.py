@@ -216,7 +216,7 @@ class ComponentFactory(object):
 
 
 def dag_from_pyomo_model(model):
-    dag = ProblemDag()
+    dag = ProblemDag(name=model.name)
     factory = ComponentFactory(dag)
     for omo_var in model_variables(model):
         new_var = factory.variable(omo_var)

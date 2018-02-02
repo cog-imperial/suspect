@@ -13,6 +13,4 @@
 # limitations under the License.
 
 from .arbitrary_precision_bound import ArbitraryPrecisionBound
-
-# TODO: remove and fix errors
-Bound = ArbitraryPrecisionBound
+from .propagation import propagate_bounds

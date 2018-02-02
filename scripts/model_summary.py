@@ -22,6 +22,7 @@ import time
 import logging
 import json
 import tempfile
+import traceback
 from mpmath import mpf
 import boto3
 import suspect.dag.dot as dot
@@ -200,6 +201,7 @@ def run_for_problem(filename, solution_filename, timeout_):
     try:
         with Timeout(seconds=300):
             model = read_problem(filename)
+            model = dag_from_pyomo_model(model)
     except Exception as err:
         logging.error('{}: Error reading: {}'.format(filename, str(err)))
         return None
@@ -212,6 +214,7 @@ def run_for_problem(filename, solution_filename, timeout_):
 
     except Exception as err:
         logging.error('{}: {}'.format(model.name, str(err)))
+        traceback.print_exc()
         return {
             'name': model.name,
             'status': 'error',
@@ -284,16 +287,11 @@ if __name__ == '__main__':
         sys.exit(1)
 
     model = read_problem(args.problem)
-    dag = dag_from_pyomo_model(model)
-    with open('/tmp/dag.dot', 'w') as f:
-        dot.dump(dag, f)
+    with RunResources(args.problem, args.solution, args.output) as r:
+        result = run_for_problem(r.problem, r.solution, args.timeout)
 
-    if False:
-        with RunResources(args.problem, args.solution, args.output) as r:
-            result = run_for_problem(r.problem, r.solution, args.timeout)
+        if result is None:
+            sys.exit(1)
 
-            if result is None:
-                sys.exit(1)
-
-                result_str = json.dumps(result, sort_keys=True)
-                r.output.write(result_str + '\n')
+        result_str = json.dumps(result, sort_keys=True)
+        r.output.write(result_str + '\n')

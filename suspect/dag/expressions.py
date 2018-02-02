@@ -157,6 +157,12 @@ class Objective(Expression):
         self.sense = sense
         self.name = name
 
+    def is_minimizing(self):
+        return self.sense == Sense.MINIMIZE
+
+    def is_maximizing(self):
+        return self.sense == Sense.MAXIMIZE
+
 
 class BoundedExpression(Expression):
     def __init__(self, lower_bound, upper_bound, children=None):
@@ -208,6 +214,9 @@ class Constraint(BoundedExpression):
                 nonlinear.append(arg)
         return linear, nonlinear
 
+    def is_equality(self):
+        return self.lower_bound == self.upper_bound
+
     def __str__(self):
         return 'Constraint(name={}, lower_bound={}, upper_bound={}, children={})'.format(
             self.name, self.lower_bound, self.upper_bound, self.children
@@ -221,6 +230,15 @@ class Variable(BoundedExpression):
         super().__init__(lower_bound, upper_bound, None)
         self.domain = domain
         self.name = name
+
+    def is_binary(self):
+        return self.domain == Domain.BINARY
+
+    def is_integer(self):
+        return self.domain == Domain.INTEGERS
+
+    def is_real(self):
+        return self.domain == Domain.REALS
 
     def __str__(self):
         return 'Variable(name={}, lower_bound={}, upper_bound={}, domain={})'.format(
