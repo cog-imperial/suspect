@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from numbers import Number
-from pyomo.environ import NumericConstant
+import pyomo.environ as aml
 from suspect.pyomo.util import (
     model_variables,
     model_objectives,
@@ -28,7 +28,12 @@ import suspect.dag.expressions as dex
 
 
 def convert_domain(dom):
-    return dex.Domain.REALS
+    if isinstance(dom, aml.RealSet):
+        return dex.Domain.REALS
+    elif isinstance(dom, aml.IntegerSet):
+        return dex.Domain.INTEGERS
+    elif isinstance(dom, aml.BooleanSet):
+        return dex.Domain.BINARY
 
 
 def convert_expression(memo, dag, expr):
@@ -44,7 +49,7 @@ class ExpressionConverterHandler(ExpressionHandler):
 
     def get(self, expr):
         if isinstance(expr, Number):
-            const = NumericConstant(expr)
+            const = aml.NumericConstant(expr)
             return self.get(const)
         else:
             return self.memo[expr]
@@ -59,7 +64,7 @@ class ExpressionConverterHandler(ExpressionHandler):
                 raise RuntimeError('unknown child')
 
     def visit_number(self, n):
-        const = NumericConstant(n)
+        const = aml.NumericConstant(n)
         self.visit_numeric_constant(const)
 
     def visit_numeric_constant(self, expr):

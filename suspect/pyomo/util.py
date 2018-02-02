@@ -18,7 +18,7 @@ from suspect.pyomo.expr_visitor import (
     InequalityExpression,
     EqualityExpression,
 )
-from suspect.bound import Bound
+from suspect.bound import ArbitraryPrecisionBound as Bound
 
 numeric_types = (int, Number, aml.NumericConstant)
 
