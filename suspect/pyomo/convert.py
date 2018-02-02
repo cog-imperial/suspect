@@ -76,13 +76,13 @@ class ExpressionConverterHandler(ExpressionHandler):
     def visit_variable(self, expr):
         if self.memo[expr] is not None:
             return self.memo[expr]
-        raise RuntimeError('Unknown variable encountered')
+        raise AssertionError('Unknown variable encountered')
 
     def visit_equality(self, expr):
-        raise RuntimeError('Invalid EqualityExpression encountered')
+        raise AssertionError('Invalid EqualityExpression encountered')
 
     def visit_inequality(self, expr):
-        raise RuntimeError('Invalid EqualityExpression encountered')
+        raise AssertionError('Invalid EqualityExpression encountered')
 
     def visit_product(self, expr):
         if self.memo[expr] is not None:
@@ -152,7 +152,7 @@ class ExpressionConverterHandler(ExpressionHandler):
             'atan': dex.AtanExpression,
         }.get(fun)
         if ExprClass is None:
-            raise RuntimeError('Unknwon function', fun)
+            raise AssertionError('Unknwon function', fun)
         new_expr = ExprClass(children)
         self.set(expr, new_expr)
 
