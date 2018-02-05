@@ -176,7 +176,7 @@ def _objcurvature(info):
         elif cvx.is_concave():
             return 'concave'
         else:
-            return 'unknown'
+            return 'indefinite'
     else:
         return ', '.join(curvatures)
 
