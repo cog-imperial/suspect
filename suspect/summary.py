@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import warnings
-from suspect.bound import propagate_bounds
+from suspect.bound import propagate_bounds, initialize_bounds
 from suspect.propagation import propagate_special_structure
 
 
@@ -96,7 +96,7 @@ def detect_special_structure(problem):
     ModelInformation
         an object containing the detected infomation about the problem
     """
-    bounds = {}
+    bounds = initialize_bounds(problem)
     propagate_bounds(problem, bounds)
     # TODO: do real bound propagation and tightening
     monotonicity, convexity = propagate_special_structure(problem, bounds)

@@ -14,7 +14,50 @@
 
 import logging
 import suspect.dag.expressions as dex
+from suspect.dag.visitor import Dispatcher
 from suspect.bound import ArbitraryPrecisionBound as Bound
+
+
+def initialize_bounds(dag):
+    """Initialize problem bounds using function domains as bound."""
+    visitor = BoundsInitializationVisitor()
+    dag.forward_visit(visitor)
+    return visitor.result()
+
+
+class BoundsInitializationVisitor(object):
+    def __init__(self):
+        self._ctx = {}
+        self._dispatcher = Dispatcher(
+            lookup={
+                dex.SqrtExpression: self.visit_sqrt,
+                dex.LogExpression: self.visit_log,
+                dex.AsinExpression: self.visit_asin,
+                dex.AcosExpression: self.visit_acos,
+            },
+            allow_missing=True)
+
+    def result(self):
+        return self._ctx
+
+    def visit_sqrt(self, expr):
+        expr = expr.children[0]
+        self._ctx[id(expr)] = Bound(0, None)
+
+    def visit_log(self, expr):
+        expr = expr.children[0]
+        self._ctx[id(expr)] = Bound(0, None)
+
+    def visit_asin(self, expr):
+        expr = expr.children[0]
+        self._ctx[id(expr)] = Bound(-1, 1)
+
+    def visit_acos(self, expr):
+        expr = expr.children[0]
+        self._ctx[id(expr)] = Bound(-1, 1)
+
+    def __call__(self, expr):
+        self._dispatcher.dispatch(expr)
 
 
 def tighten_bounds(dag, ctx):

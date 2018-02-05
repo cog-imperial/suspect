@@ -14,3 +14,4 @@
 
 from .arbitrary_precision_bound import ArbitraryPrecisionBound
 from .propagation import propagate_bounds
+from .tightening import initialize_bounds, tighten_bounds

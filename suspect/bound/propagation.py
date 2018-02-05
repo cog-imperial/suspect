@@ -41,7 +41,14 @@ class BoundsPropagationVisitor(object):
         return self._ctx[id(expr)]
 
     def set(self, expr, bound):
-        self._ctx[id(expr)] = bound
+        if id(expr) in self._ctx:
+            # bound exists, tighten it
+            old_bound = self.get(expr)
+            new_bound = old_bound.tighten(bound)
+            self._ctx[id(expr)] = new_bound
+        else:
+            # insert new bound
+            self._ctx[id(expr)] = bound
 
     def visit_variable(self, var):
         return Bound(var.lower_bound, var.upper_bound)
