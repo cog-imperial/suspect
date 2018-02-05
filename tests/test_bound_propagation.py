@@ -19,6 +19,7 @@ import hypothesis.strategies as st
 from suspect.bound.propagation import BoundsPropagationVisitor
 import suspect.dag.expressions as dex
 from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.math.arbitrary_precision import almosteq
 from tests.conftest import (
     PlaceholderExpression,
     bound_description_to_bound,
@@ -32,14 +33,15 @@ class MockBoundsPropagationVisitor(BoundsPropagationVisitor):
 
 
 @pytest.fixture
-def mock_bounds_visitor(ctx=None):
-    if ctx is None:
-        ctx = {}
-    return MockBoundsPropagationVisitor(ctx)
+def mock_bounds_visitor():
+    def _f():
+        return MockBoundsPropagationVisitor({})
+    return _f
 
 
 @given(reals(), reals())
 def test_variable_bound(mock_bounds_visitor, a, b):
+    mock_bounds_visitor = mock_bounds_visitor()
     lb = min(a, b)
     ub = max(a, b)
     var = dex.Variable('x0', lower_bound=lb, upper_bound=ub)
@@ -49,6 +51,7 @@ def test_variable_bound(mock_bounds_visitor, a, b):
 
 @given(reals())
 def test_constant_bound(mock_bounds_visitor, c):
+    mock_bounds_visitor = mock_bounds_visitor()
     const = dex.Constant(c)
     mock_bounds_visitor(const)
     assert mock_bounds_visitor.get(const) == Bound(c, c)
@@ -56,6 +59,7 @@ def test_constant_bound(mock_bounds_visitor, c):
 
 @given(reals(), reals(), reals(), reals())
 def test_constraint_bound(mock_bounds_visitor, a, b, c, d):
+    mock_bounds_visitor = mock_bounds_visitor()
     e_lb, e_ub = min(a, b), max(a, b)
     c_lb, c_ub = min(c, d), max(c, d)
     assume(max(e_lb, c_lb) <= min(e_ub, c_ub))
@@ -67,9 +71,12 @@ def test_constraint_bound(mock_bounds_visitor, a, b, c, d):
     assert mock_bounds_visitor.get(cons) == expected
 
 
-@given(reals(), reals())
+@given(reals(max_value=100.0), reals(max_value=100.0))
 def test_objective_bound(mock_bounds_visitor, a, b):
+    mock_bounds_visitor = mock_bounds_visitor()
+    print(mock_bounds_visitor._ctx)
     lb, ub = min(a, b), max(a, b)
+    assume(lb < ub)
     p = PlaceholderExpression()
     mock_bounds_visitor.set(p, Bound(lb, ub))
     o = dex.Objective('obj', children=[p])
