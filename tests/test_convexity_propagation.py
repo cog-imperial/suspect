@@ -22,6 +22,7 @@ from tests.conftest import (
     mono_description_to_mono,
     cvx_description_to_cvx,
     coefficients,
+    reals,
 )
 
 import suspect.dag.expressions as dex
@@ -637,3 +638,165 @@ class TestAtan(object):
     def test_is_not_convex(self, mock_unary_function_visitor, bound_g):
         cvx = mock_unary_function_visitor(dex.AtanExpression, 'convex', 'unknown', bound_g)
         assert cvx == Convexity.Unknown
+
+
+
+@pytest.fixture
+def mock_pow_constant_base_visitor():
+    def _f(bound_b, cvx_e, mono_e, bound_e):
+        v = MockConvexityPropagationVisitor()
+        b = dex.Constant(bound_b)
+        v.add_mono(b, 'constant')
+        v.add_bound(b, bound_b)
+        e = v.add_cvx(cvx_e)
+        v.add_mono(e, mono_e)
+        v.add_bound(e, bound_e)
+        p = dex.PowExpression([b, e])
+        v(p)
+        return v.get(p)
+    return _f
+
+
+class TestPowConstantBase(object):
+    @pytest.mark.parametrize(
+        'cvx_e,mono_e,bound_e',
+        itertools.product(
+            ['convex', 'concave', 'linear', 'unknown'],
+            ['nondecreasing', 'nonincreasing', 'unknown'],
+            ['nonpositive', 'nonnegative', 'unbounded']
+        )
+    )
+    @given(base=reals(max_value=-0.01, allow_infinity=False))
+    def test_negative_base(self, mock_pow_constant_base_visitor, base,
+                           cvx_e, mono_e, bound_e):
+        cvx = mock_pow_constant_base_visitor(base, cvx_e, mono_e, bound_e)
+        assert cvx == Convexity.Unknown
+
+    @pytest.mark.parametrize('cvx_e,mono_e,bound_e',
+        itertools.product(
+            ['convex', 'concave', 'linear', 'unknown'],
+            ['nondecreasing', 'nonincreasing', 'unknown'],
+            ['nonpositive', 'nonnegative', 'unbounded']
+        )
+    )
+    @given(base=reals(min_value=0.001, max_value=0.999))
+    def test_base_between_0_and_1(self, mock_pow_constant_base_visitor, base,
+                                  cvx_e, mono_e, bound_e):
+        if cvx_e == 'concave' or cvx_e == 'linear':
+            expected = Convexity.Convex
+        else:
+            expected = Convexity.Unknown
+        cvx = mock_pow_constant_base_visitor(base, cvx_e, mono_e, bound_e)
+        assert cvx == expected
+
+    @pytest.mark.parametrize('cvx_e,mono_e,bound_e',
+        itertools.product(
+            ['convex', 'concave', 'linear', 'unknown'],
+            ['nondecreasing', 'nonincreasing', 'unknown'],
+            ['nonpositive', 'nonnegative', 'unbounded']
+        )
+    )
+    @given(base=reals(min_value=1, allow_infinity=False))
+    def test_base_gt_1(self, mock_pow_constant_base_visitor, base,
+                       cvx_e, mono_e, bound_e):
+        if cvx_e == 'convex' or cvx_e == 'linear':
+            expected = Convexity.Convex
+        else:
+            expected = Convexity.Unknown
+        cvx = mock_pow_constant_base_visitor(base, cvx_e, mono_e, bound_e)
+        assert cvx == expected
+
+
+@pytest.fixture
+def mock_pow_constant_exponent_visitor():
+    def _f(cvx_b, mono_b, bound_b, expo):
+        v = MockConvexityPropagationVisitor()
+        expo = dex.Constant(expo)
+        v(expo)
+        v.add_mono(expo, 'constant')
+        v.add_bound(expo, Bound(expo.value, expo.value))
+        base = v.add_cvx(cvx_b)
+        v.add_mono(base, mono_b)
+        v.add_bound(base, bound_b)
+        p = dex.PowExpression([base, expo])
+        v(p)
+        return v.get(p)
+    return _f
+
+
+class TestPowConstantExponent(object):
+    @pytest.mark.parametrize(
+        'cvx_b,mono_b,bound_b',
+        itertools.product(
+            ['convex', 'concave', 'linear', 'unknown'],
+            ['nondecreasing', 'nonincreasing', 'constant', 'unknown'],
+            ['nonpositive', 'nonnegative', 'unbounded']
+        )
+    )
+    def test_exponent_equals_0(self, mock_pow_constant_exponent_visitor, cvx_b, mono_b, bound_b):
+        cvx = mock_pow_constant_exponent_visitor(cvx_b, mono_b, bound_b, 0.0)
+        assert cvx == Convexity.Linear
+
+    @pytest.mark.parametrize(
+        'cvx_b,mono_b,bound_b',
+        itertools.product(
+            ['convex', 'concave', 'linear', 'unknown'],
+            ['nondecreasing', 'nonincreasing', 'constant', 'unknown'],
+            ['nonpositive', 'nonnegative', 'unbounded']
+        )
+    )
+    def test_exponent_equals_1(self, mock_pow_constant_exponent_visitor, cvx_b, mono_b, bound_b):
+        cvx = mock_pow_constant_exponent_visitor(cvx_b, mono_b, bound_b, 1.0)
+        assert cvx == cvx_description_to_cvx(cvx_b)
+
+    @pytest.mark.parametrize('cvx_b,mono_b,bound_b,expected', [
+        ('linear', 'nondecreasing', 'unbounded', Convexity.Convex),
+
+        ('convex', 'unknown', 'nonnegative', Convexity.Convex),
+        ('convex', 'unknown', 'nonpositive', Convexity.Unknown),
+
+        ('concave', 'unknown', 'nonnegative', Convexity.Unknown),
+        ('concave', 'unknown', 'nonpositive', Convexity.Convex),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_positive_even_integer(self, mock_pow_constant_exponent_visitor, expo,
+                                   cvx_b, mono_b, bound_b, expected):
+        cvx = mock_pow_constant_exponent_visitor(cvx_b, mono_b, bound_b, 2*expo)
+        assert cvx == expected
+
+    @pytest.mark.parametrize('cvx_b,mono_b,bound_b,expected', [
+        ('convex', 'unknown', 'nonpositive', Convexity.Convex),
+        ('convex', 'unknown', 'nonnegative', Convexity.Concave),
+
+        ('concave', 'unknown', 'nonnegative', Convexity.Convex),
+        ('concave', 'unknown', 'nonpositive', Convexity.Concave),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_negative_even_integer(self, mock_pow_constant_exponent_visitor, expo,
+                                   cvx_b, mono_b, bound_b, expected):
+        cvx = mock_pow_constant_exponent_visitor(cvx_b, mono_b, bound_b, -2*expo)
+        assert cvx == expected
+
+    @pytest.mark.parametrize('cvx_b,mono_b,bound_b,expected', [
+        ('convex', 'unknown', 'nonnegative', Convexity.Convex),
+        ('convex', 'unknown', 'nonpositive', Convexity.Unknown),
+        ('concave', 'unknown', 'nonpositive', Convexity.Concave),
+        ('concave', 'unknown', 'nonnegative', Convexity.Unknown),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_positive_odd_integer(self, mock_pow_constant_exponent_visitor, expo,
+                                  cvx_b, mono_b, bound_b, expected):
+        cvx = mock_pow_constant_exponent_visitor(cvx_b, mono_b, bound_b, 2*expo+1)
+        assert cvx == expected
+
+    @pytest.mark.parametrize('cvx_b,mono_b,bound_b,expected', [
+        ('concave', 'unknown', 'nonnegative', Convexity.Convex),
+        ('concave', 'unknown', 'nonpositive', Convexity.Unknown),
+        ('convex', 'unknown', 'nonpositive', Convexity.Concave),
+        ('convex', 'unknown', 'nonnegative', Convexity.Unknown),
+    ])
+    @given(expo=st.integers(min_value=1))
+    def test_negative_odd_integer(self, mock_pow_constant_exponent_visitor, expo,
+                                  cvx_b, mono_b, bound_b, expected):
+        cvx = mock_pow_constant_exponent_visitor(cvx_b, mono_b, bound_b, -2*expo+1)
+        assert cvx == expected

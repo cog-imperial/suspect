@@ -23,7 +23,11 @@ def _numeric_exponent_pow_convexity(handler, base, exponent):
 
     cvx = handler.convexity(base)
 
-    if is_integer and is_even and exponent > 0:
+    if almosteq(exponent, 0):
+        return Convexity.Linear
+    elif almosteq(exponent, 1):
+        return cvx
+    elif is_integer and is_even and exponent > 0:
         if cvx.is_linear():
             return Convexity.Convex
         elif cvx.is_convex() and handler.is_nonnegative(base):
@@ -71,17 +75,20 @@ def _numeric_exponent_pow_convexity(handler, base, exponent):
 
 
 def pow_convexity(handler, expr):
-    assert len(expr._args) == 2
-    base, exponent = expr._args
+    assert len(expr.children) == 2
+    base, exponent = expr.children
 
-    if isinstance(exponent, numeric_types):
+    mono_base = handler.monotonicity(base)
+    mono_exponent = handler.monotonicity(exponent)
+
+    if mono_exponent.is_constant():
         return _numeric_exponent_pow_convexity(
             handler,
             base,
-            numeric_value(exponent),
+            exponent.value,
         )
-    elif isinstance(base, numeric_types):
-        base = numeric_value(base)
+    elif mono_base.is_constant():
+        base = base.value
         cvx = handler.convexity(exponent)
         if 0 < base < 1:
             if cvx.is_concave():
