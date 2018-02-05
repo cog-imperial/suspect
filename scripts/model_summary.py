@@ -166,9 +166,17 @@ def _objsense(info):
 
 
 def _objcurvature(info):
-    curvatures = [str(c) for c in info.objcurvature().values()]
+    curvatures = [c for c in info.objcurvature().values()]
     if len(info.objectives) == 1:
-        return curvatures[0]
+        cvx = curvatures[0]
+        if cvx.is_linear():
+            return 'linear'
+        elif cvx.is_convex():
+            return 'convex'
+        elif cvx.is_concave():
+            return 'concave'
+        else:
+            return 'unknown'
     else:
         return ', '.join(curvatures)
 

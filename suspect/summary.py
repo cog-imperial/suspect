@@ -15,6 +15,7 @@
 import warnings
 from suspect.bound import propagate_bounds, initialize_bounds
 from suspect.propagation import propagate_special_structure
+from suspect.polynomial_degree import polynomial_degree
 
 
 class ModelInformation(object):
@@ -100,6 +101,7 @@ def detect_special_structure(problem):
     propagate_bounds(problem, bounds)
     # TODO: do real bound propagation and tightening
     monotonicity, convexity = propagate_special_structure(problem, bounds)
+    polynomial = polynomial_degree(problem)
 
     variables = {}
     for variable_name, variable in problem.variables.items():
@@ -132,10 +134,12 @@ def detect_special_structure(problem):
             sense = 'max'
         obj_bounds = bounds[id(obj)]
         cvx = convexity[id(obj)]
+        poly = polynomial[id(obj)]
+
         objectives[obj.name] = {
             'sense': sense,
             'convexity': cvx,
-            'polynomial_degree': None,
+            'polynomial_degree': poly,
             'lower_bound': obj_bounds.lower_bound,
             'upper_bound': obj_bounds.upper_bound,
         }
@@ -151,11 +155,12 @@ def detect_special_structure(problem):
             type_ = 'inequality'
 
         cvx = convexity[id(cons)]
+        poly = polynomial[id(cons)]
 
         constraints[cons_name] = {
             'type': type_,
             'convexity': cvx,
-            'polynomial_degree': None,
+            'polynomial_degree': poly,
         }
 
     return ModelInformation(
