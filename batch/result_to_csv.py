@@ -25,9 +25,12 @@ def read_problem(bucket, problem):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('bucket')
+    parser.add_argument('output')
     args = parser.parse_args()
 
     results = filter(None, [
         read_problem(args.bucket, problem)
         for problem in list_objects(args.bucket)
     ])
+    dataframe = pd.DataFrame.from_records(results)
+    dataframe.to_csv(args.output, index=False)
