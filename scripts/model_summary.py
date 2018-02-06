@@ -294,7 +294,6 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    model = read_problem(args.problem)
     with RunResources(args.problem, args.solution, args.output) as r:
         result = run_for_problem(r.problem, r.solution, args.timeout)
 
