@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from suspect.convexity.convexity import Convexity
+import suspect.dag.expressions as dex
 
 
 def _product_convexity(handler, f, g):
@@ -47,6 +48,21 @@ def product_convexity(handler, expr):
             return Convexity.Convex
         elif cvx_f.is_concave() and handler.is_nonpositive(f):
             return Convexity.Convex
+
+    # -c*x*x is encoded as Linear([-c], [x])*Variable(x)
+    if isinstance(f, dex.LinearExpression) and isinstance(g, dex.Variable):
+        if len(f.children) == 1 and f.children[0] is g:
+            if f.coefficients[0] > 0:
+                return Convexity.Convex
+            else:
+                return Convexity.Concave
+
+    if isinstance(g, dex.LinearExpression) and isinstance(f, dex.Variable):
+        if len(g.children) == 1 and g.children[0] is f:
+            if f.coefficients[0] > 0:
+                return Convexity.Convex
+            else:
+                return Convexity.Concave
 
     if mono_g.is_constant():
         return _product_convexity(handler, f, g)
