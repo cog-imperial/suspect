@@ -61,6 +61,23 @@ def check_input_data_correctness(suspect, minlplib):
     return diff[~diff].index
 
 
+def print_runtime_stats(suspect):
+    data = suspect.runtime
+    binned = pd.cut(data, 10, retbins=False)
+    hist = binned.groupby(binned).count()
+    tot = hist.sum()
+    max_width = 30
+    print('Runtime:')
+    print()
+    for n, c in hist.items():
+        fract = c / tot
+        bar = '*' * int(max_width * fract)
+        print('  ({:-6.2f}, {:-6.2f}] {:4d} {:6.2f}% |{}'.format(
+            n.left, n.right, c, fract * 100, bar
+        ))
+    print()
+
+
 def compute_results_table(suspect, minlplib):
     expected_values = minlplib.unique()
     results = []
@@ -97,6 +114,12 @@ if __name__ == '__main__':
     suspect.set_index('name', inplace=True)
     minlplib.set_index('name', inplace=True)
 
+    print()
+    print('=' * 21 + '-- RESULTS --' + '=' * 21)
+    print()
+
+    print_runtime_stats(suspect.loc[good_instances])
+
     suspect = suspect.loc[good_instances, STRUCTURE_COLUMNS]
     minlplib = minlplib.loc[good_instances, STRUCTURE_COLUMNS]
 
@@ -109,10 +132,6 @@ if __name__ == '__main__':
     diff = suspect == minlplib
     all_good = diff.all(axis=1)
     good_pct = sum(all_good) / all_good.shape[0]
-
-    print()
-    print('=' * 21 + '-- RESULTS --' + '=' * 21)
-    print()
 
     print('Correctly identified {:.2f}% of the problems.'.format(good_pct*100))
     print()

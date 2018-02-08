@@ -25,7 +25,6 @@ import tempfile
 import traceback
 from mpmath import mpf
 import boto3
-import suspect.dag.dot as dot
 from suspect.pyomo.osil_reader import read_osil
 from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect import (
