@@ -4,6 +4,7 @@ setup(
     name='suspect',
     author='Francesco Ceccon',
     author_email='francesco@ceccon.me',
+    version='2',
     packages=find_packages(exclude=['tests']),
     scripts=[
         'scripts/model_summary.py',
