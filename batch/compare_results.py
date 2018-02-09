@@ -63,7 +63,11 @@ def check_input_data_correctness(suspect, minlplib):
 
 def print_runtime_stats(suspect):
     data = suspect.runtime
-    binned = pd.cut(data, 10, retbins=False)
+    # Want to avoid having negative bin, since pandas extends the range
+    # by 0.1% on each side.
+    _, bins = pd.cut(data, 10, retbins=True)
+    bins[0] = 0.0
+    binned = pd.cut(data, bins, retbins=False)
     hist = binned.groupby(binned).count()
     tot = hist.sum()
     max_width = 30
