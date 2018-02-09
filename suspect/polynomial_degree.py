@@ -36,6 +36,7 @@ class PolynomialDegreeVisitor(object):
                 dex.LinearExpression: self.visit_linear,
                 dex.PowExpression: self.visit_pow,
                 dex.SumExpression: self.visit_sum,
+                dex.NegationExpression: self.visit_negation,
                 dex.UnaryFunctionExpression: self.visit_unary_function,
             },
             allow_missing=False)
@@ -111,6 +112,10 @@ class PolynomialDegreeVisitor(object):
             if d > ans:
                 ans = d
         return ans
+
+    def visit_negation(self, expr):
+        child = expr.children[0]
+        return self.get(child)
 
     def visit_unary_function(self, _expr):
         return None
