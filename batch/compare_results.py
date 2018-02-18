@@ -108,6 +108,10 @@ if __name__ == '__main__':
     print()
     print('=' * 20 + '-- INPUT DATA --' + '=' * 20)
     print()
+
+    print('MINLPLib 2: {} instances'.format(minlplib.shape[0]))
+    print()
+
     print_error_statistics(suspect)
 
     # filter out errors
@@ -137,7 +141,10 @@ if __name__ == '__main__':
     all_good = diff.all(axis=1)
     good_pct = sum(all_good) / all_good.shape[0]
 
-    print('Correctly identified {:.2f}% of the problems.'.format(good_pct*100))
+    print('Correctly identified {} ({:.2f}%) of the problems.'.format(
+        sum(all_good),
+        good_pct*100
+    ))
     print()
     print('Detailed breakdown:')
     print()
