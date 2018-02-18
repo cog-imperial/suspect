@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .pyomo.compat import set_pyomo4_expression_tree
-from .summary import detect_special_structure
-
-set_pyomo4_expression_tree()
-
-from .__version__ import __version__
+__version__ = '3'
+__author__ = 'Francesco Ceccon'
+__author_email__ = 'francesco@ceccon.me'
+__license__ = 'Apache 2.0'
+__copyright__ = 'Copyright 2018 Francesco Ceccon'

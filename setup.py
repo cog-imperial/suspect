@@ -1,10 +1,19 @@
 from setuptools import setup, find_packages
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parent
+
+about = {}
+with open(project_root / 'suspect' / '__version__.py') as f:
+    exec(f.read(), about)
+
 
 setup(
     name='suspect',
-    author='Francesco Ceccon',
-    author_email='francesco@ceccon.me',
-    version='3',
+    author=about['__author__'],
+    author_email=about['__author_email__'],
+    license=about['__license__'],
+    version=about['__version__'],
     packages=find_packages(exclude=['tests']),
     scripts=[
         'scripts/model_summary.py',
