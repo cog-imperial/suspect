@@ -14,6 +14,9 @@
 
 import argparse
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib2tikz import save as tikz_save
 
 
 CHECK_COLUMNS = ['name', 'nvars', 'nintvars', 'nbinvars', 'ncons', 'objsense']
@@ -82,6 +85,21 @@ def print_runtime_stats(suspect):
     print()
 
 
+def plot_runtime_stats(suspect):
+    data = suspect.runtime.sort_values()
+    data_len = data.shape[0]
+    pct_done = np.arange(data_len) / data_len
+    pct_data = pd.Series(pct_done, index=data.values)
+    fig = plt.figure(figsize=(8, 4))
+    pct_data.plot(logx=True, fig=fig)
+    plt.xlabel('Time ($s$)')
+    plt.ylabel('Instances Processed ($\%$)')
+    plt.ylim([0, 1])
+    plt.xlim([pct_data.index.min(), pct_data.index.max()])
+    plt.grid()
+    return fig
+
+
 def compute_results_table(suspect, minlplib):
     expected_values = minlplib.unique()
     results = []
@@ -127,6 +145,7 @@ if __name__ == '__main__':
     print()
 
     print_runtime_stats(suspect.loc[good_instances])
+    runtime_plot = plot_runtime_stats(suspect.loc[good_instances])
 
     suspect = suspect.loc[good_instances, STRUCTURE_COLUMNS]
     minlplib = minlplib.loc[good_instances, STRUCTURE_COLUMNS]
