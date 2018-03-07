@@ -24,6 +24,7 @@ from suspect.math.arbitrary_precision import (
     pi,
     sin,
     tan,
+    atan,
     asin,
     acos,
     log,
@@ -201,10 +202,12 @@ class ArbitraryPrecisionBound(Bound):
             return inf
         return self.upper - self.lower
 
-    def negation(self):
+    def _negation(self):
         return -self
 
-    def abs(self):
+    _negation_inv = _negation
+
+    def _abs(self):
         new_upper = max(abs(self.lower), abs(self.upper))
         if 0 in self:
             new_lower = 0.0
@@ -212,16 +215,27 @@ class ArbitraryPrecisionBound(Bound):
             new_lower = min(abs(self.lower), abs(self.upper))
         return ArbitraryPrecisionBound(new_lower, new_upper)
 
-    def sqrt(self):
+    def _abs_inv(self):
+        assert self.upper >= 0
+        return ArbitraryPrecisionBound(-self.upper, self.upper)
+
+    def _sqrt(self):
         return ArbitraryPrecisionBound(sqrt(self.lower), sqrt(self.upper))
 
-    def exp(self):
+    def _sqrt_inv(self):
+        sqr = self.upper * self.upper
+        return ArbitraryPrecisionBound(-sqr, sqr)
+
+    def _exp(self):
         return ArbitraryPrecisionBound(exp(self.lower), exp(self.upper))
 
-    def log(self):
+    def _log(self):
         return ArbitraryPrecisionBound(log(self.lower), log(self.upper))
 
-    def sin(self):
+    _exp_inv = _log
+    _log_inv = _exp
+
+    def _sin(self):
         if almostgte(self.size(), 2*pi):
             return ArbitraryPrecisionBound(-1, 1)
         else:
@@ -236,7 +250,7 @@ class ArbitraryPrecisionBound(Bound):
                 new_l = -1
             return ArbitraryPrecisionBound(new_l, new_u)
 
-    def cos(self):
+    def _cos(self):
         if almostgte(self.size(), 2*pi):
             return ArbitraryPrecisionBound(-1, 1)
         else:
@@ -244,7 +258,7 @@ class ArbitraryPrecisionBound(Bound):
             pi_2 = pi / mpf('2')
             return (self + pi_2).sin()
 
-    def tan(self):
+    def _tan(self):
         if almostgte(self.size(), pi):
             return ArbitraryPrecisionBound(None, None)
         else:
@@ -269,8 +283,18 @@ class ArbitraryPrecisionBound(Bound):
 
             return ArbitraryPrecisionBound(new_l, new_u)
 
-    def asin(self):
+    def _asin(self):
         return ArbitraryPrecisionBound(asin(self.lower), asin(self.upper))
 
-    def acos(self):
+    def _acos(self):
         return ArbitraryPrecisionBound(acos(self.upper), acos(self.lower))
+
+    def _atan(self):
+        return ArbitraryPrecisionBound(atan(self.lower), atan(self.upper))
+
+    _sin_inv = _asin
+    _cos_inv = _acos
+    _tan_inv = _atan
+    _asin_inv = _sin
+    _acos_inv = _cos
+    _atan_inv = _tan
