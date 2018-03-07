@@ -4,7 +4,8 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent
 
 about = {}
-with open(project_root / 'suspect' / '__version__.py') as f:
+version_path = project_root / 'suspect' / '__version__.py'
+with version_path.open() as f:
     exec(f.read(), about)
 
 
