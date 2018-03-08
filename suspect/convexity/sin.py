@@ -17,10 +17,10 @@ from suspect.convexity.convexity import Convexity
 from suspect.bound import ArbitraryPrecisionBound
 
 
-def sin_convexity(handler, expr):
+def sin_convexity(expr, ctx):
     arg = expr.children[0]
-    bound = handler.bound(arg)
-    cvx = handler.convexity(arg)
+    bound = ctx.bound[arg]
+    cvx = ctx.convexity[arg]
 
     if bound.size() > pi:
         return Convexity.Unknown
@@ -49,10 +49,10 @@ def sin_convexity(handler, expr):
     return Convexity.Unknown
 
 
-def asin_convexity(handler, expr):
+def asin_convexity(expr, ctx):
     arg = expr.children[0]
-    bound = handler.bound(arg)
-    cvx = handler.convexity(arg)
+    bound = ctx.bound[arg]
+    cvx = ctx.convexity[arg]
 
     concave_domain = ArbitraryPrecisionBound(-1, 0)
     if bound in concave_domain and cvx.is_concave():

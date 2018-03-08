@@ -15,7 +15,7 @@
 from suspect.monotonicity.monotonicity import Monotonicity
 
 
-def linear_monotonicity(handler, expr):
+def linear_monotonicity(expr, ctx):
     def _adjust_monotonicity(mono, coef):
         if mono.is_unknown() or mono.is_constant():
             return mono
@@ -34,7 +34,7 @@ def linear_monotonicity(handler, expr):
         coefs = [1.0] * len(expr.children)
 
     monos = [
-        _adjust_monotonicity(handler.get(a), coef)
+        _adjust_monotonicity(ctx.monotonicity[a], coef)
         for a, coef in zip(expr.children, coefs)
     ]
     all_const = all([m.is_constant() for m in monos])

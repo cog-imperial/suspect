@@ -17,10 +17,10 @@ from suspect.convexity.convexity import Convexity
 from suspect.bound import ArbitraryPrecisionBound
 
 
-def cos_convexity(handler, expr):
+def cos_convexity(expr, ctx):
     arg = expr.children[0]
-    bound = handler.bound(arg)
-    cvx = handler.convexity(arg)
+    bound = ctx.bound[arg]
+    cvx = ctx.convexity[arg]
 
     if bound.size() > pi:
         return Convexity.Unknown
@@ -49,10 +49,10 @@ def cos_convexity(handler, expr):
     return Convexity.Unknown
 
 
-def acos_convexity(handler, expr):
+def acos_convexity(expr, ctx):
     arg = expr.children[0]
-    bound = handler.bound(arg)
-    cvx = handler.convexity(arg)
+    bound = ctx.bound[arg]
+    cvx = ctx.convexity[arg]
 
     convex_domain = ArbitraryPrecisionBound(-1, 0)
     if bound in convex_domain and cvx.is_concave():

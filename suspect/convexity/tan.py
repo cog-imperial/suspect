@@ -14,13 +14,12 @@
 
 from suspect.math.arbitrary_precision import pi
 from suspect.convexity.convexity import Convexity
-from suspect.bound import ArbitraryPrecisionBound
 
 
-def tan_convexity(handler, expr):
+def tan_convexity(expr, ctx):
     arg = expr.children[0]
-    bound = handler.bound(arg)
-    cvx = handler.convexity(arg)
+    bound = ctx.bound[arg]
+    cvx = ctx.convexity[arg]
 
     if 2.0*bound.size() > pi:
         return Convexity.Unknown
@@ -38,10 +37,10 @@ def tan_convexity(handler, expr):
     return Convexity.Unknown
 
 
-def atan_convexity(handler, expr):
+def atan_convexity(expr, ctx):
     arg = expr.children[0]
-    bound = handler.bound(arg)
-    cvx = handler.convexity(arg)
+    bound = ctx.bound[arg]
+    cvx = ctx.convexity[arg]
 
     if bound.is_nonpositive() and cvx.is_convex():
         return Convexity.Convex

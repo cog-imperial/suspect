@@ -22,6 +22,7 @@ from tests.conftest import (
     mono_description_to_mono,
     coefficients,
     reals,
+    ctx,
 )
 import suspect.dag.expressions as dex
 from suspect.math.arbitrary_precision import pi
@@ -32,32 +33,21 @@ from suspect.monotonicity.propagation import (
 )
 
 
-class MockMonotonicityPropagationVisitor(MonotonicityPropagationVisitor):
-    def __init__(self):
-        super().__init__({})
-        self._mono = {}
-
-    def add_bound(self, expr, bound_str):
-        self._bounds[id(expr)] = bound_description_to_bound(bound_str)
-
-    def add_mono(self, mono_str):
-        node = PlaceholderExpression()
-        self._mono[id(node)] = mono_description_to_mono(mono_str)
-        return node
+@pytest.fixture
+def visitor():
+    return MonotonicityPropagationVisitor()
 
 
-def test_variable_is_increasing():
-    v = MockMonotonicityPropagationVisitor()
+def test_variable_is_increasing(visitor, ctx):
     var = dex.Variable('x0', None, None)
-    v(var)
-    assert v.get(var).is_nondecreasing()
+    visitor(var, ctx)
+    assert ctx.monotonicity[var].is_nondecreasing()
 
 
-def test_constant_is_constant():
-    v = MockMonotonicityPropagationVisitor()
+def test_constant_is_constant(visitor, ctx):
     const = dex.Constant(2.0)
-    v(const)
-    assert v.get(const).is_constant()
+    visitor(const, ctx)
+    assert ctx.monotonicity[const].is_constant()
 
 
 class TestConstraint(object):
@@ -65,55 +55,56 @@ class TestConstraint(object):
         self.x0 = dex.Variable('x0', None, None)
         self.x1 = dex.NegationExpression([self.x0])
         self.const = dex.Constant(1.0)
-        self.v = MockMonotonicityPropagationVisitor()
-        self.v(self.x0)
-        self.v(self.x1)
-        self.v(self.const)
+        self.ctx = ctx()
+        self.v = visitor()
+        self.v(self.x0, self.ctx)
+        self.v(self.x1, self.ctx)
+        self.v(self.const, self.ctx)
 
     def test_lower_upper_bound(self):
         c0 = dex.Constraint('c0', 0, 1, [self.x0])
-        self.v(c0)
-        assert self.v.get(c0).is_unknown()
+        self.v(c0, self.ctx)
+        assert self.ctx.monotonicity[c0].is_unknown()
 
         c1 = dex.Constraint('c1', 0, 1, [self.const])
-        self.v(c1)
-        assert self.v.get(c1).is_constant()
+        self.v(c1, self.ctx)
+        assert self.ctx.monotonicity[c1].is_constant()
 
     def test_lower_bound_only(self):
         c0 = dex.Constraint('c0', 0, None, [self.x0])
-        self.v(c0)
-        assert self.v.get(c0).is_nonincreasing()
+        self.v(c0, self.ctx)
+        assert self.ctx.monotonicity[c0].is_nonincreasing()
 
         c1 = dex.Constraint('c1', 0, None, [self.const])
-        self.v(c1)
-        assert self.v.get(c1).is_constant()
+        self.v(c1, self.ctx)
+        assert self.ctx.monotonicity[c1].is_constant()
 
         c2 = dex.Constraint('c2', 0, None, [self.x1])
-        self.v(c2)
-        assert self.v.get(c2).is_nondecreasing()
+        self.v(c2, self.ctx)
+        assert self.ctx.monotonicity[c2].is_nondecreasing()
 
     def test_upper_bound_only(self):
         c0 = dex.Constraint('c0', None, 1, [self.x0])
-        self.v(c0)
-        assert self.v.get(c0).is_nondecreasing()
+        self.v(c0, self.ctx)
+        assert self.ctx.monotonicity[c0].is_nondecreasing()
 
         c1 = dex.Constraint('c1', None, 1, [self.const])
-        self.v(c1)
-        assert self.v.get(c1).is_constant()
+        self.v(c1, self.ctx)
+        assert self.ctx.monotonicity[c1].is_constant()
 
         c2 = dex.Constraint('c2', None, 1, [self.x1])
-        self.v(c2)
-        assert self.v.get(c2).is_nonincreasing()
+        self.v(c2, self.ctx)
+        assert self.ctx.monotonicity[c2].is_nonincreasing()
 
 
 @pytest.fixture
-def mock_objective_visitor():
+def mock_objective_visitor(visitor, ctx):
     def _f(sense, children_mono):
-        v = MockMonotonicityPropagationVisitor()
-        c = v.add_mono(children_mono)
+        c = PlaceholderExpression()
+        ctx.monotonicity[c] = mono_description_to_mono(children_mono)
         obj = dex.Objective('obj', sense, [c])
-        v(obj)
-        return v.get(obj)
+        visitor(obj, ctx)
+        return ctx.monotonicity[obj]
     return _f
 
 
@@ -140,20 +131,24 @@ class TestObjective(object):
 
 
 @pytest.fixture
-def mock_product_visitor():
+def mock_product_visitor(visitor, ctx):
     def _f(mono_f, bound_f, mono_g, bound_g):
-        v = MockMonotonicityPropagationVisitor()
-        f = v.add_mono(mono_f)
-        v.add_bound(f, bound_f)
-        g = v.add_mono(mono_g)
-        v.add_bound(g, bound_g)
+        f = PlaceholderExpression()
+        ctx.monotonicity[f] = mono_description_to_mono(mono_f)
+        ctx.bound[f] = bound_description_to_bound(bound_f)
+
+        g = PlaceholderExpression()
+        ctx.monotonicity[g] = mono_description_to_mono(mono_g)
+        ctx.bound[g] = bound_description_to_bound(bound_g)
+
         prod_fg = dex.ProductExpression([f, g])
         prod_gf = dex.ProductExpression([g, f])
-        v(prod_fg)
-        v(prod_gf)
+
+        visitor(prod_fg, ctx)
+        visitor(prod_gf, ctx)
         # product is commutative
-        assert v.get(prod_fg) == v.get(prod_gf)
-        return v.get(prod_fg)
+        assert ctx.monotonicity[prod_fg] == ctx.monotonicity[prod_gf]
+        return ctx.monotonicity[prod_fg]
     return _f
 
 
@@ -189,16 +184,19 @@ def test_product(mock_product_visitor, mono_f, bound_f, mono_g, bound_g, expecte
 
 
 @pytest.fixture
-def mock_division_visitor():
+def mock_division_visitor(visitor, ctx):
     def _f(mono_f, bound_f, mono_g, bound_g):
-        v = MockMonotonicityPropagationVisitor()
-        f = v.add_mono(mono_f)
-        v.add_bound(f, bound_f)
-        g = v.add_mono(mono_g)
-        v.add_bound(g, bound_g)
+        f = PlaceholderExpression()
+        ctx.monotonicity[f] = mono_description_to_mono(mono_f)
+        ctx.bound[f] = bound_description_to_bound(bound_f)
+
+        g = PlaceholderExpression()
+        ctx.monotonicity[g] = mono_description_to_mono(mono_g)
+        ctx.bound[g] = bound_description_to_bound(bound_g)
+
         div = dex.DivisionExpression([f, g])
-        v(div)
-        return v.get(div)
+        visitor(div, ctx)
+        return ctx.monotonicity[div]
     return _f
 
 
@@ -230,14 +228,16 @@ def test_division(mock_division_visitor, mono_f, bound_f, mono_g, bound_g, expec
 
 
 @pytest.fixture
-def mock_linear_visitor():
+def mock_linear_visitor(visitor, ctx):
     def _f(terms):
-        v = MockMonotonicityPropagationVisitor()
         coefs = [c for c, _ in terms]
-        children = [v.add_mono(m) for _, m in terms]
+        children = [PlaceholderExpression() for _ in range(len(terms))]
+        monos = [m for _, m in terms]
+        for c, m in zip(children, monos):
+            ctx.monotonicity[c] = mono_description_to_mono(m)
         linear = dex.LinearExpression(coefs, children)
-        v(linear)
-        return v.get(linear)
+        visitor(linear, ctx)
+        return ctx.monotonicity[linear]
     return _f
 
 
@@ -302,13 +302,14 @@ class TestLinear(object):
 
 
 @pytest.fixture
-def mock_sum_visitor():
+def mock_sum_visitor(visitor, ctx):
     def _f(terms):
-        v = MockMonotonicityPropagationVisitor()
-        children = [v.add_mono(m) for m in terms]
+        children = [PlaceholderExpression() for _ in terms]
+        for c, m in zip(children, terms):
+            ctx.monotonicity[c] = mono_description_to_mono(m)
         sum_ = dex.SumExpression(children)
-        v(sum_)
-        return v.get(sum_)
+        visitor(sum_, ctx)
+        return ctx.monotonicity[sum_]
     return _f
 
 
@@ -345,14 +346,14 @@ class TestSum(object):
 
 
 @pytest.fixture
-def mock_abs_visitor():
-    def _f(mono, bound):
-        v = MockMonotonicityPropagationVisitor()
-        g = v.add_mono(mono)
-        v.add_bound(g, bound)
-        abs_ = dex.AbsExpression([g])
-        v(abs_)
-        return v.get(abs_)
+def mock_func_visitor(visitor, ctx):
+    def _f(mono, bound, func):
+        g = PlaceholderExpression()
+        ctx.monotonicity[g] = mono_description_to_mono(mono)
+        ctx.bound[g] = bound_description_to_bound(bound)
+        f = func([g])
+        visitor(f, ctx)
+        return ctx.monotonicity[f]
     return _f
 
 
@@ -363,21 +364,9 @@ def mock_abs_visitor():
     ('nondecreasing', 'nonpositive', Monotonicity.Nonincreasing),
     ('nondecreasing', 'unbounded', Monotonicity.Unknown),
 ])
-def test_abs(mock_abs_visitor, mono_g, bound_g, expected):
-    mono = mock_abs_visitor(mono_g, bound_g)
+def test_abs(mock_func_visitor, mono_g, bound_g, expected):
+    mono = mock_func_visitor(mono_g, bound_g, dex.AbsExpression)
     assert mono == expected
-
-
-@pytest.fixture
-def mock_nondecreasing_visitor():
-    def _f(mono, bound, func):
-        v = MockMonotonicityPropagationVisitor()
-        g = v.add_mono(mono)
-        v.add_bound(g, bound)
-        f = func([g])
-        v(f)
-        return v.get(f)
-    return _f
 
 
 @pytest.mark.parametrize('func', [
@@ -393,9 +382,9 @@ def mock_nondecreasing_visitor():
         st.just('zero'), st.just('nonpositive'), st.just('nonnegative')
     )
 )
-def test_nondecreasing_function(mock_nondecreasing_visitor, mono_arg,
+def test_nondecreasing_function(mock_func_visitor, mono_arg,
                                 bound_arg, func):
-    mono = mock_nondecreasing_visitor(mono_arg, bound_arg, func)
+    mono = mock_func_visitor(mono_arg, bound_arg, func)
     expected = {
         'nondecreasing': Monotonicity.Nondecreasing,
         'nonincreasing': Monotonicity.Nonincreasing,
@@ -445,37 +434,25 @@ def nonpositive_cos_bounds(draw):
     return b
 
 
-@pytest.fixture
-def mock_sin_visitor():
-    def _f(mono, bound):
-        v = MockMonotonicityPropagationVisitor()
-        g = v.add_mono(mono)
-        v.add_bound(g, bound)
-        sin_ = dex.SinExpression([g])
-        v(sin_)
-        return v.get(sin_)
-    return _f
-
-
 class TestSin(object):
     @given(bound_g=nonnegative_cos_bounds())
-    def test_nondecreasing_nonnegative_cos(self, mock_sin_visitor, bound_g):
-        mono = mock_sin_visitor('nondecreasing', bound_g)
+    def test_nondecreasing_nonnegative_cos(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nondecreasing', bound_g, dex.SinExpression)
         assert mono.is_nondecreasing()
 
     @given(bound_g=nonnegative_cos_bounds())
-    def test_nonincreasing_nonnegative_cos(self, mock_sin_visitor, bound_g):
-        mono = mock_sin_visitor('nonincreasing', bound_g)
+    def test_nonincreasing_nonnegative_cos(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nonincreasing', bound_g, dex.SinExpression)
         assert mono.is_nonincreasing()
 
     @given(bound_g=nonpositive_cos_bounds())
-    def test_decreasing_nonpositive_cos(self, mock_sin_visitor, bound_g):
-        mono = mock_sin_visitor('nondecreasing', bound_g)
+    def test_decreasing_nonpositive_cos(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nondecreasing', bound_g, dex.SinExpression)
         assert mono.is_nonincreasing()
 
     @given(bound_g=nonpositive_cos_bounds())
-    def test_nonincreasing_nonpositive_cos(self, mock_sin_visitor, bound_g):
-        mono = mock_sin_visitor('nonincreasing', bound_g)
+    def test_nonincreasing_nonpositive_cos(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nonincreasing', bound_g, dex.SinExpression)
         assert mono.is_nondecreasing()
 
 
@@ -519,52 +496,40 @@ def nonpositive_sin_bounds(draw):
     return b
 
 
-@pytest.fixture
-def mock_cos_visitor():
-    def _f(mono, bound):
-        v = MockMonotonicityPropagationVisitor()
-        g = v.add_mono(mono)
-        v.add_bound(g, bound)
-        cos_ = dex.CosExpression([g])
-        v(cos_)
-        return v.get(cos_)
-    return _f
-
-
 class TestCos(object):
     @given(bound_g=nonnegative_sin_bounds())
-    def test_nonincreasing_nonnegative_sin(self, mock_cos_visitor, bound_g):
-        mono = mock_cos_visitor('nonincreasing', bound_g)
+    def test_nonincreasing_nonnegative_sin(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nonincreasing', bound_g, dex.CosExpression)
         assert mono.is_nondecreasing()
 
     @given(bound_g=nonnegative_sin_bounds())
-    def test_nondecreasing_nonnegative_sin(self, mock_cos_visitor, bound_g):
-        mono = mock_cos_visitor('nondecreasing', bound_g)
+    def test_nondecreasing_nonnegative_sin(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nondecreasing', bound_g, dex.CosExpression)
         assert mono.is_nonincreasing()
 
     @given(bound_g=nonpositive_sin_bounds())
-    def test_nondecreasing_nonpositive_sin(self, mock_cos_visitor, bound_g):
-        mono = mock_cos_visitor('nondecreasing', bound_g)
+    def test_nondecreasing_nonpositive_sin(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nondecreasing', bound_g, dex.CosExpression)
         assert mono.is_nondecreasing()
 
     @given(bound_g=nonpositive_sin_bounds())
-    def test_nonincreasing_nonpositive_sin(self, mock_cos_visitor, bound_g):
-        mono = mock_cos_visitor('nonincreasing', bound_g)
+    def test_nonincreasing_nonpositive_sin(self, mock_func_visitor, bound_g):
+        mono = mock_func_visitor('nonincreasing', bound_g, dex.CosExpression)
         assert mono.is_nonincreasing()
 
 
 @pytest.fixture
-def mock_pow_constant_base_visitor():
+def mock_pow_constant_base_visitor(visitor, ctx):
     def _f(base, mono_e, bound_e):
-        v = MockMonotonicityPropagationVisitor()
         base = dex.Constant(base)
-        v(base)
-        v.add_bound(base, Bound(base.value, base.value))
-        expo = v.add_mono(mono_e)
-        v.add_bound(expo, bound_e)
+        ctx.bound[base] = Bound(base.value, base.value)
+        visitor(base, ctx)
+        expo = PlaceholderExpression()
+        ctx.monotonicity[expo] = mono_description_to_mono(mono_e)
+        ctx.bound[expo] = bound_description_to_bound(bound_e)
         p = dex.PowExpression([base, expo])
-        v(p)
-        return v.get(p)
+        visitor(p, ctx)
+        return ctx.monotonicity[p]
     return _f
 
 
@@ -607,17 +572,18 @@ class TestPowConstantBase(object):
 
 
 @pytest.fixture
-def mock_pow_constant_exponent_visitor():
+def mock_pow_constant_exponent_visitor(visitor, ctx):
     def _f(mono_b, bound_b, expo):
-        v = MockMonotonicityPropagationVisitor()
         expo = dex.Constant(expo)
-        v(expo)
-        v.add_bound(expo, Bound(expo.value, expo.value))
-        base = v.add_mono(mono_b)
-        v.add_bound(base, bound_b)
+        ctx.bound[expo] = Bound(expo.value, expo.value)
+        visitor(expo, ctx)
+
+        base = PlaceholderExpression()
+        ctx.monotonicity[base] = mono_description_to_mono(mono_b)
+        ctx.bound[base] = bound_description_to_bound(bound_b)
         p = dex.PowExpression([base, expo])
-        v(p)
-        return v.get(p)
+        visitor(p, ctx)
+        return ctx.monotonicity[p]
     return _f
 
 
@@ -686,16 +652,17 @@ class TestPowConstantExponent(object):
 
 
 @pytest.fixture
-def mock_pow_visitor():
+def mock_pow_visitor(visitor, ctx):
     def _f(mono_b, bound_b, mono_e, bound_e):
-        v = MockMonotonicityPropagationVisitor()
-        b = v.add_mono(mono_b)
-        v.add_bound(b, bound_b)
-        e = v.add_mono(mono_e)
-        v.add_bound(e, bound_e)
+        b = PlaceholderExpression()
+        e = PlaceholderExpression()
+        ctx.monotonicity[b] = mono_description_to_mono(mono_b)
+        ctx.monotonicity[e] = mono_description_to_mono(mono_e)
+        ctx.bound[b] = bound_description_to_bound(bound_b)
+        ctx.bound[e] = bound_description_to_bound(bound_e)
         p = dex.PowExpression([b, e])
-        v(p)
-        return v.get(p)
+        visitor(p, ctx)
+        return ctx.monotonicity[p]
     return _f
 
 

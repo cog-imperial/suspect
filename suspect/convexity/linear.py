@@ -15,7 +15,7 @@
 from suspect.convexity.convexity import Convexity
 
 
-def linear_convexity(handler, expr):
+def linear_convexity(expr, ctx):
     def _adjust_convexity(cvx, coef):
         if cvx.is_unknown() or cvx.is_linear():
             return cvx
@@ -34,7 +34,7 @@ def linear_convexity(handler, expr):
         coefs = [1.0] * len(expr.children)
 
     cvxs = [
-        _adjust_convexity(handler.convexity(a), coef)
+        _adjust_convexity(ctx.convexity[a], coef)
         for a, coef in zip(expr.children, coefs)
     ]
     all_linear = all([c.is_linear() for c in cvxs])

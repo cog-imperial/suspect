@@ -14,50 +14,58 @@
 
 import logging
 import suspect.dag.expressions as dex
-from suspect.dag.visitor import Dispatcher
+from suspect.dag.visitor import BackwardVisitor
+from suspect.context import SpecialStructurePropagationContext
 from suspect.bound import ArbitraryPrecisionBound as Bound
 
 
 def initialize_bounds(dag):
     """Initialize problem bounds using function domains as bound."""
     visitor = BoundsInitializationVisitor()
-    dag.forward_visit(visitor)
-    return visitor.result()
+    ctx = SpecialStructurePropagationContext({})
+    dag.forward_visit(visitor, ctx)
+    return ctx
 
 
-class BoundsInitializationVisitor(object):
-    def __init__(self):
-        self._ctx = {}
-        self._dispatcher = Dispatcher(
-            lookup={
-                dex.SqrtExpression: self.visit_sqrt,
-                dex.LogExpression: self.visit_log,
-                dex.AsinExpression: self.visit_asin,
-                dex.AcosExpression: self.visit_acos,
-            },
-            allow_missing=True)
+class BoundsInitializationVisitor(BackwardVisitor):
+    def register_handlers(self):
+        return {
+            dex.SqrtExpression: self.visit_sqrt,
+            dex.LogExpression: self.visit_log,
+            dex.AsinExpression: self.visit_asin,
+            dex.AcosExpression: self.visit_acos,
+        }
 
-    def result(self):
-        return self._ctx
+    def handle_result(self, expr, value, ctx):
+        if value is None:
+            new_bound = Bound(None, None)
+        else:
+            new_bound = value
+        ctx.bound[expr] = new_bound
 
-    def visit_sqrt(self, expr):
-        expr = expr.children[0]
-        self._ctx[id(expr)] = Bound(0, None)
+    def visit_sqrt(self, expr, _ctx):
+        child = expr.children[0]
+        return {
+            child: Bound(0, None),
+        }
 
-    def visit_log(self, expr):
-        expr = expr.children[0]
-        self._ctx[id(expr)] = Bound(0, None)
+    def visit_log(self, expr, _ctx):
+        child = expr.children[0]
+        return {
+            child: Bound(0, None)
+        }
 
-    def visit_asin(self, expr):
-        expr = expr.children[0]
-        self._ctx[id(expr)] = Bound(-1, 1)
+    def visit_asin(self, expr, _ctx):
+        child = expr.children[0]
+        return {
+            child: Bound(-1, 1)
+        }
 
-    def visit_acos(self, expr):
-        expr = expr.children[0]
-        self._ctx[id(expr)] = Bound(-1, 1)
-
-    def __call__(self, expr):
-        self._dispatcher.dispatch(expr)
+    def visit_acos(self, expr, _ctx):
+        child = expr.children[0]
+        return {
+            child: Bound(-1, 1)
+        }
 
 
 def tighten_bounds(dag, ctx):

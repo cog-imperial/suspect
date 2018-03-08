@@ -23,6 +23,7 @@ from tests.conftest import (
     cvx_description_to_cvx,
     coefficients,
     reals,
+    ctx,
 )
 
 import suspect.dag.expressions as dex
@@ -34,49 +35,36 @@ from suspect.convexity.propagation import (
 )
 
 
-class MockConvexityPropagationVisitor(ConvexityPropagationVisitor):
-    def __init__(self):
-        super().__init__({}, {})
-        self._cvx = {}
-
-    def add_bound(self, expr, bound_str):
-        self._bounds[id(expr)] = bound_description_to_bound(bound_str)
-
-    def add_mono(self, expr, mono_str):
-        self._mono[id(expr)] = mono_description_to_mono(mono_str)
-
-    def add_cvx(self, cvx_str):
-        node = PlaceholderExpression()
-        self._cvx[id(node)] = cvx_description_to_cvx(cvx_str)
-        return node
+@pytest.fixture
+def visitor():
+    return ConvexityPropagationVisitor()
 
 
-def test_variable_is_linear():
-    v = MockConvexityPropagationVisitor()
+def test_variable_is_linear(visitor, ctx):
     var = dex.Variable('x0', None, None)
-    v(var)
-    assert v.get(var).is_linear()
+    visitor(var, ctx)
+    assert ctx.convexity[var].is_linear()
 
 
-def test_constant_is_linear():
-    v = MockConvexityPropagationVisitor()
+def test_constant_is_linear(visitor, ctx):
     const = dex.Constant(-1.0)
-    v(const)
-    assert v.get(const).is_linear()
+    visitor(const, ctx)
+    assert ctx.convexity[const].is_linear()
 
 
 @pytest.fixture
-def mock_constraint_visitor():
+def mock_constraint_visitor(visitor, ctx):
     def _f(children_cvx, lower_bound, upper_bound):
-        v = MockConvexityPropagationVisitor()
-        f = v.add_cvx(children_cvx)
-        con = dex.Constraint('c',
+        f = PlaceholderExpression()
+        ctx.convexity[f] = cvx_description_to_cvx(children_cvx)
+        con = dex.Constraint(
+            'c',
             lower_bound=lower_bound,
             upper_bound=upper_bound,
             children=[f],
         )
-        v(con)
-        return v.get(con)
+        visitor(con, ctx)
+        return ctx.convexity[con]
     return _f
 
 
@@ -106,13 +94,13 @@ def test_constraint_convexity(mock_constraint_visitor, children_cvx,
 
 
 @pytest.fixture
-def mock_objective_visitor():
+def mock_objective_visitor(visitor, ctx):
     def _f(sense, children_cvx):
-        v = MockConvexityPropagationVisitor()
-        f = v.add_cvx(children_cvx)
+        f = PlaceholderExpression()
+        ctx.convexity[f] = cvx_description_to_cvx(children_cvx)
         obj = dex.Objective('obj', sense, children=[f])
-        v(obj)
-        return v.get(obj)
+        visitor(obj, ctx)
+        return ctx.convexity[obj]
     return _f
 
 
@@ -139,21 +127,22 @@ class TestObjective(object):
 
 
 @pytest.fixture
-def mock_product_visitor():
+def mock_product_visitor(visitor, ctx):
     def _f(cvx_f, bound_g):
-        v = MockConvexityPropagationVisitor()
-        f = v.add_cvx(cvx_f)
-        v.add_mono(f, 'unknown')
-        g = v.add_cvx('linear')  # g is constant
-        v.add_bound(g, bound_g)
-        v.add_mono(g, 'constant')
+        f = PlaceholderExpression()
+        ctx.convexity[f] = cvx_description_to_cvx(cvx_f)
+        ctx.monotonicity[f] = mono_description_to_mono('unknown')
+        g = PlaceholderExpression()
+        ctx.convexity[g] = cvx_description_to_cvx('linear')  # g is constant
+        ctx.monotonicity[g] = mono_description_to_mono('constant')
+        ctx.bound[g] = bound_description_to_bound(bound_g)
         prod_fg = dex.ProductExpression([f, g])
         prod_gf = dex.ProductExpression([g, f])
-        v(prod_fg)
-        v(prod_gf)
+        visitor(prod_fg, ctx)
+        visitor(prod_gf, ctx)
         # product is commutative
-        assert v.get(prod_fg) == v.get(prod_gf)
-        return v.get(prod_fg)
+        assert ctx.convexity[prod_fg] == ctx.convexity[prod_gf]
+        return ctx.convexity[prod_fg]
     return _f
 
 
@@ -172,18 +161,21 @@ class TestProduct(object):
 
 
 @pytest.fixture
-def mock_division_visitor():
+def mock_division_visitor(visitor, ctx):
     def _f(cvx_f, mono_f, bound_f, cvx_g, mono_g, bound_g):
-        v = MockConvexityPropagationVisitor()
-        f = v.add_cvx(cvx_f)
-        v.add_mono(f, mono_f)
-        v.add_bound(f, bound_f)
-        g = v.add_cvx(cvx_g)
-        v.add_mono(g, mono_g)
-        v.add_bound(g, bound_g)
+        f = PlaceholderExpression()
+        ctx.convexity[f] = cvx_description_to_cvx(cvx_f)
+        ctx.monotonicity[f] = mono_description_to_mono(mono_f)
+        ctx.bound[f] = bound_description_to_bound(bound_f)
+
+        g = PlaceholderExpression()
+        ctx.convexity[g] = cvx_description_to_cvx(cvx_g)
+        ctx.monotonicity[g] = mono_description_to_mono(mono_g)
+        ctx.bound[g] = bound_description_to_bound(bound_g)
+
         div = dex.DivisionExpression([f, g])
-        v(div)
-        return v.get(div)
+        visitor(div, ctx)
+        return ctx.convexity[div]
     return _f
 
 
@@ -228,14 +220,16 @@ class TestDivision(object):
 
 
 @pytest.fixture
-def mock_linear_visitor():
+def mock_linear_visitor(visitor, ctx):
     def _f(terms):
-        v = MockConvexityPropagationVisitor()
         coefs = [c for c, _ in terms]
-        children = [v.add_cvx(x) for _, x in terms]
+        children = [PlaceholderExpression() for _ in terms]
+        cvxs = [c for _, c in terms]
+        for child, cvx in zip(children, cvxs):
+            ctx.convexity[child] = cvx_description_to_cvx(cvx)
         linear = dex.LinearExpression(coefs, children)
-        v(linear)
-        return v.get(linear)
+        visitor(linear, ctx)
+        return ctx.convexity[linear]
     return _f
 
 
@@ -300,13 +294,14 @@ class TestLinear(object):
 
 
 @pytest.fixture
-def mock_sum_visitor():
+def mock_sum_visitor(visitor, ctx):
     def _f(cvxs):
-        v = MockConvexityPropagationVisitor()
-        children = [v.add_cvx(x) for x in cvxs]
+        children = [PlaceholderExpression() for _ in cvxs]
+        for child, cvx in zip(children, cvxs):
+            ctx.convexity[child] = cvx_description_to_cvx(cvx)
         sum_ = dex.SumExpression(children)
-        v(sum_)
-        return v.get(sum_)
+        visitor(sum_, ctx)
+        return ctx.convexity[sum_]
     return _f
 
 
@@ -344,15 +339,15 @@ class TestSum(object):
 
 
 @pytest.fixture
-def mock_abs_visitor():
-    def _f(cvx_g, mono_g, bound_g):
-        v = MockConvexityPropagationVisitor()
-        g = v.add_cvx(cvx_g)
-        v.add_mono(g, mono_g)
-        v.add_bound(g, bound_g)
-        abs_ = dex.AbsExpression([g])
-        v(abs_)
-        return v.get(abs_)
+def mock_unary_function_visitor(visitor, ctx):
+    def _f(func, cvx_g, mono_g, bound_g):
+        g = PlaceholderExpression()
+        ctx.convexity[g] = cvx_description_to_cvx(cvx_g)
+        ctx.monotonicity[g] = mono_description_to_mono(mono_g)
+        ctx.bound[g] = bound_description_to_bound(bound_g)
+        expr = func([g])
+        visitor(expr, ctx)
+        return ctx.convexity[expr]
     return _f
 
 
@@ -360,39 +355,25 @@ class TestAbs(object):
     @pytest.mark.parametrize('mono_g,bound_g',
                              itertools.product(['nondecreasing', 'nonincreasing', 'constant'],
                                                ['nonpositive', 'nonnegative', 'unbounded']))
-    def test_linear_child(self, mock_abs_visitor, mono_g, bound_g):
-        cvx = mock_abs_visitor('linear', mono_g, bound_g)
+    def test_linear_child(self, mock_unary_function_visitor, mono_g, bound_g):
+        cvx = mock_unary_function_visitor(dex.AbsExpression, 'linear', mono_g, bound_g)
         assert cvx == Convexity.Convex
 
     @pytest.mark.parametrize('mono_g,bound_g,expected', [
         ('unknown', 'nonnegative', Convexity.Convex),
         ('unknown', 'nonpositive', Convexity.Concave),
     ])
-    def test_convex_child(self, mock_abs_visitor, mono_g, bound_g, expected):
-        cvx = mock_abs_visitor('convex', mono_g, bound_g)
+    def test_convex_child(self, mock_unary_function_visitor, mono_g, bound_g, expected):
+        cvx = mock_unary_function_visitor(dex.AbsExpression, 'convex', mono_g, bound_g)
         assert cvx == expected
 
     @pytest.mark.parametrize('mono_g,bound_g,expected', [
         ('unknown', 'nonnegative', Convexity.Concave),
         ('unknown', 'nonpositive', Convexity.Convex),
     ])
-    def test_concave_child(self, mock_abs_visitor, mono_g, bound_g, expected):
-        cvx = mock_abs_visitor('concave', mono_g, bound_g)
+    def test_concave_child(self, mock_unary_function_visitor, mono_g, bound_g, expected):
+        cvx = mock_unary_function_visitor(dex.AbsExpression, 'concave', mono_g, bound_g)
         assert cvx == expected
-
-
-
-@pytest.fixture
-def mock_unary_function_visitor():
-    def _f(func, cvx_g, mono_g, bound_g):
-        v = MockConvexityPropagationVisitor()
-        g = v.add_cvx(cvx_g)
-        v.add_mono(g, mono_g)
-        v.add_bound(g, bound_g)
-        expr = func([g])
-        v(expr)
-        return v.get(expr)
-    return _f
 
 
 class TestSqrt(object):
@@ -640,20 +621,19 @@ class TestAtan(object):
         assert cvx == Convexity.Unknown
 
 
-
 @pytest.fixture
-def mock_pow_constant_base_visitor():
+def mock_pow_constant_base_visitor(visitor, ctx):
     def _f(bound_b, cvx_e, mono_e, bound_e):
-        v = MockConvexityPropagationVisitor()
         b = dex.Constant(bound_b)
-        v.add_mono(b, 'constant')
-        v.add_bound(b, bound_b)
-        e = v.add_cvx(cvx_e)
-        v.add_mono(e, mono_e)
-        v.add_bound(e, bound_e)
+        ctx.monotonicity[b] = mono_description_to_mono('constant')
+        ctx.bound[b] = bound_description_to_bound(bound_b)
+        e = PlaceholderExpression()
+        ctx.convexity[e] = cvx_description_to_cvx(cvx_e)
+        ctx.monotonicity[e] = mono_description_to_mono(mono_e)
+        ctx.bound[e] = bound_description_to_bound(bound_e)
         p = dex.PowExpression([b, e])
-        v(p)
-        return v.get(p)
+        visitor(p, ctx)
+        return ctx.convexity[p]
     return _f
 
 
@@ -708,19 +688,20 @@ class TestPowConstantBase(object):
 
 
 @pytest.fixture
-def mock_pow_constant_exponent_visitor():
+def mock_pow_constant_exponent_visitor(visitor, ctx):
     def _f(cvx_b, mono_b, bound_b, expo):
-        v = MockConvexityPropagationVisitor()
         expo = dex.Constant(expo)
-        v(expo)
-        v.add_mono(expo, 'constant')
-        v.add_bound(expo, Bound(expo.value, expo.value))
-        base = v.add_cvx(cvx_b)
-        v.add_mono(base, mono_b)
-        v.add_bound(base, bound_b)
+        ctx.monotonicity[expo] = mono_description_to_mono('constant')
+        ctx.bound[expo] = Bound(expo.value, expo.value)
+        visitor(expo, ctx)
+
+        base = PlaceholderExpression()
+        ctx.convexity[base] = cvx_description_to_cvx(cvx_b)
+        ctx.monotonicity[base] = mono_description_to_mono(mono_b)
+        ctx.bound[base] = bound_description_to_bound(bound_b)
         p = dex.PowExpression([base, expo])
-        v(p)
-        return v.get(p)
+        visitor(p, ctx)
+        return ctx.convexity[p]
     return _f
 
 

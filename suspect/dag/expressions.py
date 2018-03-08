@@ -65,6 +65,15 @@ class Expression(metaclass=abc.ABCMeta):
                 max_depth = child.depth + 1
         self._depth = max_depth
 
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return self is other
+
+    def __ne__(self, other):
+        return not (self == other)
+
 
 class ProductExpression(Expression):
     pass

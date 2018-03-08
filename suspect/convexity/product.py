@@ -16,37 +16,39 @@ from suspect.convexity.convexity import Convexity
 import suspect.dag.expressions as dex
 
 
-def _product_convexity(handler, f, g):
-    cvx_f = handler.convexity(f)
+def _product_convexity(f, g, ctx):
+    cvx_f = ctx.convexity[f]
+    bound_g = ctx.bound[g]
     if cvx_f.is_linear():
         return cvx_f
-    elif cvx_f.is_convex() and handler.is_nonnegative(g):
+    elif cvx_f.is_convex() and bound_g.is_nonnegative():
         return Convexity.Convex
-    elif cvx_f.is_concave() and handler.is_nonpositive(g):
+    elif cvx_f.is_concave() and bound_g.is_nonpositive():
         return Convexity.Convex
-    elif cvx_f.is_concave() and handler.is_nonnegative(g):
+    elif cvx_f.is_concave() and bound_g.is_nonnegative():
         return Convexity.Concave
-    elif cvx_f.is_convex() and handler.is_nonpositive(g):
+    elif cvx_f.is_convex() and bound_g.is_nonpositive():
         return Convexity.Concave
     else:
         return Convexity.Unknown
 
 
-def product_convexity(handler, expr):
-    assert(len(expr.children) == 2)
+def product_convexity(expr, ctx):
+    assert len(expr.children) == 2
     f = expr.children[0]
     g = expr.children[1]
-    mono_f = handler.monotonicity(f)
-    mono_g = handler.monotonicity(g)
+    mono_f = ctx.monotonicity[f]
+    mono_g = ctx.monotonicity[g]
 
     if f is g:
         # Same f**2
-        cvx_f = handler.convexity(f)
+        cvx_f = ctx.convexity[f]
+        bound_f = ctx.bound[f]
         if cvx_f.is_linear():
             return Convexity.Convex
-        elif cvx_f.is_convex() and handler.is_nonnegative(f):
+        elif cvx_f.is_convex() and bound_f.is_nonnegative():
             return Convexity.Convex
-        elif cvx_f.is_concave() and handler.is_nonpositive(f):
+        elif cvx_f.is_concave() and bound_f.is_nonpositive():
             return Convexity.Convex
 
     # -c*x*x is encoded as Linear([-c], [x])*Variable(x)
@@ -65,26 +67,26 @@ def product_convexity(handler, expr):
                 return Convexity.Concave
 
     if mono_g.is_constant():
-        return _product_convexity(handler, f, g)
+        return _product_convexity(f, g, ctx)
     elif mono_f.is_constant():
-        return _product_convexity(handler, g, f)
+        return _product_convexity(g, f, ctx)
 
     if isinstance(f, dex.LinearExpression) and isinstance(g, dex.SumExpression):
-        cvx = _syn_convexity(handler, f, g)
+        cvx = _syn_convexity(f, g, ctx)
         if cvx is not None:
             return cvx
     elif isinstance(g, dex.LinearExpression) and isinstance(f, dex.SumExpression):
-        cvx = _syn_convexity(handler, g, f)
+        cvx = _syn_convexity(g, f, ctx)
         if cvx is not None:
             return cvx
     return Convexity.Unknown
 
 
-def _syn_convexity(handler, linear_expr, sum_expr):
+def _syn_convexity(linear_expr, sum_expr, ctx):
     non_div_children = []
     for expr in sum_expr.children:
         if isinstance(expr, dex.DivisionExpression):
-            cvx_num = handler.convexity(expr.children[0])
+            cvx_num = ctx.convexity[expr.children[0]]
             if not (expr.children[1] is linear_expr and cvx_num.is_linear()):
                 return
         else:

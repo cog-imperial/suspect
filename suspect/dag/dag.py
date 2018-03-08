@@ -29,13 +29,13 @@ class ProblemDag(object):
         # A pointer to vertices that are objectives
         self.objectives = {}
 
-    def forward_visit(self, cb):
+    def forward_visit(self, cb, ctx):
         for v in self.vertices:
-            cb(v)
+            cb(v, ctx)
 
-    def bacward_visit(self, cb):
+    def bacward_visit(self, cb, ctx):
         for v in reversed(self.vertices):
-            cb(v)
+            cb(v, ctx)
 
     def add_vertex(self, vertex):
         depth = vertex.depth

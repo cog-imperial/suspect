@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import hypothesis.strategies as st
 from suspect import set_pyomo4_expression_tree
 from suspect.bound import ArbitraryPrecisionBound as Bound
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.convexity.convexity import Convexity
+from suspect.context import SpecialStructurePropagationContext
 
 
 @st.composite
@@ -39,6 +41,11 @@ def coefficients(draw, min_value=None, max_value=None):
 
 class PlaceholderExpression(object):
     depth = 0
+
+
+@pytest.fixture
+def ctx():
+    return SpecialStructurePropagationContext({})
 
 
 def bound_description_to_bound(bound_str):

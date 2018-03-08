@@ -15,23 +15,25 @@
 from suspect.monotonicity.monotonicity import Monotonicity
 
 
-def product_monotonicity(mono_handler, expr):
+def product_monotonicity(expr, ctx):
     assert len(expr.children) == 2
 
     def _product_mono(f, g):
-        mono_f = mono_handler.get(f)
-        mono_g = mono_handler.get(g)
+        mono_f = ctx.monotonicity[f]
+        mono_g = ctx.monotonicity[g]
+        bound_f = ctx.bound[f]
+        bound_g = ctx.bound[g]
 
         if mono_f.is_constant() and mono_g.is_constant():
             return Monotonicity.Constant
         elif mono_g.is_constant():
-            if mono_f.is_nondecreasing() and mono_handler.is_nonnegative(g):
+            if mono_f.is_nondecreasing() and bound_g.is_nonnegative():
                 return Monotonicity.Nondecreasing
-            elif mono_f.is_nonincreasing() and mono_handler.is_nonpositive(g):
+            elif mono_f.is_nonincreasing() and bound_g.is_nonpositive():
                 return Monotonicity.Nondecreasing
-            elif mono_f.is_nondecreasing() and mono_handler.is_nonpositive(g):
+            elif mono_f.is_nondecreasing() and bound_g.is_nonpositive():
                 return Monotonicity.Nonincreasing
-            elif mono_f.is_nonincreasing() and mono_handler.is_nonnegative(g):
+            elif mono_f.is_nonincreasing() and bound_g.is_nonnegative():
                 return Monotonicity.Nonincreasing
             else:
                 return Monotonicity.Unknown
@@ -39,24 +41,24 @@ def product_monotonicity(mono_handler, expr):
             return _product_mono(g, f)
         else:
             nondec_cond1 = (
-                mono_f.is_nondecreasing() and mono_handler.is_nonnegative(g)
+                mono_f.is_nondecreasing() and bound_g.is_nonnegative()
             ) or (
-                mono_f.is_nonincreasing() and mono_handler.is_nonpositive(g)
+                mono_f.is_nonincreasing() and bound_g.is_nonpositive()
             )
             nondec_cond2 = (
-                mono_handler.is_nonnegative(f) and mono_g.is_nondecreasing()
+                bound_f.is_nonnegative() and mono_g.is_nondecreasing()
             ) or (
-                mono_handler.is_nonpositive(f) and mono_g.is_nonincreasing()
+                bound_f.is_nonpositive() and mono_g.is_nonincreasing()
             )
             noninc_cond1 = (
-                mono_f.is_nonincreasing() and mono_handler.is_nonnegative(g)
+                mono_f.is_nonincreasing() and bound_g.is_nonnegative()
             ) or (
-                mono_f.is_nondecreasing() and mono_handler.is_nonpositive(g)
+                mono_f.is_nondecreasing() and bound_g.is_nonpositive()
             )
             noninc_cond2 = (
-                mono_handler.is_nonnegative(f) and mono_g.is_nonincreasing()
+                bound_f.is_nonnegative() and mono_g.is_nonincreasing()
             ) or (
-                mono_handler.is_nonpositive(f) and mono_g.is_nondecreasing()
+                bound_f.is_nonpositive() and mono_g.is_nondecreasing()
             )
 
             if nondec_cond1 and nondec_cond2:

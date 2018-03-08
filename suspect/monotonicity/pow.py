@@ -13,19 +13,18 @@
 # limitations under the License.
 
 from suspect.monotonicity.monotonicity import Monotonicity
-from suspect.util import numeric_types, numeric_value
 from suspect.math import almosteq, almostgte
 
 
-def pow_monotonicity(handler, expr):
+def pow_monotonicity(expr, ctx):
     assert len(expr.children) == 2
     base, exponent = expr.children
 
-    mono_base = handler.monotonicity(base)
-    mono_exponent = handler.monotonicity(exponent)
+    mono_base = ctx.monotonicity[base]
+    mono_exponent = ctx.monotonicity[exponent]
 
-    bound_base = handler.bound(base)
-    bound_exponent = handler.bound(exponent)
+    bound_base = ctx.bound[base]
+    bound_exponent = ctx.bound[exponent]
 
     if mono_base.is_constant():
         mono_f = mono_exponent

@@ -13,113 +13,115 @@
 # limitations under the License.
 
 import suspect.dag.expressions as dex
-from suspect.dag.visitor import Dispatcher
+from suspect.dag.visitor import ForwardVisitor
 
 
 def polynomial_degree(dag):
     visitor = PolynomialDegreeVisitor()
-    dag.forward_visit(visitor)
-    return visitor.result()
+    poly_degree = {}
+    dag.forward_visit(visitor, poly_degree)
+    return poly_degree
 
 
-class PolynomialDegreeVisitor(object):
-    def __init__(self):
-        self._degree = {}
-        self._dispatcher = Dispatcher(
-            lookup={
-                dex.Variable: self.visit_variable,
-                dex.Constant: self.visit_constant,
-                dex.Constraint: self.visit_constraint,
-                dex.Objective: self.visit_objective,
-                dex.ProductExpression: self.visit_product,
-                dex.DivisionExpression: self.visit_division,
-                dex.LinearExpression: self.visit_linear,
-                dex.PowExpression: self.visit_pow,
-                dex.SumExpression: self.visit_sum,
-                dex.NegationExpression: self.visit_negation,
-                dex.UnaryFunctionExpression: self.visit_unary_function,
-            },
-            allow_missing=False)
+class PolynomialDegree(object):
+    def __init__(self, degree):
+        self.degree = degree
 
-    def get(self, expr):
-        return self._degree[id(expr)]
+    @classmethod
+    def not_polynomial(cls):
+        return PolynomialDegree(None)
 
-    def set(self, expr, value):
-        self._degree[id(expr)] = value
+    def is_polynomial(self):
+        return self.degree is not None
 
-    def result(self):
-        return self._degree
+    def __add__(self, other):
+        if self.is_polynomial() and other.is_polynomial():
+            return PolynomialDegree(self.degree + other.degree)
+        return self.not_polynomial()
 
-    def visit_variable(self, _variable):
-        return 1
+    def __pow__(self, other):
+        if isinstance(other, (int, float)):
+            return PolynomialDegree(self.degree * other)
+        return PolynomialDegree.not_polynomial()
 
-    def visit_constant(self, _constant):
-        return 0
+    def __gt__(self, other):
+        if not self.is_polynomial():
+            return True
+        elif not other.is_polynomial():
+            return False
+        else:
+            return self.degree > other.degree
 
-    def visit_constraint(self, expr):
-        return self.get(expr.children[0])
 
-    def visit_objective(self, expr):
-        return self.get(expr.children[0])
+class PolynomialDegreeVisitor(ForwardVisitor):
+    def register_handlers(self):
+        return {
+            dex.Variable: self.visit_variable,
+            dex.Constant: self.visit_constant,
+            dex.Constraint: self.visit_constraint,
+            dex.Objective: self.visit_objective,
+            dex.ProductExpression: self.visit_product,
+            dex.DivisionExpression: self.visit_division,
+            dex.LinearExpression: self.visit_linear,
+            dex.PowExpression: self.visit_pow,
+            dex.SumExpression: self.visit_sum,
+            dex.NegationExpression: self.visit_negation,
+            dex.UnaryFunctionExpression: self.visit_unary_function,
+        }
 
-    def visit_product(self, expr):
-        s = 0
-        for child in expr.children:
-            d = self.get(child)
-            if d is None:
-                return None
-            s += d
-        return s
+    def visit_variable(self, _variable, _ctx):
+        return PolynomialDegree(1)
 
-    def visit_division(self, expr):
+    def visit_constant(self, _constant, _ctx):
+        return PolynomialDegree(0)
+
+    def visit_constraint(self, expr, ctx):
+        return ctx[expr.children[0]]
+
+    def visit_objective(self, expr, ctx):
+        return ctx[expr.children[0]]
+
+    def visit_product(self, expr, ctx):
+        return sum([ctx[a] for a in expr.children], PolynomialDegree(0))
+
+    def visit_division(self, expr, ctx):
         assert len(expr.children) == 2
-        den_degree = self.get(expr.children[1])
-        if den_degree == 0:
-            return self.get(expr.children[0])
-        return None
+        den_degree = ctx[expr.children[1]]
+        if den_degree.is_polynomial() and den_degree.degree == 0:
+            return ctx[expr.children[0]]
+        return PolynomialDegree.not_polynomial()
 
-    def visit_linear(self, expr):
+    def visit_linear(self, expr, _ctx):
         if len(expr.children) == 0:
-            return 0
-        return 1
+            return PolynomialDegree(0)
+        return PolynomialDegree(1)
 
-    def visit_pow(self, expr):
+    def visit_pow(self, expr, ctx):
         assert len(expr.children) == 2
         base, expo = expr.children
-        base_degree = self.get(base)
-        expo_degree = self.get(expo)
-        if expo_degree == 0:
-            if base_degree == 0:
+        base_degree = ctx[base]
+        expo_degree = ctx[expo]
+
+        if not (base_degree.is_polynomial() and expo_degree.is_polynomial()):
+            return PolynomialDegree.not_polynomial()
+
+        if expo_degree.degree == 0:
+            if base_degree.degree == 0:
                 # const ** const
-                return 0
+                return PolynomialDegree(0)
             if not isinstance(expo, dex.Constant):
-                return None
+                return PolynomialDegree.not_polynomial()
             expo = expo.value
             if expo == int(expo):
-                if base_degree is not None and expo > 0:
-                    return base_degree * expo
-                elif expo == 0:
-                    return 0
-        return None
+                return base_degree ** expo
+        return PolynomialDegree.not_polynomial()
 
-    def visit_sum(self, expr):
-        # return max degree, or None
-        ans = 0
-        for child in expr.children:
-            d = self.get(child)
-            if d is None:
-                return None
-            if d > ans:
-                ans = d
-        return ans
+    def visit_sum(self, expr, ctx):
+        return max(ctx[a] for a in expr.children)
 
-    def visit_negation(self, expr):
+    def visit_negation(self, expr, ctx):
         child = expr.children[0]
-        return self.get(child)
+        return ctx[child]
 
-    def visit_unary_function(self, _expr):
-        return None
-
-    def __call__(self, expr):
-        new_value = self._dispatcher.dispatch(expr)
-        self.set(expr, new_value)
+    def visit_unary_function(self, _expr, _ctx):
+        return PolynomialDegree.not_polynomial()

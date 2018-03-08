@@ -12,21 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from suspect.util import numeric_types, numeric_value
 from suspect.convexity.convexity import Convexity
 
 
-def division_convexity(handler, expr):
-    assert(len(expr.children) == 2)
+def division_convexity(expr, ctx):
+    assert len(expr.children) == 2
     f, g = expr.children
 
-    mono_f = handler.monotonicity(f)
-    mono_g = handler.monotonicity(g)
-    bound_f = handler.bound(f)
-    bound_g = handler.bound(g)
+    mono_f = ctx.monotonicity[f]
+    mono_g = ctx.monotonicity[g]
+    bound_f = ctx.bound[f]
+    bound_g = ctx.bound[g]
 
     if mono_g.is_constant():
-        cvx_f = handler.convexity(f)
+        cvx_f = ctx.convexity[f]
 
         if cvx_f.is_convex() and bound_g.is_positive():
             return Convexity.Convex
@@ -38,7 +37,7 @@ def division_convexity(handler, expr):
             return Convexity.Concave
 
     elif mono_f.is_constant():
-        cvx_g = handler.convexity(g)
+        cvx_g = ctx.convexity[g]
 
         # want to avoid g == 0
         if 0 in bound_g:

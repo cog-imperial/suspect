@@ -17,29 +17,24 @@ from suspect.convexity import ConvexityPropagationVisitor
 
 
 class ConvexityMonotonicityPropagationVisitor(object):
-    def __init__(self, bounds):
-        self._mono = MonotonicityPropagationVisitor(bounds)
-        self._cvx = ConvexityPropagationVisitor(bounds, self._mono.result())
+    def __init__(self):
+        self._mono = MonotonicityPropagationVisitor()
+        self._cvx = ConvexityPropagationVisitor()
 
-    def __call__(self, expr):
-        self._mono(expr)
-        self._cvx(expr)
-
-    def result(self):
-        mono = self._mono.result()
-        cvx = self._cvx.result()
-        return mono, cvx
+    def __call__(self, expr, ctx):
+        self._mono(expr, ctx)
+        self._cvx(expr, ctx)
 
 
-def propagate_special_structure(problem, bounds):
+def propagate_special_structure(problem, ctx):
     """Propagate special structure.
 
     Arguments
     ---------
     problem: ProblemDag
         the problem.
-    bounds: dict-like
-        bounds of the expressions.
+    ctx: SpecialStructurePropagationContext
+      the context containing the bounds
 
     Returns
     -------
@@ -48,6 +43,6 @@ def propagate_special_structure(problem, bounds):
     convexity: dict-like
         convexity information for the problem.
     """
-    visitor = ConvexityMonotonicityPropagationVisitor(bounds)
-    problem.forward_visit(visitor)
-    return visitor.result()
+    visitor = ConvexityMonotonicityPropagationVisitor()
+    problem.forward_visit(visitor, ctx)
+    return ctx.monotonicity, ctx.convexity

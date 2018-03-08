@@ -69,7 +69,7 @@ class ModelInformation(object):
             cvx = v['convexity']
             deg = v['polynomial_degree']
             if cvx.is_linear():
-                assert deg == 1
+                assert deg.degree == 1
                 return 'linear'
             elif deg == 2:
                 return 'quadratic'
@@ -97,10 +97,10 @@ def detect_special_structure(problem):
     ModelInformation
         an object containing the detected infomation about the problem
     """
-    bounds = initialize_bounds(problem)
-    propagate_bounds(problem, bounds)
+    ctx = initialize_bounds(problem)
+    propagate_bounds(problem, ctx)
     # TODO: do real bound propagation and tightening
-    monotonicity, convexity = propagate_special_structure(problem, bounds)
+    monotonicity, convexity = propagate_special_structure(problem, ctx)
     polynomial = polynomial_degree(problem)
 
     variables = {}
@@ -111,7 +111,7 @@ def detect_special_structure(problem):
             variable_type = 'integer'
         else:
             variable_type = 'continuous'
-        var_bounds = bounds[id(variable)]
+        var_bounds = ctx.bound[variable]
 
         if variable.name in variables:
             warnings.warn('Duplicate variable {}'.format(variable.name))
@@ -132,9 +132,9 @@ def detect_special_structure(problem):
             sense = 'min'
         else:
             sense = 'max'
-        obj_bounds = bounds[id(obj)]
-        cvx = convexity[id(obj)]
-        poly = polynomial[id(obj)]
+        obj_bounds = ctx.bound[obj]
+        cvx = ctx.convexity[obj]
+        poly = polynomial[obj]
 
         objectives[obj.name] = {
             'sense': sense,
@@ -154,8 +154,8 @@ def detect_special_structure(problem):
         else:
             type_ = 'inequality'
 
-        cvx = convexity[id(cons)]
-        poly = polynomial[id(cons)]
+        cvx = ctx.convexity[cons]
+        poly = polynomial[cons]
 
         constraints[cons_name] = {
             'type': type_,
