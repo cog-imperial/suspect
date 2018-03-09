@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from .arbitrary_precision_bound import ArbitraryPrecisionBound
+from .initialization import initialize_bounds
 from .propagation import propagate_bounds
-from .tightening import initialize_bounds, tighten_bounds
+from .tightening import tighten_bounds

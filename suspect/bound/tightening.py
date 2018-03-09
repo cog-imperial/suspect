@@ -12,60 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
-from suspect.context import SpecialStructurePropagationContext
 from suspect.bound import ArbitraryPrecisionBound as Bound
-
-
-def initialize_bounds(dag):
-    """Initialize problem bounds using function domains as bound."""
-    visitor = BoundsInitializationVisitor()
-    ctx = SpecialStructurePropagationContext({})
-    dag.forward_visit(visitor, ctx)
-    return ctx
-
-
-class BoundsInitializationVisitor(BackwardVisitor):
-    def register_handlers(self):
-        return {
-            dex.SqrtExpression: self.visit_sqrt,
-            dex.LogExpression: self.visit_log,
-            dex.AsinExpression: self.visit_asin,
-            dex.AcosExpression: self.visit_acos,
-        }
-
-    def handle_result(self, expr, value, ctx):
-        if value is None:
-            new_bound = Bound(None, None)
-        else:
-            new_bound = value
-        ctx.bound[expr] = new_bound
-
-    def visit_sqrt(self, expr, _ctx):
-        child = expr.children[0]
-        return {
-            child: Bound(0, None),
-        }
-
-    def visit_log(self, expr, _ctx):
-        child = expr.children[0]
-        return {
-            child: Bound(0, None)
-        }
-
-    def visit_asin(self, expr, _ctx):
-        child = expr.children[0]
-        return {
-            child: Bound(-1, 1)
-        }
-
-    def visit_acos(self, expr, _ctx):
-        child = expr.children[0]
-        return {
-            child: Bound(-1, 1)
-        }
 
 
 def tighten_bounds(dag, ctx):
@@ -78,100 +27,74 @@ def tighten_bounds(dag, ctx):
     ctx: dict-like
       the context containing each node bounds
     """
-    for constraint in dag.constraints.values():
-        tighten_variables_in_constraint(constraint, ctx)
+    visitor = BoundsTighteningVisitor()
+    dag.backward_visit(visitor, ctx)
+    return ctx
 
 
-def tighten_variables_in_constraint(constraint, bounds, maxiter=10):
-    """Tighten the bounds of variables in the constraint."""
-    linear = constraint.linear_component()
-    nonlinear = constraint.nonlinear_component()
+class BoundsTighteningVisitor(BackwardVisitor):
+    def register_handlers(self):
+        return {
+            dex.Constraint: self.visit_constraint,
+            dex.SumExpression: self.visit_sum,
+            dex.LinearExpression: self.visit_linear,
+            dex.UnaryFunctionExpression: self.visit_unary_function,
+        }
 
-    variables = [arg for arg in linear.children]
-    for it in iter(maxiter):
-        any_changed = False
-        for var in variables:
-            new_bound, changed = \
-              tighten_variable_in_linear_component(linear, nonlinear, var,
-                                                   constraint, bounds)
-            if changed:
-                any_changed = changed
-
-        if not any_changed:
-            logging.info('No change in iteration {}. Exit'.format(it))
-            break
-
-    linear_bound = Bound.zero()
-    for coef, arg in linear.children:
-        linear_bound += coef * bounds[id(arg)]
-
-    constraint_bound = bounds[id(constraint)]
-
-    for expr in nonlinear:
-        nonlinear_bound = Bound.zero()
-        for arg in nonlinear:
-            if arg is not expr:
-                nonlinear_bound += bounds[id(arg)]
-        tighten_nonlinear_component(expr, linear_bound, nonlinear_bound, constraint_bound, bounds)
-
-
-
-
-def tighten_variable_in_linear_component(linear, nonlinear, variable, constraint, bounds):
-    """Tightens the bounds of `variable` based on the bounds of the linear and nonlinear components.
-
-    Given constraint g(x) = l(x) + a*x + N(x), where l(x) = L(x) - a*x,
-    compute the new bounds on x as:
-
-        c^L - l^U - n^U <= a*x <= c^U - l^L - n^L
-
-    where:
-        l^L <= l(x) <= l^U
-        n^L <= N(x) <= n^U
-    """
-    linear_bound, variable_coef = _linear_bound_and_coef(linear, variable, bounds)
-    nonlinear_bound = _nonlinear_bound(nonlinear, bounds)
-    constraint_bound = bounds[id(constraint)]
-    variable_bound = bounds[id(variable)]
-
-    print(linear_bound, nonlinear_bound, constraint_bound, variable_bound)
-    candidate_lower = (
-        constraint_bound.lower_bound - linear_bound.upper_bound - nonlinear_bound.upper_bound
-    ) / variable_coef
-    candidate_upper = (
-        constraint_bound.upper_bound - linear_bound.lower_bound - nonlinear_bound.lower_bound
-    ) / variable_coef
-
-    if variable_coef < 0:
-        candidate_lower, candidate_upper = candidate_upper, candidate_lower
-
-    new_lower = max(candidate_lower, variable_bound.lower_bound)
-    new_upper = min(candidate_upper, variable_bound.upper_bound)
-    return Bound(new_lower, new_upper)
-
-
-def _linear_bound_and_coef(linear, variable, bounds):
-    linear_bound = Bound.zero()
-    variable_coef = None
-    for coef, arg in zip(linear.coefficients, linear.children):
-        assert isinstance(arg, dex.Variable)
-        if arg is not variable:
-            linear_bound += coef * bounds[id(arg)]
+    def handle_result(self, expr, value, ctx):
+        if value is None:
+            new_bound = Bound(None, None)
         else:
-            variable_coef = coef
+            new_bound = value
 
-    if variable_coef is None:
-        raise AssertionError('Variable is not present in constraint')
+        if expr in ctx.bound:
+            old_bound = ctx.bound[expr]
+            new_bound = old_bound.tighten(new_bound)
 
-    return linear_bound, variable_coef
+        ctx.bound[expr] = new_bound
+
+    def visit_constraint(self, expr, ctx):
+        child = expr.children[0]
+        bound = Bound(expr.lower_bound, expr.upper_bound)
+        return {
+            child: bound
+        }
+
+    def visit_sum(self, expr, ctx):
+        expr_bound = ctx.bound[expr]
+        bounds = {}
+        for child, siblings in _sum_child_and_siblings(expr.children):
+            siblings_bound = sum(ctx.bound[s] for s in siblings)
+            bounds[child] = expr_bound - siblings_bound
+        return bounds
+
+    def visit_linear(self, expr, ctx):
+        expr_bound = ctx.bound[expr]
+        bounds = {}
+        const = expr.constant_term
+        for (child_c, child), siblings in _linear_child_and_siblings(expr.coefficients, expr.children):
+            siblings_bound = sum(ctx.bound[s] * c for c, s in siblings) + const
+            bounds[child] = (expr_bound - siblings_bound) / child_c
+        return bounds
+
+    def visit_unary_function(self, expr, ctx):
+        child = expr.children[0]
+        bound = ctx.bound[expr]
+        func = getattr(bound, expr.func_name)
+        return {
+            child: func.inv()
+        }
 
 
-def _nonlinear_bound(nonlinear, bounds):
-    nonlinear_bound = Bound.zero()
-    for expr in nonlinear:
-        nonlinear_bound += bounds[id(expr)]
-    return nonlinear_bound
+def _sum_child_and_siblings(children):
+    for i in range(len(children) - 1):
+        yield children[i], children[:i] + children[i+1:]
 
 
-def tighten_nonlinear_components(expr, linear_bound, nonlinear_bound, constraint_bound, bounds):
-    pass
+def _linear_child_and_siblings(coefficients, children):
+    for i in range(len(children) - 1):
+        child = children[i]
+        child_c = coefficients[i]
+        other_children = children[:i] + children[i+1:]
+        other_coefficients = coefficients[:i] + coefficients[i+1:]
+        yield (child_c, child), zip(other_coefficients, other_children)

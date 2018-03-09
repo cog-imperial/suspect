@@ -33,7 +33,7 @@ class ProblemDag(object):
         for v in self.vertices:
             cb(v, ctx)
 
-    def bacward_visit(self, cb, ctx):
+    def backward_visit(self, cb, ctx):
         for v in reversed(self.vertices):
             cb(v, ctx)
 

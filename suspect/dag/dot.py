@@ -76,10 +76,10 @@ def dump(dag, f, metadata=None):
             cur_depth += 1
             f.write('  }{ rankdir=same;\n')
 
-        if metadata is None or metadata.get(id(vertex)) is None:
+        if metadata is None or metadata.get(vertex) is None:
             label = node_label(vertex)
-        elif metadata is not None and metadata.get(id(vertex)) is not None:
-            label = node_label(vertex) + '\\n' + str(metadata[id(vertex)])
+        elif metadata is not None and metadata.get(vertex) is not None:
+            label = node_label(vertex) + '\\n' + str(metadata[vertex])
         f.write('  {} [label="{}"];\n'.format(
             node_name(vertex),
             label,
