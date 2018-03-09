@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import warnings
-from suspect.bound import propagate_bounds, initialize_bounds
+from suspect.bound import propagate_bounds, initialize_bounds, tighten_bounds
 from suspect.propagation import propagate_special_structure
 from suspect.polynomial_degree import polynomial_degree
 
@@ -84,7 +84,7 @@ class ModelInformation(object):
         )
 
 
-def detect_special_structure(problem):
+def detect_special_structure(problem, max_iter=10):
     """Detect special structure in the problem.
 
     Parameters
@@ -97,9 +97,12 @@ def detect_special_structure(problem):
     ModelInformation
         an object containing the detected infomation about the problem
     """
+
     ctx = initialize_bounds(problem)
-    propagate_bounds(problem, ctx)
-    # TODO: do real bound propagation and tightening
+    for _ in range(max_iter):
+        propagate_bounds(problem, ctx)
+        tighten_bounds(problem, ctx)
+
     monotonicity, convexity = propagate_special_structure(problem, ctx)
     polynomial = polynomial_degree(problem)
 
