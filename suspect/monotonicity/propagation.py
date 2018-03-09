@@ -69,11 +69,8 @@ class MonotonicityPropagationVisitor(ForwardVisitor):
             dex.AtanExpression: self.visit_nondecreasing_function,
         }
 
-    def __call__(self, expr, ctx):
-        result = self.visit(expr, ctx)
-        if result is not None:
-            ctx.monotonicity[expr] = result
-        return result
+    def handle_result(self, expr, result, ctx):
+        ctx.monotonicity[expr] = result
 
     def visit_variable(self, _expr, _ctx):
         return Monotonicity.Nondecreasing

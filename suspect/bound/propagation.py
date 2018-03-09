@@ -16,7 +16,6 @@ import operator
 from functools import reduce
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import ForwardVisitor
-from suspect.context import SpecialStructurePropagationContext
 from suspect.bound import ArbitraryPrecisionBound as Bound
 
 
@@ -35,15 +34,16 @@ class BoundsPropagationVisitor(ForwardVisitor):
             dex.UnaryFunctionExpression: self.visit_unary_function,
         }
 
-    def __call__(self, expr, ctx):
-        new_bound = self.visit(expr, ctx)
-        if new_bound is not None:
-            if expr in ctx.bound:
-                # bounds exists, tighten it
-                old_bound = ctx.bound[expr]
-                new_bound = old_bound.tighten(new_bound)
-            ctx.bound[expr] = new_bound
-        return new_bound
+    def handle_result(self, expr, new_bound, ctx):
+        if expr in ctx.bound:
+            # bounds exists, tighten it
+            old_bound = ctx.bound[expr]
+            new_bound = old_bound.tighten(new_bound)
+            has_changed = new_bound != old_bound
+        else:
+            has_changed = True
+        ctx.bound[expr] = new_bound
+        return has_changed
 
     def visit_variable(self, var, _ctx):
         return Bound(var.lower_bound, var.upper_bound)
@@ -104,5 +104,4 @@ def propagate_bounds(dag, ctx):
       the context containing the initial bounds
     """
     visitor = BoundsPropagationVisitor()
-    dag.forward_visit(visitor, ctx)
-    return ctx
+    return dag.forward_visit(visitor, ctx)

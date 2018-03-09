@@ -30,12 +30,18 @@ class ProblemDag(object):
         self.objectives = {}
 
     def forward_visit(self, cb, ctx):
-        for v in self.vertices:
-            cb(v, ctx)
+        return self._visit(cb, ctx, self.vertices)
 
     def backward_visit(self, cb, ctx):
-        for v in reversed(self.vertices):
-            cb(v, ctx)
+        return self._visit(cb, ctx, reversed(self.vertices))
+
+    def _visit(self, cb, ctx, vertices):
+        changed_vertices = []
+        for v in vertices:
+            has_changed = cb(v, ctx)
+            if has_changed:
+                changed_vertices.append(v)
+        return changed_vertices
 
     def add_vertex(self, vertex):
         depth = vertex.depth

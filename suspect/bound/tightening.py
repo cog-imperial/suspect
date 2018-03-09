@@ -28,8 +28,7 @@ def tighten_bounds(dag, ctx):
       the context containing each node bounds
     """
     visitor = BoundsTighteningVisitor()
-    dag.backward_visit(visitor, ctx)
-    return ctx
+    return dag.backward_visit(visitor, ctx)
 
 
 class BoundsTighteningVisitor(BackwardVisitor):
@@ -50,8 +49,12 @@ class BoundsTighteningVisitor(BackwardVisitor):
         if expr in ctx.bound:
             old_bound = ctx.bound[expr]
             new_bound = old_bound.tighten(new_bound)
+            has_changed = old_bound != new_bound
+        else:
+            has_changed = True
 
         ctx.bound[expr] = new_bound
+        return has_changed
 
     def visit_constraint(self, expr, ctx):
         child = expr.children[0]

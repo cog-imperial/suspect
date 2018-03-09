@@ -44,6 +44,10 @@ class Visitor(object, metaclass=abc.ABCMeta):
     def register_handlers(self):
         pass
 
+    @abc.abstractmethod
+    def handle_result(self, expr, result, ctx):
+        pass
+
     def visit(self, expr, ctx):
         type_ = type(expr)
         cb = self._registered_handlers.get(type_)
@@ -65,8 +69,10 @@ class ForwardVisitor(Visitor):
     def __call__(self, expr, ctx):
         result = self.visit(expr, ctx)
         if result is not None:
-            ctx[expr] = result
-        return result
+            has_changed = self.handle_result(expr, result, ctx)
+            if has_changed:
+                return True
+        return False
 
 
 class BackwardVisitor(Visitor):
@@ -77,8 +83,12 @@ class BackwardVisitor(Visitor):
     def __call__(self, expr, ctx):
         result = self.visit(expr, ctx)
         if isinstance(result, dict):
+            any_changed = False
             for k, v in result.items():
-                self.handle_result(k, v, ctx)
+                has_changed = self.handle_result(k, v, ctx)
+                if has_changed:
+                    any_changed = True
+            return any_changed
         elif result is not None:
             raise RuntimeError('BackwardVisitor must return dict')
-        return result
+        return False

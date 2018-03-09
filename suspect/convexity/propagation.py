@@ -59,11 +59,8 @@ class ConvexityPropagationVisitor(ForwardVisitor):
             dex.AtanExpression: self.visit_atan,
         }
 
-    def __call__(self, expr, ctx):
-        result = self.visit(expr, ctx)
-        if result is not None:
-            ctx.convexity[expr] = result
-        return result
+    def handle_result(self, expr, result, ctx):
+        ctx.convexity[expr] = result
 
     def visit_variable(self, _expr, _ctx):
         return Convexity.Linear

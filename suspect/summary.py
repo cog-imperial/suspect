@@ -100,8 +100,10 @@ def detect_special_structure(problem, max_iter=10):
 
     ctx = initialize_bounds(problem)
     for _ in range(max_iter):
-        propagate_bounds(problem, ctx)
-        tighten_bounds(problem, ctx)
+        changes_prop = propagate_bounds(problem, ctx)
+        changes_tigh = tighten_bounds(problem, ctx)
+        if len(changes_prop) == 0 and len(changes_tigh) == 0:
+            break
 
     monotonicity, convexity = propagate_special_structure(problem, ctx)
     polynomial = polynomial_degree(problem)

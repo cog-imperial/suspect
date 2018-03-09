@@ -69,6 +69,9 @@ class PolynomialDegreeVisitor(ForwardVisitor):
             dex.UnaryFunctionExpression: self.visit_unary_function,
         }
 
+    def handle_result(self, expr, result, ctx):
+        ctx[expr] = result
+
     def visit_variable(self, _variable, _ctx):
         return PolynomialDegree(1)
 
