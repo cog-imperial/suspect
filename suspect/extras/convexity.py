@@ -83,3 +83,41 @@ class RSynConvexityVisitor(ForwardVisitor):
 
         if den is linear_expr:
             return Convexity.Convex
+
+
+class L2NormConvexityVisitor(ForwardVisitor):
+    """Detect L_2 Norm convexity in the form
+
+       sqrt(eps + sum_i(x_i**2))
+    """
+    def register_handlers(self):
+        return {
+            dex.SqrtExpression: self.visit_sqrt,
+        }
+
+    def handle_result(self, expr, result, ctx):
+        ctx.convexity[expr] = result
+        return not result.is_unknown()
+
+    def visit_sqrt(self, expr, ctx):
+        if not isinstance(expr.children[0], dex.SumExpression):
+            return
+        grandchildren = expr.children[0].children
+        if all([self._square_or_constant(c) for c in grandchildren]):
+            return Convexity.Convex
+
+    def _square_or_constant(self, expr):
+        if isinstance(expr, dex.Constant):
+            return True
+        if isinstance(expr, dex.PowExpression):
+            base, exp = expr.children
+            if isinstance(base, dex.Variable) and isinstance(exp, dex.Constant):
+                return exp.value == 2
+            else:
+                return False
+        if isinstance(expr, dex.ProductExpression):
+            if len(expr.children) != 2:
+                return False
+            f, g = expr.children
+            return f is g and isinstance(f, dex.Variable)
+        return False

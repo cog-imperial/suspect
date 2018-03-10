@@ -19,6 +19,7 @@ setup(
     entry_points={
         'suspect.convexity_detection': [
             'rsyn=suspect.extras.convexity:RSynConvexityVisitor',
+            'l2norm=suspect.extras.convexity:L2NormConvexityVisitor',
         ]
     },
     scripts=[
