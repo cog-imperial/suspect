@@ -15,7 +15,7 @@ import abc
 
 
 class Visitor(object, metaclass=abc.ABCMeta):
-    def __init__(self):
+    def __init__(self, *args):
         self._registered_handlers = self.register_handlers()
 
     @abc.abstractmethod

@@ -17,7 +17,7 @@ from suspect.dag.visitor import ForwardVisitor
 from suspect.convexity import Convexity
 
 
-class RSynConvexityPropagationVisitor(ForwardVisitor):
+class RSynConvexityVisitor(ForwardVisitor):
     def register_handlers(self):
         return {
             dex.ProductExpression: self.visit_product,
@@ -25,7 +25,7 @@ class RSynConvexityPropagationVisitor(ForwardVisitor):
 
     def handle_result(self, expr, result, ctx):
         ctx.convexity[expr] = result
-        return result.is_unknown()
+        return not result.is_unknown()
 
     def visit_product(self, expr, ctx):
         f, g = expr.children

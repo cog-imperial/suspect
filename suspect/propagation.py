@@ -26,26 +26,26 @@ def convexity_detection_entry_points():
 
 
 class SpecialStructurePropagationVisitor(object):
-    def __init__(self):
+    def __init__(self, problem):
         self._mono_visitors = [MonotonicityPropagationVisitor()]
         for entry_point in monotonicity_detection_entry_points():
             cls = entry_point.load()
-            self._mono_visitors.append(cls())
+            self._mono_visitors.append(cls(problem))
 
         self._cvx_visitors = [ConvexityPropagationVisitor()]
         for entry_point in convexity_detection_entry_points():
             cls = entry_point.load()
-            self._cvx_visitors.append(cls())
+            self._cvx_visitors.append(cls(problem))
 
     def __call__(self, expr, ctx):
         for mono_visitor in self._mono_visitors:
-            mono_unknown = mono_visitor(expr, ctx)
-            if not mono_unknown:
+            mono_known = mono_visitor(expr, ctx)
+            if mono_known:
                 break
 
         for cvx_visitor in self._cvx_visitors:
-            cvx_unknown = cvx_visitor(expr, ctx)
-            if not cvx_unknown:
+            cvx_known = cvx_visitor(expr, ctx)
+            if cvx_known:
                 break
 
 
@@ -66,6 +66,6 @@ def propagate_special_structure(problem, ctx):
     convexity: dict-like
         convexity information for the problem.
     """
-    visitor = SpecialStructurePropagationVisitor()
+    visitor = SpecialStructurePropagationVisitor(problem)
     problem.forward_visit(visitor, ctx)
     return ctx.monotonicity, ctx.convexity

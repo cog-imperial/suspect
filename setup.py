@@ -18,7 +18,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     entry_points={
         'suspect.convexity_detection': [
-            'rsyn=suspect.extras.convexity:RSynConvexityPropagationVisitor'
+            'rsyn=suspect.extras.convexity:RSynConvexityVisitor',
         ]
     },
     scripts=[
