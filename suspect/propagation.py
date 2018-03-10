@@ -14,16 +14,39 @@
 
 from suspect.monotonicity import MonotonicityPropagationVisitor
 from suspect.convexity import ConvexityPropagationVisitor
+import pkg_resources
 
 
-class ConvexityMonotonicityPropagationVisitor(object):
+def monotonicity_detection_entry_points():
+    return pkg_resources.iter_entry_points('suspect.monotonicity_detection')
+
+
+def convexity_detection_entry_points():
+    return pkg_resources.iter_entry_points('suspect.convexity_detection')
+
+
+class SpecialStructurePropagationVisitor(object):
     def __init__(self):
-        self._mono = MonotonicityPropagationVisitor()
-        self._cvx = ConvexityPropagationVisitor()
+        self._mono_visitors = [MonotonicityPropagationVisitor()]
+        for entry_point in monotonicity_detection_entry_points():
+            cls = entry_point.load()
+            self._mono_visitors.append(cls())
+
+        self._cvx_visitors = [ConvexityPropagationVisitor()]
+        for entry_point in convexity_detection_entry_points():
+            cls = entry_point.load()
+            self._cvx_visitors.append(cls())
 
     def __call__(self, expr, ctx):
-        self._mono(expr, ctx)
-        self._cvx(expr, ctx)
+        for mono_visitor in self._mono_visitors:
+            mono_unknown = mono_visitor(expr, ctx)
+            if not mono_unknown:
+                break
+
+        for cvx_visitor in self._cvx_visitors:
+            cvx_unknown = cvx_visitor(expr, ctx)
+            if not cvx_unknown:
+                break
 
 
 def propagate_special_structure(problem, ctx):
@@ -43,6 +66,6 @@ def propagate_special_structure(problem, ctx):
     convexity: dict-like
         convexity information for the problem.
     """
-    visitor = ConvexityMonotonicityPropagationVisitor()
+    visitor = SpecialStructurePropagationVisitor()
     problem.forward_visit(visitor, ctx)
     return ctx.monotonicity, ctx.convexity

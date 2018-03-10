@@ -16,6 +16,11 @@ setup(
     license=about['__license__'],
     version=about['__version__'],
     packages=find_packages(exclude=['tests']),
+    entry_points={
+        'suspect.convexity_detection': [
+            'rsyn=suspect.extras.convexity:RSynConvexityPropagationVisitor'
+        ]
+    },
     scripts=[
         'scripts/model_summary.py',
         'scripts/osil_to_dot.py',

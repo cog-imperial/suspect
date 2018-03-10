@@ -71,6 +71,7 @@ class MonotonicityPropagationVisitor(ForwardVisitor):
 
     def handle_result(self, expr, result, ctx):
         ctx.monotonicity[expr] = result
+        return result.is_unknown()
 
     def visit_variable(self, _expr, _ctx):
         return Monotonicity.Nondecreasing

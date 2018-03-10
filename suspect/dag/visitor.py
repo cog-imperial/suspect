@@ -14,28 +14,6 @@
 import abc
 
 
-class Dispatcher(object):
-    def __init__(self, lookup, allow_missing=False):
-        self._lookup = lookup
-        self._allow_missing = allow_missing
-
-    def dispatch(self, expr):
-        type_ = type(expr)
-        cb = self._lookup.get(type_)
-        if cb is not None:
-            return cb(expr)
-
-        # try superclasses, for most cases this will work fine
-        # but since dicts are not ordered it could cause
-        # unexpected behaviour
-        for target_type, cb in self._lookup.items():
-            if isinstance(expr, target_type):
-                return cb(expr)
-
-        if not self._allow_missing:
-            raise RuntimeError('Could not find callback for {} of type {}'.format(expr, type_))
-
-
 class Visitor(object, metaclass=abc.ABCMeta):
     def __init__(self):
         self._registered_handlers = self.register_handlers()
