@@ -40,6 +40,7 @@ class Expression(metaclass=abc.ABCMeta):
             children = []
 
         self._children = children
+        self._parents = []
 
         self._depth = 0
         self._update_depth()
@@ -57,6 +58,13 @@ class Expression(metaclass=abc.ABCMeta):
     @property
     def children(self):
         return self._children
+
+    @property
+    def parents(self):
+        return self._parents
+
+    def add_parent(self, parent):
+        self._parents.append(parent)
 
     def _update_depth(self):
         max_depth = self.depth

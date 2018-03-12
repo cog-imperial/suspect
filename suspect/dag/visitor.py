@@ -49,8 +49,7 @@ class ForwardVisitor(Visitor):
         if result is not None:
             has_changed = self.handle_result(expr, result, ctx)
             if has_changed:
-                return True
-        return False
+                return [expr]
 
 
 class BackwardVisitor(Visitor):
@@ -61,12 +60,12 @@ class BackwardVisitor(Visitor):
     def __call__(self, expr, ctx):
         result = self.visit(expr, ctx)
         if isinstance(result, dict):
-            any_changed = False
+            changes = []
             for k, v in result.items():
                 has_changed = self.handle_result(k, v, ctx)
                 if has_changed:
-                    any_changed = True
-            return any_changed
+                    changes.append(k)
+            if len(changes) > 0:
+                return changes
         elif result is not None:
             raise RuntimeError('BackwardVisitor must return dict')
-        return False

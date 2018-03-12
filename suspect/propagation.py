@@ -47,6 +47,7 @@ class SpecialStructurePropagationVisitor(object):
             cvx_known = cvx_visitor(expr, ctx)
             if cvx_known:
                 break
+        return [expr]
 
 
 def propagate_special_structure(problem, ctx):

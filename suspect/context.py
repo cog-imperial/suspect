@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# from suspect.monotonicity.monotonicity import Monotonicity
+# from suspect.convexity.convexity import Convexity
+
 
 class SpecialStructurePropagationContext(object):
     def __init__(self, bounds):

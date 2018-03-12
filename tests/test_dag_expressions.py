@@ -13,19 +13,8 @@
 # limitations under the License.
 
 import pytest
-from unittest.mock import MagicMock
-from hypothesis import given, assume
-import hypothesis.strategies as st
-from suspect.bound.propagation import BoundsPropagationVisitor
 import suspect.dag.expressions as dex
-from suspect.bound import ArbitraryPrecisionBound as Bound
-from tests.conftest import (
-    PlaceholderExpression,
-    bound_description_to_bound,
-    mono_description_to_mono,
-    coefficients,
-    reals,
-)
+from tests.conftest import PlaceholderExpression
 
 
 class TestConstraintLinearComponent(object):

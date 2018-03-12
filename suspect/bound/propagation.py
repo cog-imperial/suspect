@@ -93,7 +93,7 @@ class BoundsPropagationVisitor(ForwardVisitor):
         return func()
 
 
-def propagate_bounds(dag, ctx):
+def propagate_bounds(dag, ctx, starting_vertices=None):
     """Propagate bounds from sources to sinks.
 
     Arguments
@@ -102,6 +102,8 @@ def propagate_bounds(dag, ctx):
       the problem
     ctx: SpecialStructurePropagationContext
       the context containing the initial bounds
+    starting_vertices: Expression list
+      start propagation from these vertices
     """
     visitor = BoundsPropagationVisitor()
-    return dag.forward_visit(visitor, ctx)
+    return dag.forward_visit(visitor, ctx, starting_vertices)

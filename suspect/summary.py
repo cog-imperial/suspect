@@ -14,6 +14,7 @@
 
 import warnings
 from suspect.bound import propagate_bounds, initialize_bounds, tighten_bounds
+from suspect.bound import ArbitraryPrecisionBound as Bound
 from suspect.propagation import propagate_special_structure
 from suspect.polynomial_degree import polynomial_degree
 
@@ -99,9 +100,10 @@ def detect_special_structure(problem, max_iter=10):
     """
 
     ctx = initialize_bounds(problem)
+    changes_tigh = None
     for _ in range(max_iter):
-        changes_prop = propagate_bounds(problem, ctx)
-        changes_tigh = tighten_bounds(problem, ctx)
+        changes_prop = propagate_bounds(problem, ctx, changes_tigh)
+        changes_tigh = tighten_bounds(problem, ctx, changes_prop)
         if len(changes_prop) == 0 and len(changes_tigh) == 0:
             break
 
@@ -137,7 +139,7 @@ def detect_special_structure(problem, max_iter=10):
             sense = 'min'
         else:
             sense = 'max'
-        obj_bounds = ctx.bound[obj]
+        obj_bounds = ctx.bound.get(obj, Bound(None, None))
         cvx = ctx.convexity[obj]
         poly = polynomial[obj]
 

@@ -71,6 +71,7 @@ class PolynomialDegreeVisitor(ForwardVisitor):
 
     def handle_result(self, expr, result, ctx):
         ctx[expr] = result
+        return True
 
     def visit_variable(self, _variable, _ctx):
         return PolynomialDegree(1)

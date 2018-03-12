@@ -56,6 +56,9 @@ class ExpressionConverterHandler(ExpressionHandler):
 
     def set(self, expr, new_expr):
         self.memo[expr] = new_expr
+        if len(new_expr.children) > 0:
+            for child in new_expr.children:
+                child.add_parent(new_expr)
         self.dag.add_vertex(new_expr)
 
     def _check_children(self, expr):
@@ -193,12 +196,14 @@ class ComponentFactory(object):
     def constraint(self, omo_cons):
         bounds, expr = bounds_and_expr(omo_cons.expr)
         new_expr = self.expression(expr)
-        return dex.Constraint(
+        constraint = dex.Constraint(
             omo_cons.name,
             bounds.lower,
             bounds.upper,
             [new_expr],
         )
+        new_expr.add_parent(constraint)
+        return constraint
 
     def objective(self, omo_obj):
         if omo_obj.is_minimizing():
@@ -207,9 +212,11 @@ class ComponentFactory(object):
             sense = dex.Sense.MAXIMIZE
 
         new_expr = self.expression(omo_obj.expr)
-        return dex.Objective(
+        obj = dex.Objective(
             omo_obj.name, sense=sense, children=[new_expr]
         )
+        new_expr.add_parent(obj)
+        return obj
 
     def expression(self, expr):
         return convert_expression(self._components, self.dag, expr)

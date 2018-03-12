@@ -17,7 +17,7 @@ from suspect.dag.visitor import BackwardVisitor
 from suspect.bound import ArbitraryPrecisionBound as Bound
 
 
-def tighten_bounds(dag, ctx):
+def tighten_bounds(dag, ctx, starting_vertices=None):
     """Tighten bounds from sinks to sources.
 
     Parameters
@@ -26,9 +26,11 @@ def tighten_bounds(dag, ctx):
       the problem
     ctx: dict-like
       the context containing each node bounds
+    starting_vertices: Expression list
+      start propagation from these vertices
     """
     visitor = BoundsTighteningVisitor()
-    return dag.backward_visit(visitor, ctx)
+    return dag.backward_visit(visitor, ctx, starting_vertices)
 
 
 class BoundsTighteningVisitor(BackwardVisitor):
@@ -83,6 +85,10 @@ class BoundsTighteningVisitor(BackwardVisitor):
     def visit_unary_function(self, expr, ctx):
         child = expr.children[0]
         bound = ctx.bound[expr]
+        if expr.func_name in ['sin', 'cos', 'tan', 'asin', 'acos', 'atan']:
+            return {
+                child: Bound(None, None)
+            }
         func = getattr(bound, expr.func_name)
         return {
             child: func.inv()
