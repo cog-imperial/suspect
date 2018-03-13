@@ -15,6 +15,10 @@
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
 from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.math.arbitrary_precision import inf
+
+
+MAX_EXPR_CHILDREN = 1000
 
 
 def tighten_bounds(dag, ctx, starting_vertices=None):
@@ -67,6 +71,10 @@ class BoundsTighteningVisitor(BackwardVisitor):
 
     def visit_sum(self, expr, ctx):
         expr_bound = ctx.bound[expr]
+        if expr_bound.size() == inf:
+            return
+        if len(expr.children) > MAX_EXPR_CHILDREN:
+            return
         bounds = {}
         for child, siblings in _sum_child_and_siblings(expr.children):
             siblings_bound = sum(ctx.bound[s] for s in siblings)
@@ -75,6 +83,10 @@ class BoundsTighteningVisitor(BackwardVisitor):
 
     def visit_linear(self, expr, ctx):
         expr_bound = ctx.bound[expr]
+        if expr_bound.size() == inf:
+            return
+        if len(expr.children) > MAX_EXPR_CHILDREN:
+            return
         bounds = {}
         const = expr.constant_term
         for (child_c, child), siblings in _linear_child_and_siblings(expr.coefficients, expr.children):
