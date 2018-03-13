@@ -60,7 +60,8 @@ class VerticesList(object):
         """Pop an element from the front of the list"""
         self._vertices_depth.pop(0)
         vertex = self._vertices.pop(0)
-        self._vertices_set.remove(id(vertex))
+        if id(vertex) in self._vertices_set:
+            self._vertices_set.remove(id(vertex))
         return vertex
 
     def __iter__(self):
