@@ -70,14 +70,14 @@ class ModelInformation(object):
             cvx = v['convexity']
             deg = v['polynomial_degree']
             if cvx.is_linear():
-                assert deg.degree == 1
+                assert deg.is_linear()
                 return 'linear'
-            elif deg == 2:
+            elif deg.is_quadratic():
                 return 'quadratic'
-            elif deg is None:
-                return 'nonlinear'
-            else:
+            elif deg.is_polynomial():
                 return 'polynomial'
+            else:
+                return 'nonlinear'
 
         return dict(
             (k, _objtype(v))
@@ -98,13 +98,15 @@ def detect_special_structure(problem, max_iter=10):
     ModelInformation
         an object containing the detected infomation about the problem
     """
-
     ctx = initialize_bounds(problem)
     changes_tigh = None
-    for _ in range(max_iter):
+    for i in range(max_iter):
         changes_prop = propagate_bounds(problem, ctx, changes_tigh)
+        if len(changes_prop) == 0:
+            break
+
         changes_tigh = tighten_bounds(problem, ctx, changes_prop)
-        if len(changes_prop) == 0 and len(changes_tigh) == 0:
+        if len(changes_tigh) == 0:
             break
 
     monotonicity, convexity = propagate_special_structure(problem, ctx)

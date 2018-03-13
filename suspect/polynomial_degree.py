@@ -34,6 +34,12 @@ class PolynomialDegree(object):
     def is_polynomial(self):
         return self.degree is not None
 
+    def is_linear(self):
+        return self.is_polynomial() and self.degree == 1
+
+    def is_quadratic(self):
+        return self.is_polynomial() and self.degree == 2
+
     def __add__(self, other):
         if self.is_polynomial() and other.is_polynomial():
             return PolynomialDegree(self.degree + other.degree)
