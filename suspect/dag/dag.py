@@ -38,6 +38,7 @@ class VerticesList(object):
 
         self._vertices = vertices
         self._vertices_depth = [v.depth for v in self._vertices]
+        self._vertices_set = set([id(v) for v in self._vertices])
         self._reverse = reverse
 
         if self._reverse:
@@ -47,21 +48,29 @@ class VerticesList(object):
 
     def append(self, vertex):
         """Append vertex to the list, keeping the vertices sorted by depth"""
+        if id(vertex) in self._vertices_set:
+            return
         depth = vertex.depth
         insertion_idx = self._find_insertion_idx(self._vertices_depth, depth)
         self._vertices.insert(insertion_idx, vertex)
         self._vertices_depth.insert(insertion_idx, depth)
+        self._vertices_set.add(id(vertex))
 
     def pop(self):
         """Pop an element from the front of the list"""
         self._vertices_depth.pop(0)
-        return self._vertices.pop(0)
+        vertex = self._vertices.pop(0)
+        self._vertices_set.remove(id(vertex))
+        return vertex
 
     def __iter__(self):
         return iter(self._vertices)
 
     def __len__(self):
         return len(self._vertices)
+
+    def __contains__(self, vertex):
+        return id(vertex) in self._vertices_set
 
 
 class ProblemDag(object):
@@ -112,6 +121,8 @@ class ProblemDag(object):
         seen = set()
         while len(vertices) > 0:
             curr_vertex = vertices.pop()
+            if id(curr_vertex) in seen:
+                continue
             changes = cb(curr_vertex, ctx)
             seen.add(id(curr_vertex))
 
@@ -121,7 +132,6 @@ class ProblemDag(object):
                     for next_vertex in get_next_vertices(v):
                         if id(next_vertex) not in seen:
                             vertices.append(next_vertex)
-                            seen.add(id(next_vertex))
 
         return changed_vertices
 
