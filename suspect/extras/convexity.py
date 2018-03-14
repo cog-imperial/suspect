@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import ForwardVisitor
 from suspect.convexity import Convexity
@@ -121,3 +122,97 @@ class L2NormConvexityVisitor(ForwardVisitor):
             f, g = expr.children
             return f is g and isinstance(f, dex.Variable)
         return False
+
+
+class QuadraticFormConvexityVisitor(ForwardVisitor):
+    def register_handlers(self):
+        return {
+            dex.SumExpression: self.visit_sum,
+        }
+
+    def handle_result(self, expr, result, ctx):
+        ctx.convexity[expr] = result
+        return not result.is_unknown()
+
+    def visit_sum(self, expr, ctx):
+        if not all(self._product_or_square(child) for child in expr.children):
+            return
+        unique_vars = self._unique_variables(expr)
+        n = len(unique_vars)
+        A = np.zeros((n, n))
+        for (vi, vj, c) in self._product_variables(expr):
+            i = unique_vars[vi]
+            j = unique_vars[vj]
+            if i == j:
+                A[i, j] = c
+            else:
+                A[i, j] /= 2
+                A[j, i] = A[i, j]
+        eigv = np.linalg.eigvalsh(A)
+        if np.all(eigv >= 0):
+            return Convexity.Convex
+
+    def _product_or_square(self, expr):
+        if not isinstance(expr, (dex.ProductExpression, dex.PowExpression)):
+            return False
+
+        if isinstance(expr, dex.ProductExpression):
+            if len(expr.children) != 2:
+                return False
+            a, b = expr.children
+            return self._is_product_of_variables(a, b)
+
+        print(expr.children)
+
+    def _is_product_of_variables(self, a, b):
+        if isinstance(a, dex.Variable):
+            if isinstance(b, dex.Variable):
+                return True
+            if isinstance(b, dex.LinearExpression):
+                if b.constant_term != 0 or len(b.children) != 1:
+                    return False
+            return isinstance(b.children[0], dex.Variable)
+        elif isinstance(b, dex.Variable):
+            return self._is_product_of_variables(b, a)
+        return False
+
+    def _unique_variables(self, expr):
+        result = {}
+        count = 0
+
+        def _maybe_variable(v, count):
+            if v in result:
+                return count
+            result[v] = count
+            return count + 1
+
+        for child in expr.children:
+            if isinstance(child, dex.ProductExpression):
+                a, b = child.children
+                if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
+                    count = _maybe_variable(a, count)
+                    count = _maybe_variable(b, count)
+                elif isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
+                    count = _maybe_variable(a, count)
+                    count = _maybe_variable(b.children[0], count)
+                elif isinstance(b, dex.Variable) and isinstance(a, dex.LinearExpression):
+                    count = _maybe_variable(a.children[0], count)
+                    count = _maybe_variable(b, count)
+                else:
+                    raise RuntimeError('unreachable')
+        return result
+
+    def _product_variables(self, expr):
+        # From previous checks, we know we are going to
+        # encouter only bilinear terms
+        for child in expr.children:
+            if isinstance(child, dex.ProductExpression):
+                a, b = child.children
+                if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
+                    yield (a, b, 1.0)
+                elif isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
+                    yield (a, b.children[0], b.coefficients[0])
+                elif isinstance(b, dex.Variable) and isinstance(a, dex.LinearExpression):
+                    yield (a.children[0], b, a.coefficients[0])
+                else:
+                    raise RuntimeError('unreachable')
