@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import bisect
+from suspect.dag.visitor import ForwardVisitor, BackwardVisitor
 
 
 def _reverse_bisect_right(arr, x):
@@ -93,6 +94,12 @@ class ProblemDag(object):
     @property
     def vertices(self):
         return iter(self._vertices)
+
+    def visit(self, visitor, ctx, starting_vertices=None):
+        if isinstance(visitor, ForwardVisitor):
+            return self.forward_visit(visitor, ctx, starting_vertices)
+        elif isinstance(visitor, BackwardVisitor):
+            return self.backward_visit(visitor, ctx, starting_vertices)
 
     def forward_visit(self, cb, ctx, starting_vertices=None):
         if starting_vertices is None:
