@@ -207,7 +207,9 @@ def run_for_problem(filename, solution_filename, timeout_):
     logging.info('Starting {} / {}. timeout={}'.format(filename, solution_filename, timeout_))
     try:
         with Timeout(seconds=300):
+            logging.info('\tReading Problem')
             model = read_problem(filename)
+            logging.info('\tConverting DAG')
             model = dag_from_pyomo_model(model)
     except Exception as err:
         logging.error('{}: Error reading: {}'.format(filename, str(err)))
@@ -215,9 +217,11 @@ def run_for_problem(filename, solution_filename, timeout_):
 
     try:
         with Timeout(seconds=timeout_):
+            logging.info('\tStarting Special Structure Detection')
             start_t = time.time()
             info = detect_special_structure(model)
             end_t = time.time()
+            logging.info('\tSpecial Structure Detection Finished')
 
     except Exception as err:
         logging.error('{}: {}'.format(model.name, str(err)))
