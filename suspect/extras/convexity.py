@@ -135,84 +135,85 @@ class QuadraticFormConvexityVisitor(ForwardVisitor):
         return not result.is_unknown()
 
     def visit_sum(self, expr, ctx):
-        if not all(self._product_or_square(child) for child in expr.children):
+        if not ctx.polynomial[expr].is_quadratic():
             return
-        unique_vars = self._unique_variables(expr)
+        # Check convexity of non quadratic children
+        for child in expr.children:
+            if not ctx.polynomial[child].is_quadratic():
+                if not ctx.convexity[child].is_convex():
+                    # we have sum of quadratic + unknown nonlinear
+                    # It can't be convex so just stop checking
+                    return
+
+        count = 0
+        unique_vars = {}
+        for (vi, vj, _) in self._variables_of_quadratic(expr, ctx):
+            if vi not in unique_vars:
+                unique_vars[vi] = count
+                count += 1
+            if vj not in unique_vars:
+                unique_vars[vj] = count
+                count += 1
+
         n = len(unique_vars)
         A = np.zeros((n, n))
-        for (vi, vj, c) in self._product_variables(expr):
+        for (vi, vj, c) in self._variables_of_quadratic(expr, ctx):
             i = unique_vars[vi]
             j = unique_vars[vj]
             if i == j:
                 A[i, j] = c
             else:
-                A[i, j] /= 2
+                A[i, j] = c / 2
                 A[j, i] = A[i, j]
         eigv = np.linalg.eigvalsh(A)
         if np.all(eigv >= 0):
             return Convexity.Convex
 
-    def _product_or_square(self, expr):
-        if not isinstance(expr, (dex.ProductExpression, dex.PowExpression)):
-            return False
+    def _variables_of_quadratic(self, expr, ctx):
+        def _both_variables(a, b):
+            return (a, b, 1.0)
 
-        if isinstance(expr, dex.ProductExpression):
-            if len(expr.children) != 2:
-                return False
+        def _variable_and_linear(a, b):
+            return (a, b.children[0], b.coefficients[0])
+
+        def _const_pow_expression(const, powe):
+            a, b = powe.children
+            if isinstance(a, dex.Variable):
+                assert isinstance(b, dex.Constant)
+                return (a, a, const)
+            elif isinstance(b, dex.Variable):
+                assert isinstance(a, dex.Constant)
+                return (b, b, const)
+            else:
+                raise RuntimeError('unreachable')
+
+        def _product_expression(expr):
             a, b = expr.children
-            return self._is_product_of_variables(a, b)
+            if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
+                return _both_variables(a, b)
+            elif isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
+                return _variable_and_linear(a, b)
+            elif isinstance(b, dex.Variable) and isinstance(a, dex.LinearExpression):
+                return _variable_and_linear(b, a)
+            elif isinstance(a, dex.Constant) and isinstance(b, dex.PowExpression):
+                return _const_pow_expression(a.value, b)
+            elif isinstance(b, dex.Constant) and isinstance(a, dex.PowExpression):
+                return _const_pow_expression(b.value, a)
+            else:
+                raise RuntimeError('unreachable')
 
-        print(expr.children)
-
-    def _is_product_of_variables(self, a, b):
-        if isinstance(a, dex.Variable):
-            if isinstance(b, dex.Variable):
-                return True
-            if isinstance(b, dex.LinearExpression):
-                if b.constant_term != 0 or len(b.children) != 1:
-                    return False
-            return isinstance(b.children[0], dex.Variable)
-        elif isinstance(b, dex.Variable):
-            return self._is_product_of_variables(b, a)
-        return False
-
-    def _unique_variables(self, expr):
-        result = {}
-        count = 0
-
-        def _maybe_variable(v, count):
-            if v in result:
-                return count
-            result[v] = count
-            return count + 1
+        def _child_variables(child):
+            if isinstance(child, dex.ProductExpression):
+                return _product_expression(child)
+            elif isinstance(child, dex.PowExpression):
+                return _const_pow_expression(1.0, child)
+            elif isinstance(child, dex.NegationExpression):
+                expr = child.children[0]
+                return _child_variables(expr)
+            else:
+                raise RuntimeError('unreachable')
 
         for child in expr.children:
-            if isinstance(child, dex.ProductExpression):
-                a, b = child.children
-                if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
-                    count = _maybe_variable(a, count)
-                    count = _maybe_variable(b, count)
-                elif isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
-                    count = _maybe_variable(a, count)
-                    count = _maybe_variable(b.children[0], count)
-                elif isinstance(b, dex.Variable) and isinstance(a, dex.LinearExpression):
-                    count = _maybe_variable(a.children[0], count)
-                    count = _maybe_variable(b, count)
-                else:
-                    raise RuntimeError('unreachable')
-        return result
-
-    def _product_variables(self, expr):
-        # From previous checks, we know we are going to
-        # encouter only bilinear terms
-        for child in expr.children:
-            if isinstance(child, dex.ProductExpression):
-                a, b = child.children
-                if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
-                    yield (a, b, 1.0)
-                elif isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
-                    yield (a, b.children[0], b.coefficients[0])
-                elif isinstance(b, dex.Variable) and isinstance(a, dex.LinearExpression):
-                    yield (a.children[0], b, a.coefficients[0])
-                else:
-                    raise RuntimeError('unreachable')
+            if not ctx.polynomial[child].is_quadratic():
+                continue
+            yield _child_variables(child)

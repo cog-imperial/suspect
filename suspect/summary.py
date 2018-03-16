@@ -109,8 +109,8 @@ def detect_special_structure(problem, max_iter=10):
         if len(changes_tigh) == 0:
             break
 
+    polynomial = polynomial_degree(problem, ctx)
     monotonicity, convexity = propagate_special_structure(problem, ctx)
-    polynomial = polynomial_degree(problem)
 
     variables = {}
     for variable_name, variable in problem.variables.items():

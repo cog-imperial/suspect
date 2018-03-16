@@ -21,3 +21,4 @@ class SpecialStructurePropagationContext(object):
         self.bound = bounds
         self.monotonicity = {}
         self.convexity = {}
+        self.polynomial = {}

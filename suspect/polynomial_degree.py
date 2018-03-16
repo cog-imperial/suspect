@@ -16,11 +16,10 @@ import suspect.dag.expressions as dex
 from suspect.dag.visitor import ForwardVisitor
 
 
-def polynomial_degree(dag):
+def polynomial_degree(dag, ctx):
     visitor = PolynomialDegreeVisitor()
-    poly_degree = {}
-    dag.forward_visit(visitor, poly_degree)
-    return poly_degree
+    dag.forward_visit(visitor, ctx)
+    return ctx.polynomial
 
 
 class PolynomialDegree(object):
@@ -76,7 +75,7 @@ class PolynomialDegreeVisitor(ForwardVisitor):
         }
 
     def handle_result(self, expr, result, ctx):
-        ctx[expr] = result
+        ctx.polynomial[expr] = result
         return True
 
     def visit_variable(self, _variable, _ctx):
@@ -86,19 +85,19 @@ class PolynomialDegreeVisitor(ForwardVisitor):
         return PolynomialDegree(0)
 
     def visit_constraint(self, expr, ctx):
-        return ctx[expr.children[0]]
+        return ctx.polynomial[expr.children[0]]
 
     def visit_objective(self, expr, ctx):
-        return ctx[expr.children[0]]
+        return ctx.polynomial[expr.children[0]]
 
     def visit_product(self, expr, ctx):
-        return sum([ctx[a] for a in expr.children], PolynomialDegree(0))
+        return sum([ctx.polynomial[a] for a in expr.children], PolynomialDegree(0))
 
     def visit_division(self, expr, ctx):
         assert len(expr.children) == 2
-        den_degree = ctx[expr.children[1]]
+        den_degree = ctx.polynomial[expr.children[1]]
         if den_degree.is_polynomial() and den_degree.degree == 0:
-            return ctx[expr.children[0]]
+            return ctx.polynomial[expr.children[0]]
         return PolynomialDegree.not_polynomial()
 
     def visit_linear(self, expr, _ctx):
@@ -109,8 +108,8 @@ class PolynomialDegreeVisitor(ForwardVisitor):
     def visit_pow(self, expr, ctx):
         assert len(expr.children) == 2
         base, expo = expr.children
-        base_degree = ctx[base]
-        expo_degree = ctx[expo]
+        base_degree = ctx.polynomial[base]
+        expo_degree = ctx.polynomial[expo]
 
         if not (base_degree.is_polynomial() and expo_degree.is_polynomial()):
             return PolynomialDegree.not_polynomial()
@@ -127,11 +126,11 @@ class PolynomialDegreeVisitor(ForwardVisitor):
         return PolynomialDegree.not_polynomial()
 
     def visit_sum(self, expr, ctx):
-        return max(ctx[a] for a in expr.children)
+        return max(ctx.polynomial[a] for a in expr.children)
 
     def visit_negation(self, expr, ctx):
         child = expr.children[0]
-        return ctx[child]
+        return ctx.polynomial[child]
 
     def visit_unary_function(self, _expr, _ctx):
         return PolynomialDegree.not_polynomial()
