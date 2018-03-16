@@ -28,12 +28,28 @@ class RSynConvexityVisitor(ForwardVisitor):
         ctx.convexity[expr] = result
         return not result.is_unknown()
 
+    @property
+    def convex_concave_functions(self):
+        return self.convex_functions + self.concave_functions
+
+    @property
+    def convex_functions(self):
+        return ['exp']
+
+    @property
+    def concave_functions(self):
+        return ['sqrt', 'log']
+
     def visit_product(self, expr, ctx):
         f, g = expr.children
         if isinstance(f, dex.LinearExpression) and isinstance(g, dex.SumExpression):
             return self.detect_syn_convexity(f, g, ctx)
         elif isinstance(g, dex.LinearExpression) and isinstance(f, dex.SumExpression):
             return self.detect_syn_convexity(g, f, ctx)
+        elif isinstance(f, dex.LinearExpression) and isinstance(g, dex.UnaryFunctionExpression):
+            return self._detect_syn_convexity(f, g, ctx)
+        elif isinstance(g, dex.LinearExpression) and isinstance(f, dex.UnaryFunctionExpression):
+            return self._detect_syn_convexity(g, f, ctx)
 
     def detect_syn_convexity(self, linear_expr, sum_expr, ctx):
         non_div_children = []
@@ -48,42 +64,65 @@ class RSynConvexityVisitor(ForwardVisitor):
         if len(non_div_children) != 1:
             return
 
-        # Drill down to find log
+        # Drill down to find g
         curr_expr = non_div_children[0]
+        sign = 1.0
         while True:
-            if isinstance(curr_expr, dex.UnaryFunctionExpression) and curr_expr.func_name == 'log':
-                break
-            if isinstance(curr_expr, dex.ProductExpression):
+            if isinstance(curr_expr, dex.UnaryFunctionExpression) and \
+              curr_expr.func_name in self.convex_concave_functions:
+                break  # unary function found
+            elif isinstance(curr_expr, dex.ProductExpression):
                 a, b = curr_expr.children
-                if isinstance(a, dex.Constant):
+                if isinstance(a, dex.Constant) and isinstance(b, dex.UnaryFunctionExpression):
                     curr_expr = b
-                else:
+                    sign *= np.sign(a.value)
+                elif isinstance(b, dex.Constant) and isinstance(a, dex.UnaryFunctionExpression):
                     curr_expr = a
-                continue
-            curr_expr = curr_expr.children[0]
+                    sign *= np.sign(b.value)
+                else:
+                    return
+            elif isinstance(curr_expr, dex.NegationExpression):
+                curr_expr = curr_expr.children[0]
+                sign *= -1.0
+            else:
+                return
 
-        if not isinstance(curr_expr.children[0], dex.SumExpression):
+        cvx = self._detect_syn_convexity(linear_expr, curr_expr, ctx)
+
+        if cvx is None:
             return
-        inner_sum = curr_expr.children[0]
-        a, b = inner_sum.children
-        if isinstance(a, dex.Constant) and isinstance(b, dex.DivisionExpression):
-            const = a
-            div_expr = b
-        elif isinstance(b, dex.Constant) and isinstance(a, dex.DivisionExpression):
-            const = b
-            div_expr = a
+        if sign > 0:
+            return cvx
         else:
+            return cvx.negate()
+
+    def _detect_syn_convexity(self, linear_expr, unary_expr, ctx):
+        g_func = unary_expr.func_name
+        denominator = self._denominator(unary_expr.children[0])
+
+        if denominator is None:
             return
 
-        if const.value != 1.0:
-            return
+        if denominator is linear_expr:
+            if g_func in self.convex_functions:
+                return Convexity.Convex
+            elif g_func in self.concave_functions:
+                return Convexity.Concave
+            else:
+                raise RuntimeError('unreachable')
 
-        num, den = div_expr.children
-        if not isinstance(num, dex.Variable):
-            return
-
-        if den is linear_expr:
-            return Convexity.Convex
+    def _denominator(self, expr):
+        if isinstance(expr, dex.DivisionExpression):
+            return expr.children[1]
+        elif isinstance(expr, dex.SumExpression):
+            divs = []
+            for child in expr.children:
+                den = self._denominator(child)
+                if den is not None:
+                    divs.append(den)
+            if len(divs) == 1:
+                return divs[0]
+        return None
 
 
 class L2NormConvexityVisitor(ForwardVisitor):
