@@ -168,6 +168,8 @@ class QuadraticFormConvexityVisitor(ForwardVisitor):
         eigv = np.linalg.eigvalsh(A)
         if np.all(eigv >= 0):
             return Convexity.Convex
+        elif np.all(eigv <= 0):
+            return Convexity.Concave
 
     def _variables_of_quadratic(self, expr, ctx):
         def _both_variables(a, b):
