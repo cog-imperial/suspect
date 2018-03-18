@@ -49,7 +49,7 @@ def _instance_variables(root):
     for v in vars_:
         attr = v.attrib
         name = attr['name']
-        lb = float(attr['lb']) if 'lb' in attr else None
+        lb = float(attr['lb']) if 'lb' in attr else 0.0
         ub = float(attr['ub']) if 'ub' in attr else None
         type_ = attr.get('type', 'C')
         if type_ == 'S':
