@@ -92,7 +92,7 @@ def plot_runtime_stats(suspect):
     pct_data = pd.Series(pct_done, index=data.values)
     fig = plt.figure(figsize=(8, 4))
     pct_data.plot(logx=True, fig=fig)
-    plt.xlabel('Time ($s$)')
+    plt.xlabel('Time ($\log s$)')
     plt.ylabel('Instances Processed ($\%$)')
     plt.ylim([0, 1])
     plt.xlim([pct_data.index.min(), pct_data.index.max()])
@@ -114,6 +114,19 @@ def compute_results_table(suspect, minlplib):
     return results.pivot(index='expected', columns='have', values='count').fillna(0)
 
 
+def write_problem_list(filename, df, columns=3):
+    with open(filename, 'w') as f:
+        count = 0
+        for name in df.index:
+            f.write('  ' + str(name.replace('_', '\\_')) + '  ')
+            if count >= (columns - 1):
+                f.write('\\\\\n')
+                count = 0
+            else:
+                f.write(' & ')
+                count += 1
+
+
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
     args.add_argument('suspect_input')
@@ -131,6 +144,8 @@ if __name__ == '__main__':
     print()
 
     print_error_statistics(suspect)
+
+    suspect_orig = suspect.set_index('name')
 
     # filter out errors
     suspect = suspect[suspect.status == 'ok']
@@ -153,8 +168,18 @@ if __name__ == '__main__':
     suspect.drop('gams03', inplace=True)
     minlplib.drop('gams03', inplace=True)
 
-    minlplib.conscurvature.replace({'unknown': 'indefinite'}, inplace=True)
-    minlplib.objcurvature.replace({'unknown': 'indefinite'}, inplace=True)
+    cvx_replace = {
+        'unknown': 'indefinite',
+        'nonconcave': 'indefinite',
+        'nonconvex': 'indefinite',
+    }
+    minlplib.conscurvature.replace(cvx_replace, inplace=True)
+    minlplib.objcurvature.replace(cvx_replace, inplace=True)
+
+    type_replace = {
+        'signomial': 'nonlinear'
+    }
+    minlplib.objtype.replace(type_replace, inplace=True)
 
     diff = suspect == minlplib
     all_good = diff.all(axis=1)
@@ -178,3 +203,15 @@ if __name__ == '__main__':
 
     print(' * Objective Type')
     print(compute_results_table(suspect.objtype, minlplib.objtype))
+
+    good_idx = all_good[all_good].index
+    wrong_idx = all_good[~all_good].index
+    correct_result = suspect_orig.loc[good_idx]
+    wrong_result = suspect_orig.loc[wrong_idx]
+
+    correct_lt2 = correct_result[correct_result.runtime <= 2]
+    correct_lt10 = correct_result[(correct_result.runtime > 2) & (correct_result.runtime <= 10)]
+    correct_gt10 = correct_result[correct_result.runtime > 10]
+
+    compare_wrong = wrong_result[STRUCTURE_COLUMNS].join(minlplib[STRUCTURE_COLUMNS], how='left', lsuffix='_have', rsuffix='_expected')
+    compare_wrong['runtime'] = wrong_result['runtime']
