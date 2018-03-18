@@ -173,15 +173,27 @@ class QuadraticFormConvexityVisitor(ForwardVisitor):
         ctx.convexity[expr] = result
         return not result.is_unknown()
 
+    @property
+    def allowed_children(self):
+        return (
+            dex.ProductExpression,
+            dex.NegationExpression,
+            dex.PowExpression,
+        )
+
     def visit_sum(self, expr, ctx):
         if not ctx.polynomial[expr].is_quadratic():
             return
+
         # Check convexity of non quadratic children
         for child in expr.children:
             if not ctx.polynomial[child].is_quadratic():
                 if not ctx.convexity[child].is_convex():
                     # we have sum of quadratic + unknown nonlinear
                     # It can't be convex so just stop checking
+                    return
+            else:
+                if not isinstance(child, self.allowed_children):
                     return
 
         count = 0
