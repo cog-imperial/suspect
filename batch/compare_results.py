@@ -15,6 +15,8 @@
 import argparse
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib2tikz import save as tikz_save
 
@@ -66,10 +68,7 @@ def check_input_data_correctness(suspect, minlplib):
 
 def print_runtime_stats(suspect):
     data = suspect.runtime
-    # Want to avoid having negative bin, since pandas extends the range
-    # by 0.1% on each side.
-    _, bins = pd.cut(data, 10, retbins=True)
-    bins[0] = 0.0
+    bins = [0.0, 1.0, 2.0, 5.0, 10.0, 60.0, 120.0, data.max()]
     binned = pd.cut(data, bins, retbins=False)
     hist = binned.groupby(binned).count()
     tot = hist.sum()
@@ -85,13 +84,16 @@ def print_runtime_stats(suspect):
     print()
 
 
-def plot_runtime_stats(suspect):
+def plot_runtime_stats(suspect, total_instances, read_instances=None):
     data = suspect.runtime.sort_values()
     data_len = data.shape[0]
-    pct_done = np.arange(data_len) / data_len
+    pct_done = np.arange(data_len) / total_instances
     pct_data = pd.Series(pct_done, index=data.values)
     fig = plt.figure(figsize=(8, 4))
     pct_data.plot(logx=True, fig=fig)
+    if read_instances is not None:
+        read_pct = read_instances / total_instances
+        plt.axhline(read_pct, color='black', linestyle='dashed', linewidth=0.8)
     plt.xlabel('Time ($\log s$)')
     plt.ylabel('Instances Processed ($\%$)')
     plt.ylim([0, 1])
@@ -136,12 +138,15 @@ if __name__ == '__main__':
     suspect = pd.read_csv(args.suspect_input)
     minlplib = pd.read_csv(args.minlplib_input)
 
+    total_instances = minlplib.shape[0]
+
     print()
     print('=' * 20 + '-- INPUT DATA --' + '=' * 20)
     print()
 
     print('MINLPLib 2: {} instances'.format(minlplib.shape[0]))
     print()
+
 
     print_error_statistics(suspect)
 
@@ -155,18 +160,23 @@ if __name__ == '__main__':
     suspect.set_index('name', inplace=True)
     minlplib.set_index('name', inplace=True)
 
+    missing_problems = minlplib.loc[~minlplib.index.isin(suspect_orig.index)]
+
     print()
     print('=' * 21 + '-- RESULTS --' + '=' * 21)
     print()
+    print('Correctly read {} out of {} problems ({:.2f}%)'.format(
+        suspect_orig.shape[0], total_instances, (suspect_orig.shape[0] / total_instances) * 100
+    ))
 
     print_runtime_stats(suspect.loc[good_instances])
-    runtime_plot = plot_runtime_stats(suspect.loc[good_instances])
+    runtime_plot = plot_runtime_stats(suspect.loc[good_instances], total_instances, suspect_orig.shape[0])
 
     suspect = suspect.loc[good_instances, STRUCTURE_COLUMNS]
     minlplib = minlplib.loc[good_instances, STRUCTURE_COLUMNS]
 
-    suspect.drop('gams03', inplace=True)
-    minlplib.drop('gams03', inplace=True)
+    # suspect.drop('gams03', inplace=True)
+    # minlplib.drop('gams03', inplace=True)
 
     cvx_replace = {
         'unknown': 'indefinite',
@@ -185,8 +195,9 @@ if __name__ == '__main__':
     all_good = diff.all(axis=1)
     good_pct = sum(all_good) / all_good.shape[0]
 
-    print('Correctly identified {} ({:.2f}%) of the problems.'.format(
+    print('Correctly identified {} out of {} ({:.2f}%) of the problems.'.format(
         sum(all_good),
+        all_good.shape[0],
         good_pct*100
     ))
     print()
@@ -214,4 +225,3 @@ if __name__ == '__main__':
     correct_gt10 = correct_result[correct_result.runtime > 10]
 
     compare_wrong = wrong_result[STRUCTURE_COLUMNS].join(minlplib[STRUCTURE_COLUMNS], how='left', lsuffix='_have', rsuffix='_expected')
-    compare_wrong['runtime'] = wrong_result['runtime']
