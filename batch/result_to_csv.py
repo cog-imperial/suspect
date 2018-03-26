@@ -18,7 +18,7 @@ def read_problem(bucket, problem):
     res = s3.get_object(Bucket=bucket, Key=problem)
     body = res['Body'].read()
     if len(body) > 0:
-        return json.loads(body)
+        return json.loads(body.decode('utf-8'))
     return None
 
 
