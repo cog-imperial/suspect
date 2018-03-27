@@ -7,6 +7,8 @@ Release v\ |version|.
           upgrade.
 
 
+.. _installation:
+
 Installation
 ------------
 
@@ -23,6 +25,7 @@ Or download the tarball::
 After you downloaded the source, you can install it in the current environment::
 
     $ cd suspect
+    $ pip install -r requirements.txt
     $ python install .
 
 
@@ -87,6 +90,14 @@ This command will print a summary about the problem objective and constraints, f
     INFO:root:	Special Structure Detection Finished
     {"bounds_obj_ok": true, "bounds_var_ok": true, "conscurvature": "convex", "name": "rsyn0805h", "nbinvars": 37, "ncons": 429, "nintvars": 0, "nvars": 308, "objcurvature": "linear", "objsense": "max", "objtype": "linear", "runtime": 0.21518850326538086, "status": "ok"}
 
+
+Extending SUSPECT
+-----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   extending
 
 
 API Documentation
