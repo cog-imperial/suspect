@@ -102,11 +102,8 @@ def detect_special_structure(problem, max_iter=10):
     changes_tigh = None
     for i in range(max_iter):
         changes_prop = propagate_bounds(problem, ctx, changes_tigh)
-        if len(changes_prop) == 0:
-            break
-
         changes_tigh = tighten_bounds(problem, ctx, changes_prop)
-        if len(changes_tigh) == 0:
+        if len(changes_tigh) == 0 and len(changes_prop) == 0:
             break
 
     polynomial = polynomial_degree(problem, ctx)

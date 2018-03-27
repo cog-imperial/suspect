@@ -104,6 +104,8 @@ class ProblemDag(object):
     def forward_visit(self, cb, ctx, starting_vertices=None):
         if starting_vertices is None:
             starting_vertices = self._sources
+        else:
+            starting_vertices = self._sources + starting_vertices
         return self._visit(
             cb,
             ctx,
@@ -115,6 +117,8 @@ class ProblemDag(object):
     def backward_visit(self, cb, ctx, starting_vertices=None):
         if starting_vertices is None:
             starting_vertices = self._sinks
+        else:
+            starting_vertices = self._sinks + starting_vertices
         return self._visit(
             cb,
             ctx,
