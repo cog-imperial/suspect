@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from .convert import dag_from_pyomo_model
+from .osil_reader import read_osil

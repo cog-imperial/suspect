@@ -27,6 +27,36 @@ from suspect.dag.dag import ProblemDag
 import suspect.dag.expressions as dex
 
 
+def dag_from_pyomo_model(model):
+    """Convert the Pyomo ``model`` to SUSPECT DAG.
+
+    Parameters
+    ----------
+    model : ConcreteModel
+        the Pyomo model.
+
+    Returns
+    -------
+    ProblemDag
+        SUSPECT problem DAG.
+    """
+    dag = ProblemDag(name=model.name)
+    factory = ComponentFactory(dag)
+    for omo_var in model_variables(model):
+        new_var = factory.variable(omo_var)
+        dag.add_variable(new_var)
+
+    for omo_cons in model_constraints(model):
+        new_cons = factory.constraint(omo_cons)
+        dag.add_constraint(new_cons)
+
+    for omo_obj in model_objectives(model):
+        new_obj = factory.objective(omo_obj)
+        dag.add_objective(new_obj)
+
+    return dag
+
+
 def convert_domain(dom):
     if isinstance(dom, aml.RealSet):
         return dex.Domain.REALS
@@ -220,21 +250,3 @@ class ComponentFactory(object):
 
     def expression(self, expr):
         return convert_expression(self._components, self.dag, expr)
-
-
-def dag_from_pyomo_model(model):
-    dag = ProblemDag(name=model.name)
-    factory = ComponentFactory(dag)
-    for omo_var in model_variables(model):
-        new_var = factory.variable(omo_var)
-        dag.add_variable(new_var)
-
-    for omo_cons in model_constraints(model):
-        new_cons = factory.constraint(omo_cons)
-        dag.add_constraint(new_cons)
-
-    for omo_obj in model_objectives(model):
-        new_obj = factory.objective(omo_obj)
-        dag.add_objective(new_obj)
-
-    return dag

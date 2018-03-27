@@ -76,6 +76,33 @@ class VerticesList(object):
 
 
 class ProblemDag(object):
+    r"""The optimization problem represented as Directed Acyclic Graph (DAG).
+
+    The vertices in the DAG are sorted by depth, defined as
+
+    .. math::
+
+        d(v) = \begin{cases}
+          0 & \text{if } v \text{ is a variable or constant}\\
+          \max\{d(u) | u \in c(v)\} & \text{otherwise}
+        \end{cases}
+
+    where :math:`c(v)` are the children of vertex :math:`v`.
+
+
+    Attributes
+    ----------
+    name : str
+        the problem name.
+    variables : dict
+        the problem variables.
+    constraints : dict
+        the problem constraints.
+    objectives : dict
+        the problem objectives.
+    vertices : iter
+        an iterator over the vertices sorted by :math:`d(v)`.
+    """
     def __init__(self, name=None):
         self.name = name
         # The DAG vertices sorted by depth
@@ -96,12 +123,34 @@ class ProblemDag(object):
         return iter(self._vertices)
 
     def visit(self, visitor, ctx, starting_vertices=None):
+        """Visit all vertices in the DAG.
+
+        Parameters
+        ----------
+        visitor : Visitor
+           the visitor.
+        ctx : dict-like
+           a context passed to the callbacks.
+        starting_vertices : Expression list
+           a list of starting vertices.
+        """
         if isinstance(visitor, ForwardVisitor):
             return self.forward_visit(visitor, ctx, starting_vertices)
         elif isinstance(visitor, BackwardVisitor):
             return self.backward_visit(visitor, ctx, starting_vertices)
 
     def forward_visit(self, cb, ctx, starting_vertices=None):
+        """Forward visit all vertices in the DAG.
+
+        Parameters
+        ----------
+        visitor : ForwardVisitor
+           the visitor.
+        ctx : dict-like
+           a context passed to the callbacks.
+        starting_vertices : Expression list
+           a list of starting vertices.
+        """
         if starting_vertices is None:
             starting_vertices = self._sources
         else:
@@ -115,6 +164,17 @@ class ProblemDag(object):
         )
 
     def backward_visit(self, cb, ctx, starting_vertices=None):
+        """Backward visit all vertices in the DAG.
+
+        Parameters
+        ----------
+        visitor : BackwardVisitor
+           the visitor.
+        ctx : dict-like
+           a context passed to the callbacks.
+        starting_vertices : Expression list
+           a list of starting vertices.
+        """
         if starting_vertices is None:
             starting_vertices = self._sinks
         else:
@@ -148,6 +208,13 @@ class ProblemDag(object):
         return changed_vertices
 
     def add_vertex(self, vertex):
+        """Add a vertex to the DAG.
+
+        Parameters
+        ----------
+        vertex : Expression
+           the vertex to add.
+        """
         self._vertices.append(vertex)
         if vertex.is_source:
             self._sources.append(vertex)
@@ -160,15 +227,49 @@ class ProblemDag(object):
         collection[expr.name] = expr
 
     def add_variable(self, var):
+        """Add a variable to the DAG.
+
+        Parameters
+        ----------
+        var : Variable
+            the variable.
+        """
         self._add_named(var, self.variables)
 
     def add_constraint(self, cons):
+        """Add a constraint to the DAG.
+
+        Parameters
+        ----------
+        cons : Constraint
+           the constraint.
+        """
         self._add_named(cons, self.constraints)
 
     def add_objective(self, obj):
+        """Add an objective to the DAG.
+
+        Parameters
+        ----------
+        obj : Objective
+           the objective.
+        """
         self._add_named(obj, self.objectives)
 
     def stats(self):
+        """Return statistics about the DAG.
+
+        Returns
+        -------
+        dict
+            A dictionary containing information about the DAG:
+
+             * Number of vertices
+             * Maximum depth
+             * Number of variables
+             * Number of constraints
+             * Number of objectives
+        """
         return {
             'num_vertices': len(self.vertices),
             'max_depth': max(self._vertices_depth),

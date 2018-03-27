@@ -13,13 +13,26 @@
 # limitations under the License.
 
 import warnings
+from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect.bound import propagate_bounds, initialize_bounds, tighten_bounds
 from suspect.bound import ArbitraryPrecisionBound as Bound
 from suspect.propagation import propagate_special_structure
 from suspect.polynomial_degree import polynomial_degree
+from pyomo.environ import ConcreteModel
 
 
 class ModelInformation(object):
+    """Hold structure information about a problem.
+
+    Attributes
+    ----------
+    variables : dict
+       map variables names to their information
+    objectives : dict
+       map objectives names to their information
+    constraints : dict
+       map constraints names to their information
+    """
     def __init__(self, name, variables, objectives, constraints):
         self.name = name
         self.variables = variables
@@ -90,14 +103,20 @@ def detect_special_structure(problem, max_iter=10):
 
     Parameters
     ----------
-    model: ProblemDag
-        the problem DAG.
+    model : suspect.dag.ProblemDag or ConcreteModel
+        the problem DAG or a Pyomo ConcreteModel.
+
+    max_iter : int
+        number of maximum bound propagation/tightening iterations.
 
     Returns
     -------
     ModelInformation
-        an object containing the detected infomation about the problem
+        an object containing the detected infomation about the problem.
     """
+    if isinstance(problem, ConcreteModel):
+        problem = dag_from_pyomo_model(problem)
+
     ctx = initialize_bounds(problem)
     changes_tigh = None
     for i in range(max_iter):

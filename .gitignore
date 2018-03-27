@@ -10,3 +10,4 @@ __pycache__
 .tox
 htmlcov
 venv
+docs/_build

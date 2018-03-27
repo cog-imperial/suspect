@@ -57,6 +57,12 @@ class PolynomialDegree(object):
         else:
             return self.degree > other.degree
 
+    def __str__(self):
+        return 'PolynomialDegree(degree={})'.format(self.degree)
+
+    def __repr__(self):
+        return '<{} at {}>'.format(str(self), hex(id(self)))
+
 
 class PolynomialDegreeVisitor(ForwardVisitor):
     def register_handlers(self):

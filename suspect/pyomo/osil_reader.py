@@ -281,5 +281,24 @@ class OsilParser(object):
 
 
 def read_osil(filename, objective_prefix=None, constraint_prefix=None):
+    """Read OSiL-formatted problem into a Pyomo model.
+
+    It's possible to optionally specify a prefix for objectives/constraints
+    to avoid name clashes.
+
+    Parameters
+    ----------
+    filename : str
+        the OSiL file path.
+    objective_prefix : str
+        a prefix to give all objectives.
+    constraint_prefix : str
+        a prefix to give all constraints.
+
+    Returns
+    -------
+    ConcreteModel
+        a Pyomo concrete model.
+    """
     p = OsilParser(filename, objective_prefix, constraint_prefix)
     return p.parse()
