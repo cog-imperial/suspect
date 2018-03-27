@@ -14,19 +14,15 @@
 
 import numpy as np
 import suspect.dag.expressions as dex
-from suspect.dag.visitor import ForwardVisitor
+from suspect.ext import ConvexityDetector
 from suspect.convexity import Convexity
 
 
-class RSynConvexityVisitor(ForwardVisitor):
+class RSynConvexityVisitor(ConvexityDetector):
     def register_handlers(self):
         return {
             dex.ProductExpression: self.visit_product,
         }
-
-    def handle_result(self, expr, result, ctx):
-        ctx.convexity[expr] = result
-        return not result.is_unknown()
 
     @property
     def convex_concave_functions(self):
@@ -125,7 +121,7 @@ class RSynConvexityVisitor(ForwardVisitor):
         return None
 
 
-class L2NormConvexityVisitor(ForwardVisitor):
+class L2NormConvexityVisitor(ConvexityDetector):
     """Detect L_2 Norm convexity in the form
 
        sqrt(eps + sum_i(x_i**2))
@@ -134,10 +130,6 @@ class L2NormConvexityVisitor(ForwardVisitor):
         return {
             dex.SqrtExpression: self.visit_sqrt,
         }
-
-    def handle_result(self, expr, result, ctx):
-        ctx.convexity[expr] = result
-        return not result.is_unknown()
 
     def visit_sqrt(self, expr, ctx):
         if not isinstance(expr.children[0], dex.SumExpression):
@@ -163,15 +155,11 @@ class L2NormConvexityVisitor(ForwardVisitor):
         return False
 
 
-class QuadraticFormConvexityVisitor(ForwardVisitor):
+class QuadraticFormConvexityVisitor(ConvexityDetector):
     def register_handlers(self):
         return {
             dex.SumExpression: self.visit_sum,
         }
-
-    def handle_result(self, expr, result, ctx):
-        ctx.convexity[expr] = result
-        return not result.is_unknown()
 
     @property
     def allowed_children(self):
