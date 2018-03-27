@@ -101,7 +101,10 @@ html_static_path = ['_static']
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-# html_sidebars = {}
+html_sidebars = {
+    '*': ['sidebarintro.html', 'localtoc.html', 'relations.html',
+          'sourcelink.html']
+}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
