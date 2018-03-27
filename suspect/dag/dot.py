@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import suspect.dag.expressions as dex
+from io import StringIO
 
 
-NODE_SYMBOLS = {
+_NODE_SYMBOLS = {
     dex.ProductExpression: '*',
     dex.DivisionExpression: '/',
     dex.SumExpression: '+',
@@ -35,17 +36,17 @@ NODE_SYMBOLS = {
 }
 
 
-def node_name(v):
+def _node_name(v):
     return 'n{}'.format(id(v))
 
 
-def node_label(expr):
+def _node_label(expr):
     if isinstance(expr, (dex.Variable, dex.Constraint, dex.Objective)):
         return expr.name
     elif isinstance(expr, dex.Constant):
         return str(expr.lower_bound)
     else:
-        return NODE_SYMBOLS.get(type(expr))
+        return _NODE_SYMBOLS.get(type(expr))
 
 
 def dump(dag, f, metadata=None):
@@ -56,14 +57,14 @@ def dump(dag, f, metadata=None):
     f.write('  { rank=same;\n')
     for cons in dag.constraints.values():
         f.write('    {} [label="{}", shape=box];\n'.format(
-            node_name(cons),
-            node_label(cons),
+            _node_name(cons),
+            _node_label(cons),
         ))
 
     for obj in dag.objectives.values():
         f.write('    {} [label="{}", shape=box, color=red];\n'.format(
-            node_name(obj),
-            node_label(obj),
+            _node_name(obj),
+            _node_label(obj),
         ))
     f.write('  }\n')
 
@@ -74,24 +75,30 @@ def dump(dag, f, metadata=None):
             continue
         if vertex.depth != cur_depth:
             cur_depth += 1
-            f.write('  }{ rankdir=same;\n')
+            f.write('  }\n  { rankdir=same;\n')
 
         if metadata is None or metadata.get(vertex) is None:
-            label = node_label(vertex)
+            label = _node_label(vertex)
         elif metadata is not None and metadata.get(vertex) is not None:
-            label = node_label(vertex) + '\\n' + str(metadata[vertex])
-        f.write('  {} [label="{}"];\n'.format(
-            node_name(vertex),
+            label = _node_label(vertex) + '\\n' + str(metadata[vertex])
+        f.write('    {} [label="{}"];\n'.format(
+            _node_name(vertex),
             label,
         ))
-    f.write('}\n')
+    f.write('  }\n')
 
     for vertex in dag.vertices:
         for i, child in enumerate(vertex.children):
             f.write('  {} -> {} [taillabel="{}"];\n'.format(
-                node_name(vertex),
-                node_name(child),
+                _node_name(vertex),
+                _node_name(child),
                 i,
             ))
 
     f.write('}\n')
+
+
+def dumps(dag, metadata=None):
+    s = StringIO()
+    dump(dag, s, metadata)
+    return s.getvalue()
