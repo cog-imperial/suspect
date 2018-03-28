@@ -9,6 +9,11 @@ This library implements methods to:
 * Tighten expression bounds
 
 
+Documentation
+-------------
+
+Documentation is available at https://cog-imperial.github.io/suspect/
+
 
 Installation
 ------------
