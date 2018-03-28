@@ -9,14 +9,28 @@ This library implements methods to:
 * Tighten expression bounds
 
 
+
 Installation
 ------------
 
-Install by running `python setup.py install`.
+SUSPECT requires Python 3.5 or later. We recommend installing SUSPECT in
+a virtual environment
+
+To create the virtual environment run:
+
+    $ python3 -m venv myenv
+    $ source myenv/bin/activate
+
+Then you are ready to clone and install SUSPECT
+
+    $ git clone git@github.com:cog-imperial/suspect.git
+    $ cd suspect
+    $ pip install -r requirements.txt
+    $ pip install .
 
 
-Usage
------
+Command Line Usage
+------------------
 
 The package contains an utility to display structure information about
 a single problem.
@@ -33,8 +47,45 @@ The repository also includes a `Dockerfile` to simplify running the utility in
 batch mode in a cloud environment. Refer to the `batch` folder for more information.
 
 
-References
-----------
+Library Usage
+-------------
 
- * R Fourer, D Orban. DrAmpl: A meta solver for optimization problem analysis. Computational Management Science. 2010
- * R Fourer et al. Convexity and Concavity Detection in Computational Graphs: Tree Walks for Convexity Assessment. INFORMS Journal on Computing. 2010
+    from suspect import (
+	set_pyomo4_expression_tree,
+	detect_special_structure,
+    )
+    import pyomo.environ as aml
+
+
+    set_pyomo4_expression_tree()
+
+
+    model = aml.ConcreteModel()
+    model.x = aml.Var()
+    model.y = aml.Var()
+
+    model.obj = aml.Objective(expr=(model.y - model.x)**3)
+    model.c1 = aml.Constraint(expr=model.y - model.x >= 0)
+
+    info = detect_special_structure(model)
+
+    # try info.variables, info.objectives, and info.constraints
+    print(info.objectives['obj'])
+
+
+License
+-------
+
+Copyright 2018 Francesco Ceccon
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
