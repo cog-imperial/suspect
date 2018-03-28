@@ -1,0 +1,673 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Developer Interface &#8212; SUSPECT  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Extending SUSPECT" href="extending.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-suspect">
+<span id="developer-interface"></span><h1>Developer Interface<a class="headerlink" href="#module-suspect" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="main-module">
+<h2>Main Module<a class="headerlink" href="#main-module" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="suspect.set_pyomo4_expression_tree">
+<code class="descclassname">suspect.</code><code class="descname">set_pyomo4_expression_tree</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.set_pyomo4_expression_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set Pyomo expression tree format to <code class="docutils literal notranslate"><span class="pre">Mode.pyomo4_trees</span></code>.</p>
+<p>SUSPECT does not work with Pyomo default tree format, so this
+function should be called at the beginning of every program.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="suspect.detect_special_structure">
+<code class="descclassname">suspect.</code><code class="descname">detect_special_structure</code><span class="sig-paren">(</span><em>problem</em>, <em>max_iter=10</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.detect_special_structure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detect special structure in the problem.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>model</strong> : suspect.dag.ProblemDag or ConcreteModel</p>
+<blockquote>
+<div><p>the problem DAG or a Pyomo ConcreteModel.</p>
+</div></blockquote>
+<p><strong>max_iter</strong> : int</p>
+<blockquote>
+<div><p>number of maximum bound propagation/tightening iterations.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ModelInformation</p>
+<blockquote class="last">
+<div><p>an object containing the detected infomation about the problem.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.summary.ModelInformation">
+<em class="property">class </em><code class="descclassname">suspect.summary.</code><code class="descname">ModelInformation</code><span class="sig-paren">(</span><em>name</em>, <em>variables</em>, <em>objectives</em>, <em>constraints</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hold structure information about a problem.</p>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="77%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>variables</strong></td>
+<td>(dict) map variables names to their information</td>
+</tr>
+<tr class="row-even"><td><strong>objectives</strong></td>
+<td>(dict) map objectives names to their information</td>
+</tr>
+<tr class="row-odd"><td><strong>constraints</strong></td>
+<td>(dict) map constraints names to their information</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="suspect.summary.ModelInformation.conscurvature">
+<code class="descname">conscurvature</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.conscurvature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the convexity of each constraint.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.summary.ModelInformation.num_binaries">
+<code class="descname">num_binaries</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.num_binaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of binary variables in the problem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.summary.ModelInformation.num_constraints">
+<code class="descname">num_constraints</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.num_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of constraints in the problem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.summary.ModelInformation.num_integers">
+<code class="descname">num_integers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.num_integers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of integer variables in the problem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.summary.ModelInformation.num_variables">
+<code class="descname">num_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.num_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of variables in the problem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.summary.ModelInformation.objcurvature">
+<code class="descname">objcurvature</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.objcurvature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the convexity of each objective.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.summary.ModelInformation.objtype">
+<code class="descname">objtype</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.objtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the type of each objective.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="pyomo-compatibility">
+<h2>Pyomo Compatibility<a class="headerlink" href="#pyomo-compatibility" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="suspect.pyomo.dag_from_pyomo_model">
+<code class="descclassname">suspect.pyomo.</code><code class="descname">dag_from_pyomo_model</code><span class="sig-paren">(</span><em>model</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.pyomo.dag_from_pyomo_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the Pyomo <code class="docutils literal notranslate"><span class="pre">model</span></code> to SUSPECT DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>model</strong> : ConcreteModel</p>
+<blockquote>
+<div><p>the Pyomo model.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ProblemDag</p>
+<blockquote class="last">
+<div><p>SUSPECT problem DAG.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="suspect.pyomo.read_osil">
+<code class="descclassname">suspect.pyomo.</code><code class="descname">read_osil</code><span class="sig-paren">(</span><em>filename</em>, <em>objective_prefix=None</em>, <em>constraint_prefix=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.pyomo.read_osil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read OSiL-formatted problem into a Pyomo model.</p>
+<p>It’s possible to optionally specify a prefix for objectives/constraints
+to avoid name clashes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filename</strong> : str</p>
+<blockquote>
+<div><p>the OSiL file path.</p>
+</div></blockquote>
+<p><strong>objective_prefix</strong> : str</p>
+<blockquote>
+<div><p>a prefix to give all objectives.</p>
+</div></blockquote>
+<p><strong>constraint_prefix</strong> : str</p>
+<blockquote>
+<div><p>a prefix to give all constraints.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ConcreteModel</p>
+<blockquote class="last">
+<div><p>a Pyomo concrete model.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="directed-acyclic-graph">
+<h2>Directed Acyclic Graph<a class="headerlink" href="#directed-acyclic-graph" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="suspect.dag.ProblemDag">
+<em class="property">class </em><code class="descclassname">suspect.dag.</code><code class="descname">ProblemDag</code><span class="sig-paren">(</span><em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag" title="Permalink to this definition">¶</a></dt>
+<dd><p>The optimization problem represented as Directed Acyclic Graph (DAG).</p>
+<p>The vertices in the DAG are sorted by depth, defined as</p>
+<div class="math notranslate">
+\[\begin{split}d(v) = \begin{cases}
+  0 &amp; \text{if } v \text{ is a variable or constant}\\
+  \max\{d(u) | u \in c(v)\} &amp; \text{otherwise}
+\end{cases}\end{split}\]</div>
+<p>where <span class="math notranslate">\(c(v)\)</span> are the children of vertex <span class="math notranslate">\(v\)</span>.</p>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>name</strong></td>
+<td>(str) the problem name.</td>
+</tr>
+<tr class="row-even"><td><strong>variables</strong></td>
+<td>(dict) the problem variables.</td>
+</tr>
+<tr class="row-odd"><td><strong>constraints</strong></td>
+<td>(dict) the problem constraints.</td>
+</tr>
+<tr class="row-even"><td><strong>objectives</strong></td>
+<td>(dict) the problem objectives.</td>
+</tr>
+<tr class="row-odd"><td><strong>vertices</strong></td>
+<td>(iter) an iterator over the vertices sorted by <span class="math notranslate">\(d(v)\)</span>.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.add_constraint">
+<code class="descname">add_constraint</code><span class="sig-paren">(</span><em>cons</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.add_constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a constraint to the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cons</strong> : Constraint</p>
+<blockquote class="last">
+<div><p>the constraint.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.add_objective">
+<code class="descname">add_objective</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.add_objective" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an objective to the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>obj</strong> : Objective</p>
+<blockquote class="last">
+<div><p>the objective.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.add_variable">
+<code class="descname">add_variable</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.add_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a variable to the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>var</strong> : Variable</p>
+<blockquote class="last">
+<div><p>the variable.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.add_vertex">
+<code class="descname">add_vertex</code><span class="sig-paren">(</span><em>vertex</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.add_vertex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a vertex to the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>vertex</strong> : Expression</p>
+<blockquote class="last">
+<div><p>the vertex to add.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.backward_visit">
+<code class="descname">backward_visit</code><span class="sig-paren">(</span><em>cb</em>, <em>ctx</em>, <em>starting_vertices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.backward_visit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Backward visit all vertices in the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>visitor</strong> : BackwardVisitor</p>
+<blockquote>
+<div><p>the visitor.</p>
+</div></blockquote>
+<p><strong>ctx</strong> : dict-like</p>
+<blockquote>
+<div><p>a context passed to the callbacks.</p>
+</div></blockquote>
+<p><strong>starting_vertices</strong> : Expression list</p>
+<blockquote class="last">
+<div><p>a list of starting vertices.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.forward_visit">
+<code class="descname">forward_visit</code><span class="sig-paren">(</span><em>cb</em>, <em>ctx</em>, <em>starting_vertices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.forward_visit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward visit all vertices in the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>visitor</strong> : ForwardVisitor</p>
+<blockquote>
+<div><p>the visitor.</p>
+</div></blockquote>
+<p><strong>ctx</strong> : dict-like</p>
+<blockquote>
+<div><p>a context passed to the callbacks.</p>
+</div></blockquote>
+<p><strong>starting_vertices</strong> : Expression list</p>
+<blockquote class="last">
+<div><p>a list of starting vertices.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.stats">
+<code class="descname">stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return statistics about the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">dict</p>
+<blockquote class="last">
+<div><p>A dictionary containing information about the DAG:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Number of vertices</li>
+<li>Maximum depth</li>
+<li>Number of variables</li>
+<li>Number of constraints</li>
+<li>Number of objectives</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.dag.ProblemDag.visit">
+<code class="descname">visit</code><span class="sig-paren">(</span><em>visitor</em>, <em>ctx</em>, <em>starting_vertices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.visit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Visit all vertices in the DAG.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>visitor</strong> : Visitor</p>
+<blockquote>
+<div><p>the visitor.</p>
+</div></blockquote>
+<p><strong>ctx</strong> : dict-like</p>
+<blockquote>
+<div><p>a context passed to the callbacks.</p>
+</div></blockquote>
+<p><strong>starting_vertices</strong> : Expression list</p>
+<blockquote class="last">
+<div><p>a list of starting vertices.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-suspect.dag.dot"></span></div>
+<div class="section" id="module-suspect.dag.expressions">
+<span id="expression-types"></span><h2>Expression Types<a class="headerlink" href="#module-suspect.dag.expressions" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="suspect.dag.expressions.AbsExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AbsExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AbsExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.AcosExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AcosExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AcosExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.AsinExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AsinExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AsinExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.AtanExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AtanExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AtanExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.BoundedExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">BoundedExpression</code><span class="sig-paren">(</span><em>lower_bound</em>, <em>upper_bound</em>, <em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.BoundedExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.Constant">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Constant</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Constant" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.Constraint">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Constraint</code><span class="sig-paren">(</span><em>name</em>, <em>lower_bound</em>, <em>upper_bound</em>, <em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.CosExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">CosExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.CosExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.DivisionExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">DivisionExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.DivisionExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.Domain">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Domain</code><a class="headerlink" href="#suspect.dag.expressions.Domain" title="Permalink to this definition">¶</a></dt>
+<dd><p>The variable domain</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.ExpExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">ExpExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.ExpExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.Expression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Expression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Expression" title="Permalink to this definition">¶</a></dt>
+<dd><p>The base class for all expressions objects in the DAG</p>
+<p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+<dl class="attribute">
+<dt id="suspect.dag.expressions.Expression.depth">
+<code class="descname">depth</code><a class="headerlink" href="#suspect.dag.expressions.Expression.depth" title="Permalink to this definition">¶</a></dt>
+<dd><p>The depth of the expression.</p>
+<p>The depth of the expression is defined as <cite>0</cite> if the
+expression is a source (Variables and Constants), otherwise
+it is the maximum depth of its children plus <cite>1</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.LinearExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">LinearExpression</code><span class="sig-paren">(</span><em>coefficients=None</em>, <em>children=None</em>, <em>constant_term=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.LinearExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.LogExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">LogExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.LogExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.NegationExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">NegationExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.NegationExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.Objective">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Objective</code><span class="sig-paren">(</span><em>name</em>, <em>sense=None</em>, <em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Objective" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.PowExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">PowExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.PowExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.ProductExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">ProductExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.ProductExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.Sense">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Sense</code><a class="headerlink" href="#suspect.dag.expressions.Sense" title="Permalink to this definition">¶</a></dt>
+<dd><p>The objective function sense</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.SinExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">SinExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.SinExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.SqrtExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">SqrtExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.SqrtExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.SumExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">SumExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.SumExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.TanExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">TanExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.TanExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.UnaryFunctionExpression">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">UnaryFunctionExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.UnaryFunctionExpression" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.dag.expressions.Variable">
+<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Variable</code><span class="sig-paren">(</span><em>name</em>, <em>lower_bound</em>, <em>upper_bound</em>, <em>domain=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Variable" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Attributes</p>
+<p class="rubric">Methods</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p>
+  SUSPECT is a special structure detection library built for Pyomo.
+</p>
+
+
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="https://github.com/cog-imperial/suspect">SUSPECT @ GitHub</a></li>
+
+  <p></p>
+
+  <li><a href="https://github.com/cog-imperial">Computational Optimization Group @ GitHub</a></li>
+  <li><a href="https://optimisation.doc.ic.ac.uk/">Computational Optimization Group @ Imperial College London</a></li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Developer Interface</a><ul>
+<li><a class="reference internal" href="#main-module">Main Module</a></li>
+<li><a class="reference internal" href="#pyomo-compatibility">Pyomo Compatibility</a></li>
+<li><a class="reference internal" href="#directed-acyclic-graph">Directed Acyclic Graph</a></li>
+<li><a class="reference internal" href="#module-suspect.dag.expressions">Expression Types</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="extending.html" title="previous chapter">Extending SUSPECT</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/api.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2018 Francesco Ceccon.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

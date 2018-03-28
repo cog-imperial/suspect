@@ -1,0 +1,270 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Extending SUSPECT &#8212; SUSPECT  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Developer Interface" href="api.html" />
+    <link rel="prev" title="SUSPECT: Special Structure Detection for Pyomo" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="extending-suspect">
+<h1>Extending SUSPECT<a class="headerlink" href="#extending-suspect" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="tutorial">
+<h2>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="pre-requisites">
+<h3>Pre requisites<a class="headerlink" href="#pre-requisites" title="Permalink to this headline">¶</a></h3>
+<p>We recommend developing SUSPECT extensions in a separate virtual
+environment than your main one.</p>
+<p>From the root folder of your project, run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python3 -m venv myenv
+$ source myenv/bin/activate
+</pre></div>
+</div>
+<p>After that, proceed to install SUSPECT in the newly created virtual
+environment, see <a class="reference internal" href="index.html#installation"><span class="std std-ref">Installation</span></a>.</p>
+</div>
+<div class="section" id="task-overview">
+<h3>Task Overview<a class="headerlink" href="#task-overview" title="Permalink to this headline">¶</a></h3>
+<p>The objective of this tutorial is writing an extension for SUSPECT to detect
+the convexity of the expression</p>
+<div class="math notranslate">
+\[f(x) = \frac{1}{x}\]</div>
+<p>When <span class="math notranslate">\(x &gt; 0\)</span>, <span class="math notranslate">\(f(x)\)</span> is convex, while when <span class="math notranslate">\(x &lt; 0\)</span>,
+<span class="math notranslate">\(f(x)\)</span> is concave.</p>
+<p>In SUSPECT, this expression is represented by a root vertex of type
+<a class="reference internal" href="api.html#suspect.dag.expressions.DivisionExpression" title="suspect.dag.expressions.DivisionExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">suspect.dag.expressions.DivisionExpression</span></code></a> with two children: a
+<a class="reference internal" href="api.html#suspect.dag.expressions.Constant" title="suspect.dag.expressions.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">suspect.dag.expressions.Constant</span></code></a> numerator and a
+<a class="reference internal" href="api.html#suspect.dag.expressions.Variable" title="suspect.dag.expressions.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">suspect.dag.expressions.Variable</span></code></a> denominator.</p>
+<p>In this tutorial we will use the <a class="reference external" href="http://www.minlplib.org/procsyn.html">procsyn</a> instance
+as an example.</p>
+<p>At the moment, SUSPECT fails at detecting convexity of the constraints
+containing the expression <span class="math notranslate">\(1/x\)</span>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ model_summary.py -p /path/to/minlplib2/data/osil/procsyn.osil
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+INFO:root:Starting ../minlplib2/data/osil/procsyn.osil / None. timeout=300
+INFO:root:    Reading Problem
+INFO:root:    Converting DAG
+INFO:root:    Starting Special Structure Detection
+INFO:root:    Special Structure Detection Finished
+{&quot;conscurvature&quot;: &quot;indefinite&quot;, &quot;name&quot;: &quot;procsyn&quot;, &quot;nbinvars&quot;: 0, &quot;ncons&quot;: 27, &quot;nintvars&quot;: 0,
+ &quot;nvars&quot;: 20, &quot;objcurvature&quot;: &quot;convex&quot;, &quot;objsense&quot;: &quot;min&quot;, &quot;objtype&quot;: &quot;polynomial&quot;,
+ &quot;runtime&quot;: 0.020023822784423828, &quot;status&quot;: &quot;ok&quot;}
+</pre></div>
+</div>
+</div>
+<div class="section" id="detector-implementation">
+<h3>Detector Implementation<a class="headerlink" href="#detector-implementation" title="Permalink to this headline">¶</a></h3>
+<p>At the root of your project directory, create a new directory
+containing the source of the convexity detector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ mkdir example_ext
+</pre></div>
+</div>
+<p>And write the detector in <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ $EDITOR example_ext/__init__.py
+</pre></div>
+</div>
+<p>In this way we can later on package the detector. The content of the file is as follows</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span> <span class="nn">suspect.ext</span> <span class="kn">import</span> <span class="n">ConvexityDetector</span><span class="p">,</span> <span class="n">Convexity</span>
+ <span class="kn">import</span> <span class="nn">suspect.dag.expressions</span> <span class="kn">as</span> <span class="nn">dex</span>
+
+
+ <span class="k">class</span> <span class="nc">ConstOverVarDetector</span><span class="p">(</span><span class="n">ConvexityDetector</span><span class="p">):</span>
+     <span class="sd">&quot;&quot;&quot;Convexity detector for expressions of the type:</span>
+
+<span class="sd">     .. math::</span>
+
+<span class="sd">         \frac{c}{x}</span>
+
+<span class="sd">     where c is a constant and x is a variable.</span>
+<span class="sd">     &quot;&quot;&quot;</span>
+
+     <span class="k">def</span> <span class="nf">register_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+         <span class="sd">&quot;&quot;&quot;Register interest in DivisionExpression.&quot;&quot;&quot;</span>
+         <span class="k">return</span> <span class="p">{</span>
+             <span class="n">dex</span><span class="o">.</span><span class="n">DivisionExpression</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit_division</span><span class="p">,</span>
+         <span class="p">}</span>
+
+     <span class="k">def</span> <span class="nf">visit_division</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+         <span class="sd">&quot;&quot;&quot;Visit a division expression.</span>
+
+<span class="sd">         Return `Convexity.Convex` if the numerator is constant and the</span>
+<span class="sd">         denominator is nonnegative.</span>
+
+<span class="sd">         Return `Convexity.Concave` if the numerator is constant and the</span>
+<span class="sd">         denominator is nonpositive.</span>
+<span class="sd">         &quot;&quot;&quot;</span>
+         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+         <span class="n">num</span><span class="p">,</span> <span class="n">den</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">children</span>
+
+         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dex</span><span class="o">.</span><span class="n">Constant</span><span class="p">):</span>
+             <span class="k">return</span>
+
+         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">den</span><span class="p">,</span> <span class="n">dex</span><span class="o">.</span><span class="n">Variable</span><span class="p">):</span>
+             <span class="k">return</span>
+
+         <span class="k">if</span> <span class="n">num</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+             <span class="k">return</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Linear</span>
+
+<span class="hll">         <span class="n">bound</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">bound</span><span class="p">[</span><span class="n">den</span><span class="p">]</span>
+</span>
+         <span class="k">if</span> <span class="n">bound</span><span class="o">.</span><span class="n">is_nonnegative</span><span class="p">():</span>
+             <span class="n">cvx</span> <span class="o">=</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Convex</span>
+         <span class="k">elif</span> <span class="n">bound</span><span class="o">.</span><span class="n">is_nonpositive</span><span class="p">():</span>
+             <span class="n">cvx</span> <span class="o">=</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Concave</span>
+         <span class="k">else</span><span class="p">:</span>
+             <span class="k">return</span>
+
+         <span class="k">if</span> <span class="n">num</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+             <span class="k">return</span> <span class="n">cvx</span>
+         <span class="k">else</span><span class="p">:</span>
+             <span class="k">return</span> <span class="n">cvx</span><span class="o">.</span><span class="n">negate</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Implementing a convexity detector requires subclassing the
+<code class="docutils literal notranslate"><span class="pre">ConvexityDetector</span></code> base class and implement <code class="docutils literal notranslate"><span class="pre">register_handlers</span></code>
+to tell SUSPECT what kind of expressions our detector can handle.
+In our case, we only handle divisions.</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">visit_divison</span></code> callback we first check if the numerator is a
+constant and the denominator a variable.</p>
+<p>In the highlighted line, we lookup the bound for the denominator, if
+this bound is nonnegative then the expression is convex, otherwise it
+is concave. We finally handle the case when the constant is negative,
+and in that case we return the negation of our computed convexity
+information.</p>
+</div>
+<div class="section" id="packaging">
+<h3>Packaging<a class="headerlink" href="#packaging" title="Permalink to this headline">¶</a></h3>
+<p>SUSPECT requires extensions to be packaged and registered as an entry
+point. At the root of your project, add the following <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">setup</span>
+
+
+ <span class="n">setup</span><span class="p">(</span>
+     <span class="n">name</span><span class="o">=</span><span class="s1">&#39;example_ext&#39;</span><span class="p">,</span>
+     <span class="n">packages</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;example_ext&#39;</span><span class="p">],</span>
+<span class="hll">     <span class="n">entry_points</span><span class="o">=</span><span class="p">{</span>
+</span><span class="hll">         <span class="s1">&#39;suspect.convexity_detection&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span><span class="hll">             <span class="s1">&#39;const_over_var=example_ext:ConstOverVarDetector&#39;</span>
+</span><span class="hll">         <span class="p">]</span>
+</span><span class="hll">     <span class="p">},</span>
+</span>     <span class="n">requires</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;suspect&#39;</span><span class="p">]</span>
+ <span class="p">)</span>
+</pre></div>
+</div>
+<p>The highlighted lines show how to register the convexity detector with SUSPECT.</p>
+<p>Finally, install the convexity detector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python setup.py install
+</pre></div>
+</div>
+<p>If we now run SUSPECT with the same input file as before, we can see
+that the convexity of the constraints is correctly identified:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ model_summary.py -p /path/to/minlplib2/data/osil/procsyn.osil
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+INFO:root:Starting ../minlplib2/data/osil/procsyn.osil / None. timeout=300
+INFO:root:    Reading Problem
+INFO:root:    Converting DAG
+INFO:root:    Starting Special Structure Detection
+INFO:root:    Special Structure Detection Finished
+{&quot;conscurvature&quot;: &quot;convex&quot;, &quot;name&quot;: &quot;procsyn&quot;, &quot;nbinvars&quot;: 0, &quot;ncons&quot;: 27, &quot;nintvars&quot;: 0,
+ &quot;nvars&quot;: 20, &quot;objcurvature&quot;: &quot;convex&quot;, &quot;objsense&quot;: &quot;min&quot;, &quot;objtype&quot;: &quot;polynomial&quot;,
+ &quot;runtime&quot;: 0.01907968521118164, &quot;status&quot;: &quot;ok&quot;}
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p>
+  SUSPECT is a special structure detection library built for Pyomo.
+</p>
+
+
+<h3>Useful Links</h3>
+<ul>
+  <li><a href="https://github.com/cog-imperial/suspect">SUSPECT @ GitHub</a></li>
+
+  <p></p>
+
+  <li><a href="https://github.com/cog-imperial">Computational Optimization Group @ GitHub</a></li>
+  <li><a href="https://optimisation.doc.ic.ac.uk/">Computational Optimization Group @ Imperial College London</a></li>
+</ul>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Extending SUSPECT</a><ul>
+<li><a class="reference internal" href="#tutorial">Tutorial</a><ul>
+<li><a class="reference internal" href="#pre-requisites">Pre requisites</a></li>
+<li><a class="reference internal" href="#task-overview">Task Overview</a></li>
+<li><a class="reference internal" href="#detector-implementation">Detector Implementation</a></li>
+<li><a class="reference internal" href="#packaging">Packaging</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">SUSPECT: Special Structure Detection for Pyomo</a></li>
+      <li>Next: <a href="api.html" title="next chapter">Developer Interface</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/extending.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2018 Francesco Ceccon.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/extending.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
