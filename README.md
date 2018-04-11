@@ -1,6 +1,10 @@
 Special Structure Detection for Pyomo
 =====================================
 
+[![DOI](https://zenodo.org/badge/127118649.svg)](https://zenodo.org/badge/latestdoi/127118649)
+
+
+
 This library implements methods to:
 
 * Detect convex and concave expressions
@@ -28,7 +32,7 @@ To create the virtual environment run:
 
 Then you are ready to clone and install SUSPECT
 
-    $ git clone git@github.com:cog-imperial/suspect.git
+    $ git clone https://github.com/cog-imperial/suspect.git
     $ cd suspect
     $ pip install -r requirements.txt
     $ pip install .
