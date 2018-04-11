@@ -4,3 +4,5 @@ Pyomo>=5.2
 numpy>=1.13.1
 mpmath==1.0.0
 boto3>=1.4.8
+sphinx>=1.7.2
+tox>=3.0.0
