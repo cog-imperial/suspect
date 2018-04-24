@@ -9,4 +9,4 @@ install:
 script:
   - tox
 after_success:
-  - codecox
+  - codecov
