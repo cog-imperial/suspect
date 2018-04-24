@@ -220,11 +220,14 @@ class ArbitraryPrecisionBound(Bound):
         return ArbitraryPrecisionBound(-self.upper, self.upper)
 
     def _sqrt(self):
+        assert self.is_nonnegative()
         return ArbitraryPrecisionBound(sqrt(self.lower), sqrt(self.upper))
 
     def _sqrt_inv(self):
-        sqr = self.upper * self.upper
-        return ArbitraryPrecisionBound(-sqr, sqr)
+        assert self.is_nonnegative()
+        sqr_upper = self.upper * self.upper
+        sqr_lower = self.lower * self.lower
+        return ArbitraryPrecisionBound(sqr_lower, sqr_upper)
 
     def _exp(self):
         return ArbitraryPrecisionBound(exp(self.lower), exp(self.upper))

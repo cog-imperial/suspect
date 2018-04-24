@@ -17,7 +17,7 @@ from hypothesis import given, assume
 import hypothesis.strategies as st
 from suspect.bound import ArbitraryPrecisionBound
 from suspect.math.arbitrary_precision import (
-    inf, almostlte, almostgte, almosteq, pi, log, exp, cos
+    inf, almostlte, almostgte, almosteq, pi, log, exp, cos, sqrt,
 )
 from tests.conftest import reals
 
@@ -347,6 +347,13 @@ class TestMonotonicFunctions(object):
         b = ArbitraryPrecisionBound(min(a, b), max(a, b))
         assert almosteq(b.sqrt().lower_bound**2, b.lower_bound)
         assert almosteq(b.sqrt().upper_bound**2, b.upper_bound)
+
+    @given(reals(min_value=0.0), reals(min_value=0.0))
+    def test_sqrt_inv(self, a, b):
+        b = ArbitraryPrecisionBound(min(a, b), max(a, b))
+        inv_b = b.sqrt.inv()
+        assert almosteq(sqrt(inv_b.lower_bound), b.lower_bound)
+        assert almosteq(sqrt(inv_b.upper_bound), b.upper_bound)
 
     @given(reals(min_value=0.0), reals(min_value=0.0))
     def test_exp(self, a, b):
