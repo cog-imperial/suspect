@@ -1,8 +1,7 @@
 Special Structure Detection for Pyomo
 =====================================
 
-[![DOI](https://zenodo.org/badge/127118649.svg)](https://zenodo.org/badge/latestdoi/127118649) [![Build Status](https://travis-ci.org/cog-imperial/suspect.svg?branch=master)](https://travis-ci.org/cog-imperial/suspect)
-
+[![DOI](https://zenodo.org/badge/127118649.svg)](https://zenodo.org/badge/latestdoi/127118649) [![Build Status](https://travis-ci.org/cog-imperial/suspect.svg?branch=master)](https://travis-ci.org/cog-imperial/suspect) [![codecov](https://codecov.io/gh/cog-imperial/suspect/branch/master/graph/badge.svg)](https://codecov.io/gh/cog-imperial/suspect)
 
 
 This library implements methods to:
