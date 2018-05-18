@@ -258,3 +258,71 @@ class QuadraticFormConvexityVisitor(ConvexityDetector):
             if not ctx.polynomial[child].is_quadratic():
                 continue
             yield _child_variables(child)
+
+
+class FractionalConvexityDetector(ConvexityDetector):
+    """Convexity detector for fractional expressions of the type:
+
+        g(x) = (a1*x + b1) / (a2*x + b2)
+
+    the convexity is derived from the second derivative of the expression:
+
+        ddg/ddx = -2*a2*(a1*b2 - a2*b1)/(a1*x + b2)^3
+    """
+    linear_types = (dex.Constant, dex.Variable, dex.LinearExpression)
+
+    def register_handlers(self):
+        return {
+            dex.DivisionExpression: self.visit_division,
+        }
+
+    def visit_division(self, expr, ctx):
+        num, den = expr.children
+        if not isinstance(num, self.linear_types):
+            return
+        if not isinstance(den, self.linear_types):
+            return
+        if isinstance(num, dex.LinearExpression):
+            if len(num.children) != 1:
+                return
+
+        if isinstance(den, dex.LinearExpression):
+            if len(den.children) != 1:
+                return
+
+        a1, x, b1 = self._linear_components(num)
+        a2, y, b2 = self._linear_components(den)
+
+        if x is not None and y is not None:
+            if x is not y:
+                return
+
+        if x is not None:
+            x_bound = ctx.bound[x]
+        elif y is not None:
+            x_bound = ctx.bound[y]
+        else:
+            raise RuntimeError('no variable in numerator or denonimator')
+
+        dd_num = -2*a2*(a1*b2 - a2*b1)
+        dd_den = a2*x_bound + b2
+        dd_bound = dd_den * (1/dd_num)
+        if dd_bound.is_nonpositive():
+            return Convexity.Concave
+        elif dd_bound.is_nonnegative():
+            return Convexity.Convex
+        # inconclusive
+        return
+
+    def _linear_components(self, expr):
+        if isinstance(expr, dex.LinearExpression):
+            assert len(expr.children) == 1
+            a = expr.coefficients[0]
+            x = expr.children[0]
+            b = expr.constant_term
+            return a, x, b
+        if isinstance(expr, dex.Constant):
+            return 0.0, None, expr.value
+        if isinstance(expr, dex.Variable):
+            return 1.0, expr, 0.0
+        raise RuntimeError('invalid expression type in fractional convexity detector')
