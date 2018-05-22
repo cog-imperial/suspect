@@ -15,7 +15,7 @@
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
 from suspect.bound import ArbitraryPrecisionBound as Bound
-from suspect.math.arbitrary_precision import inf
+from suspect.math.arbitrary_precision import inf, almosteq
 
 
 MAX_EXPR_CHILDREN = 1000
@@ -43,6 +43,7 @@ class BoundsTighteningVisitor(BackwardVisitor):
             dex.Constraint: self.visit_constraint,
             dex.SumExpression: self.visit_sum,
             dex.LinearExpression: self.visit_linear,
+            dex.PowExpression: self.visit_pow,
             dex.UnaryFunctionExpression: self.visit_unary_function,
         }
 
@@ -93,6 +94,24 @@ class BoundsTighteningVisitor(BackwardVisitor):
             siblings_bound = sum(ctx.bound[s] * c for c, s in siblings) + const
             bounds[child] = (expr_bound - siblings_bound) / child_c
         return bounds
+
+    def visit_pow(self, expr, ctx):
+        base, expo = expr.children
+        if not isinstance(expo, dex.Constant):
+            return
+        if not almosteq(expo.value, 2):
+            return
+
+        bound = ctx.bound[expr]
+        # the bound of a square number is never negative, but check anyway to
+        # avoid unexpected crashes.
+        if not bound.is_nonnegative():
+            return
+
+        sqrt_bound = bound.sqrt()
+        return {
+            base: Bound(-sqrt_bound.upper_bound, sqrt_bound.upper_bound)
+        }
 
     def visit_unary_function(self, expr, ctx):
         child = expr.children[0]

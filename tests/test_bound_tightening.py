@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: skip-file
 import pytest
 from unittest.mock import MagicMock
 from hypothesis import given, assume
@@ -25,4 +26,28 @@ from tests.conftest import (
     mono_description_to_mono,
     coefficients,
     reals,
+    ctx,
 )
+
+@pytest.fixture
+def visitor():
+    return BoundsTighteningVisitor()
+
+
+class TestPower(object):
+    def test_square(self, visitor, ctx):
+        c = dex.Constant(2.0)
+        p = PlaceholderExpression()
+        pow_ = dex.PowExpression(children=[p, c])
+        ctx.bound[pow_] = Bound(0, 4)
+        visitor(pow_, ctx)
+        assert ctx.bound[p] == Bound(-2, 2)
+
+    def test_non_square(self, visitor, ctx):
+        c = dex.Constant(3.0)
+        p = PlaceholderExpression()
+        ctx.bound[p] = Bound(None, None)
+        pow_ = dex.PowExpression(children=[p, c])
+        ctx.bound[pow_] = Bound(0, 4)
+        visitor(pow_, ctx)
+        assert ctx.bound[p] == Bound(None, None)
