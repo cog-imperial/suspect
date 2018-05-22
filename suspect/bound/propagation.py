@@ -17,6 +17,7 @@ from functools import reduce
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import ForwardVisitor
 from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.math.arbitrary_precision import almosteq
 
 
 class BoundsPropagationVisitor(ForwardVisitor):
@@ -84,7 +85,14 @@ class BoundsPropagationVisitor(ForwardVisitor):
         bounds = [ctx.bound[c] for c in expr.children]
         return sum(bounds)
 
-    def visit_pow(self, _expr, _ctx):
+    def visit_pow(self, expr, _ctx):
+        _, expo = expr.children
+        if not isinstance(expo, dex.Constant):
+            return Bound(None, None)
+        is_even = almosteq(expo.value % 2, 0)
+        is_positive = expo.value > 0
+        if is_even and is_positive:
+            return Bound(0, None)
         return Bound(None, None)
 
     def visit_unary_function(self, expr, ctx):

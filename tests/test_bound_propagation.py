@@ -14,6 +14,7 @@
 
 import pytest
 from hypothesis import given, assume
+from hypothesis.strategies import integers
 from suspect.bound.propagation import BoundsPropagationVisitor
 import suspect.dag.expressions as dex
 from suspect.bound import ArbitraryPrecisionBound as Bound
@@ -70,3 +71,12 @@ def test_objective_bound(visitor, ctx, a, b):
     o = dex.Objective('obj', children=[p])
     visitor(o, ctx)
     assert ctx.bound[o] == Bound(lb, ub)
+
+
+@given(integers(min_value=1))
+def test_even_pow_bound(visitor, ctx, n):
+    p = PlaceholderExpression()
+    c = dex.Constant(2*n)
+    pow_ = dex.PowExpression(children=[p, c])
+    visitor(pow_, ctx)
+    assert ctx.bound[pow_].is_nonnegative()
