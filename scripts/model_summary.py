@@ -30,6 +30,7 @@ from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect import (
     set_pyomo4_expression_tree,
     detect_special_structure,
+    logger,
 )
 
 
@@ -291,7 +292,12 @@ if __name__ == '__main__':
     parser.add_argument('--output', '-o', nargs='?')
     parser.add_argument('--timeout', type=int, default=300,
                         help='Timeout in seconds')
+    parser.add_argument('--log', dest='log_level',
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                        default='WARNING')
     args = parser.parse_args()
+
+    logger.setLevel(level=args.log_level)
 
     if args.problem is None:
         parser.print_help()
