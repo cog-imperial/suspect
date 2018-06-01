@@ -40,7 +40,7 @@ def initialize_bounds(dag):
 class BoundsInitializationVisitor(BackwardVisitor):
     def register_handlers(self):
         return {
-            dex.Constraint: self.visit_constraint,
+            # dex.Constraint: self.visit_constraint,
             dex.SqrtExpression: self.visit_sqrt,
             dex.LogExpression: self.visit_log,
             dex.AsinExpression: self.visit_asin,
