@@ -13,12 +13,16 @@
 # limitations under the License.
 
 import warnings
+import logging
 from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect.bound import propagate_bounds, initialize_bounds, tighten_bounds
 from suspect.bound import ArbitraryPrecisionBound as Bound
 from suspect.propagation import propagate_special_structure
 from suspect.polynomial_degree import polynomial_degree
 from pyomo.environ import ConcreteModel
+
+
+logger = logging.getLogger('suspect')
 
 
 class ModelInformation(object):
@@ -122,6 +126,8 @@ def detect_special_structure(problem, max_iter=10):
     for i in range(max_iter):
         changes_prop = propagate_bounds(problem, ctx, changes_tigh)
         changes_tigh = tighten_bounds(problem, ctx, changes_prop)
+        logger.info('FBBT(%s/%s): changes_propagation=%s, changes_tightening=%s',
+                    i, max_iter, len(changes_prop), len(changes_tigh))
         if len(changes_tigh) == 0 and len(changes_prop) == 0:
             break
 

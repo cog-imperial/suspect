@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from suspect.monotonicity import MonotonicityPropagationVisitor
 from suspect.convexity import ConvexityPropagationVisitor
 import pkg_resources
+
+
+logger = logging.getLogger('suspect')
 
 
 def monotonicity_detection_entry_points():
@@ -32,10 +36,20 @@ class SpecialStructurePropagationVisitor(object):
             cls = entry_point.load()
             self._mono_visitors.append(cls(problem))
 
+        logger.info(
+            'Loaded %s monotonicity detectors: %s',
+            len(self._mono_visitors), ', '.join([str(mono) for mono in self._mono_visitors])
+        )
+
         self._cvx_visitors = [ConvexityPropagationVisitor()]
         for entry_point in convexity_detection_entry_points():
             cls = entry_point.load()
             self._cvx_visitors.append(cls(problem))
+
+        logger.info(
+            'Loaded %s convexity detectors: %s',
+            len(self._cvx_visitors), ', '.join([str(cvx) for cvx in self._cvx_visitors])
+        )
 
     def __call__(self, expr, ctx):
         for mono_visitor in self._mono_visitors:
