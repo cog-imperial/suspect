@@ -12,38 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+# pylint: disable=invalid-name
+"""Arbitrary precision mathematical constants and comparison."""
+from typing import Any
 import mpmath
 
 
 mpf = mpmath.mpf
-inf = mpf('inf')
-
-# Re-export symbols from mpmath
-_EXPORTED_SYMBOLS = [
-    'pi', 'sin', 'cos', 'sqrt', 'log', 'sin', 'asin', 'cos', 'acos',
-    'tan', 'atan', 'exp']
-
-_module = sys.modules[__name__]
-for sym in _EXPORTED_SYMBOLS:
-    setattr(_module, sym, getattr(mpmath, sym))
-
-
+make_number = mpmath.mpf
+inf = make_number('inf')
+pi = mpmath.pi
 isnan = mpmath.isnan
 
 
-def almosteq(a, b):
+def _declare_function(name, fun):
+    globals()[name] = lambda n, _: fun(n)
+
+
+_FUNCTIONS = ['sqrt', 'log', 'exp', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan']
+for fun in _FUNCTIONS:
+    _declare_function(fun, getattr(mpmath, fun))
+
+
+def almosteq(a: Any, b: Any) -> bool:
     """Floating point equality check between `a` and `b`."""
+    # in mpmath inf != inf, but we want inf == inf
     if abs(a) == inf and abs(b) == inf:
-        return True
+        return (a > 0 and b > 0) or (a < 0 and b < 0)
     return mpmath.almosteq(a, b)
 
 
-def almostgte(a, b):
+def almostgte(a: Any, b: Any) -> bool:
     """Return True if a >= b."""
     return a > b or almosteq(a, b)
 
 
-def almostlte(a, b):
+def almostlte(a: Any, b: Any) -> bool:
     """Return True if a <= b."""
     return a < b or almosteq(a, b)
