@@ -228,8 +228,8 @@ class ComponentFactory(object):
         new_expr = self.expression(expr)
         constraint = dex.Constraint(
             omo_cons.name,
-            bounds.lower,
-            bounds.upper,
+            bounds.lower_bound,
+            bounds.upper_bound,
             [new_expr],
         )
         new_expr.add_parent(constraint)

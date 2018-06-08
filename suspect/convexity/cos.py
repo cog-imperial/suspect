@@ -14,7 +14,7 @@
 
 from suspect.math.arbitrary_precision import pi
 from suspect.convexity.convexity import Convexity
-from suspect.bound import ArbitraryPrecisionBound
+from suspect.interval import Interval
 
 
 def cos_convexity(expr, ctx):
@@ -54,11 +54,11 @@ def acos_convexity(expr, ctx):
     bound = ctx.bound[arg]
     cvx = ctx.convexity[arg]
 
-    convex_domain = ArbitraryPrecisionBound(-1, 0)
+    convex_domain = Interval(-1, 0)
     if bound in convex_domain and cvx.is_concave():
         return Convexity.Convex
 
-    concave_domain = ArbitraryPrecisionBound(0, 1)
+    concave_domain = Interval(0, 1)
     if bound in concave_domain and cvx.is_convex():
         return Convexity.Concave
 

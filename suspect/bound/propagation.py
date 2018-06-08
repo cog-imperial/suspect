@@ -16,7 +16,7 @@ import operator
 from functools import reduce
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import ForwardVisitor
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from suspect.math.arbitrary_precision import almosteq
 
 
@@ -39,7 +39,7 @@ class BoundsPropagationVisitor(ForwardVisitor):
         if expr in ctx.bound:
             # bounds exists, tighten it
             old_bound = ctx.bound[expr]
-            new_bound = old_bound.tighten(new_bound)
+            new_bound = old_bound.intersect(new_bound)
             has_changed = new_bound != old_bound
         else:
             has_changed = True
@@ -47,10 +47,10 @@ class BoundsPropagationVisitor(ForwardVisitor):
         return has_changed
 
     def visit_variable(self, var, _ctx):
-        return Bound(var.lower_bound, var.upper_bound)
+        return Interval(var.lower_bound, var.upper_bound)
 
     def visit_constant(self, const, _ctx):
-        return Bound(const.value, const.value)
+        return Interval(const.value, const.value)
 
     def visit_constraint(self, constr, ctx):
         arg = constr.children[0]
@@ -59,7 +59,7 @@ class BoundsPropagationVisitor(ForwardVisitor):
         new_ub = min(inner.upper_bound, constr.upper_bound)
         if not new_lb <= new_ub:
             raise RuntimeError('Infeasible bound.')
-        return Bound(new_lb, new_ub)
+        return Interval(new_lb, new_ub)
 
     def visit_objective(self, obj, ctx):
         arg = obj.children[0]
@@ -78,7 +78,7 @@ class BoundsPropagationVisitor(ForwardVisitor):
             coef * ctx.bound[c]
             for coef, c in zip(expr.coefficients, expr.children)
         ]
-        bounds.append(Bound(expr.constant_term, expr.constant_term))
+        bounds.append(Interval(expr.constant_term, expr.constant_term))
         return sum(bounds)
 
     def visit_sum(self, expr, ctx):
@@ -88,12 +88,12 @@ class BoundsPropagationVisitor(ForwardVisitor):
     def visit_pow(self, expr, _ctx):
         _, expo = expr.children
         if not isinstance(expo, dex.Constant):
-            return Bound(None, None)
+            return Interval(None, None)
         is_even = almosteq(expo.value % 2, 0)
         is_positive = expo.value > 0
         if is_even and is_positive:
-            return Bound(0, None)
-        return Bound(None, None)
+            return Interval(0, None)
+        return Interval(None, None)
 
     def visit_unary_function(self, expr, ctx):
         arg_bound = ctx.bound[expr.children[0]]

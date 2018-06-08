@@ -19,7 +19,7 @@ from hypothesis import given, assume
 import hypothesis.strategies as st
 from suspect.bound.tightening import *
 import suspect.dag.expressions as dex
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from tests.conftest import (
     PlaceholderExpression,
     bound_description_to_bound,
@@ -39,15 +39,15 @@ class TestPower(object):
         c = dex.Constant(2.0)
         p = PlaceholderExpression()
         pow_ = dex.PowExpression(children=[p, c])
-        ctx.bound[pow_] = Bound(0, 4)
+        ctx.bound[pow_] = Interval(0, 4)
         visitor(pow_, ctx)
-        assert ctx.bound[p] == Bound(-2, 2)
+        assert ctx.bound[p] == Interval(-2, 2)
 
     def test_non_square(self, visitor, ctx):
         c = dex.Constant(3.0)
         p = PlaceholderExpression()
-        ctx.bound[p] = Bound(None, None)
+        ctx.bound[p] = Interval(None, None)
         pow_ = dex.PowExpression(children=[p, c])
-        ctx.bound[pow_] = Bound(0, 4)
+        ctx.bound[pow_] = Interval(0, 4)
         visitor(pow_, ctx)
-        assert ctx.bound[p] == Bound(None, None)
+        assert ctx.bound[p] == Interval(None, None)

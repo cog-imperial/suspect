@@ -16,7 +16,7 @@ import warnings
 import logging
 from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect.bound import propagate_bounds, initialize_bounds, tighten_bounds
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from suspect.propagation import propagate_special_structure
 from suspect.polynomial_degree import polynomial_degree
 from pyomo.environ import ConcreteModel
@@ -163,7 +163,7 @@ def detect_special_structure(problem, max_iter=10):
             sense = 'min'
         else:
             sense = 'max'
-        obj_bounds = ctx.bound.get(obj, Bound(None, None))
+        obj_bounds = ctx.bound.get(obj, Interval(None, None))
         cvx = ctx.convexity[obj]
         poly = polynomial[obj]
 

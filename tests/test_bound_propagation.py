@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: skip-file
 import pytest
 from hypothesis import given, assume
 from hypothesis.strategies import integers
 from suspect.bound.propagation import BoundsPropagationVisitor
 import suspect.dag.expressions as dex
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from tests.conftest import (
     PlaceholderExpression,
     bound_description_to_bound,
@@ -39,14 +40,14 @@ def test_variable_bound(visitor, ctx, a, b):
     ub = max(a, b)
     var = dex.Variable('x0', lower_bound=lb, upper_bound=ub)
     visitor(var, ctx)
-    assert ctx.bound[var] == Bound(lb, ub)
+    assert ctx.bound[var] == Interval(lb, ub)
 
 
 @given(reals())
 def test_constant_bound(visitor, ctx, c):
     const = dex.Constant(c)
     visitor(const, ctx)
-    assert ctx.bound[const] == Bound(c, c)
+    assert ctx.bound[const] == Interval(c, c)
 
 
 @given(reals(), reals(), reals(), reals())
@@ -55,10 +56,10 @@ def test_constraint_bound(visitor, ctx, a, b, c, d):
     c_lb, c_ub = min(c, d), max(c, d)
     assume(max(e_lb, c_lb) <= min(e_ub, c_ub))
     p = PlaceholderExpression()
-    ctx.bound[p] = Bound(e_lb, e_ub)
+    ctx.bound[p] = Interval(e_lb, e_ub)
     cons = dex.Constraint('c0', lower_bound=c_lb, upper_bound=c_ub, children=[p])
     visitor(cons, ctx)
-    expected = Bound(max(e_lb, c_lb), min(c_ub, e_ub))
+    expected = Interval(max(e_lb, c_lb), min(c_ub, e_ub))
     assert ctx.bound[cons] == expected
 
 
@@ -67,10 +68,10 @@ def test_objective_bound(visitor, ctx, a, b):
     lb, ub = min(a, b), max(a, b)
     assume(lb < ub)
     p = PlaceholderExpression()
-    ctx.bound[p] = Bound(lb, ub)
+    ctx.bound[p] = Interval(lb, ub)
     o = dex.Objective('obj', children=[p])
     visitor(o, ctx)
-    assert ctx.bound[o] == Bound(lb, ub)
+    assert ctx.bound[o] == Interval(lb, ub)
 
 
 @given(integers(min_value=1))

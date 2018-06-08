@@ -15,7 +15,7 @@
 import pytest
 import hypothesis.strategies as st
 from suspect import set_pyomo4_expression_tree
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.convexity.convexity import Convexity
 from suspect.context import SpecialStructurePropagationContext
@@ -51,17 +51,17 @@ def ctx():
 def bound_description_to_bound(bound_str):
     if isinstance(bound_str, str):
         return {
-            'zero': Bound.zero(),
-            'nonpositive': Bound(None, 0),
-            'nonnegative': Bound(0, None),
-            'positive': Bound(1, None),
-            'negative': Bound(None, -1),
-            'unbounded': Bound(None, None),
+            'zero': Interval.zero(),
+            'nonpositive': Interval(None, 0),
+            'nonnegative': Interval(0, None),
+            'positive': Interval(1, None),
+            'negative': Interval(None, -1),
+            'unbounded': Interval(None, None),
         }[bound_str]
-    elif isinstance(bound_str, Bound):
+    elif isinstance(bound_str, Interval):
         return bound_str
     else:
-        return Bound(bound_str, bound_str)
+        return Interval(bound_str, bound_str)
 
 
 def mono_description_to_mono(mono_str):

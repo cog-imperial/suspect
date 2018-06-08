@@ -28,7 +28,7 @@ from tests.conftest import (
 
 import suspect.dag.expressions as dex
 from suspect.math.arbitrary_precision import pi
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from suspect.convexity.convexity import Convexity
 from suspect.convexity.propagation import (
     ConvexityPropagationVisitor,
@@ -452,130 +452,130 @@ class TestLog(object):
 
 class TestSin(object):
     def test_bound_size_too_big(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Bound(-2, 2))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Interval(-2, 2))
         assert cvx == Convexity.Unknown
 
     def test_bound_opposite_sign(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Bound(-0.1, 0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Interval(-0.1, 0.1))
         assert cvx == Convexity.Unknown
 
     def test_positive_sin_linear_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Bound(pi/2-0.1, pi/2+0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Interval(pi/2-0.1, pi/2+0.1))
         assert cvx == Convexity.Concave
 
     def test_positive_sin_convex_child_but_wrong_interval(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'convex', 'unknown', Bound(pi/2-0.1, pi/2+0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'convex', 'unknown', Interval(pi/2-0.1, pi/2+0.1))
         assert cvx == Convexity.Unknown
 
     def test_positive_sin_convex_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'convex', 'unknown', Bound(pi/2+0.1, pi-0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'convex', 'unknown', Interval(pi/2+0.1, pi-0.1))
         assert cvx == Convexity.Concave
 
     def test_positive_sin_concave_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'concave', 'unknown', Bound(0.1, pi/2-0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'concave', 'unknown', Interval(0.1, pi/2-0.1))
         assert cvx == Convexity.Concave
 
     def test_negative_sin_linear_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Bound(1.5*pi-0.1, 1.5*pi+0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'linear', 'constant', Interval(1.5*pi-0.1, 1.5*pi+0.1))
         assert cvx == Convexity.Convex
 
     def test_negative_sin_concave_child_but_wrong_interval(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'concave', 'unknown', Bound(1.5*pi-0.1, 1.5*pi+0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'concave', 'unknown', Interval(1.5*pi-0.1, 1.5*pi+0.1))
         assert cvx == Convexity.Unknown
 
     def test_negative_sin_concave_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'concave', 'unknown', Bound(pi+0.1, 1.5*pi-0.1))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'concave', 'unknown', Interval(pi+0.1, 1.5*pi-0.1))
         assert cvx == Convexity.Convex
 
     def test_negative_sin_convex_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.SinExpression, 'convex', 'unknown', Bound(1.5*pi, 2*pi))
+        cvx = mock_unary_function_visitor(dex.SinExpression, 'convex', 'unknown', Interval(1.5*pi, 2*pi))
         assert cvx == Convexity.Convex
 
 
 class TestCos(object):
     def test_bound_size_too_big(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Bound(-2, 2))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Interval(-2, 2))
         assert cvx == Convexity.Unknown
 
     def test_bound_opposite_sign(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Bound(pi/2-0.1, pi/2+0.1))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Interval(pi/2-0.1, pi/2+0.1))
         assert cvx == Convexity.Unknown
 
     def test_positive_cos_linear_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Bound(0, 0.5*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Interval(0, 0.5*pi))
         assert cvx == Convexity.Concave
 
     def test_positive_cos_convex_child_but_wrong_interval(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'convex', 'unknown', Bound(0, 0.5*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'convex', 'unknown', Interval(0, 0.5*pi))
         assert cvx == Convexity.Unknown
 
     def test_positive_cos_convex_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'convex', 'unknown', Bound(1.5*pi, 2*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'convex', 'unknown', Interval(1.5*pi, 2*pi))
         assert cvx == Convexity.Concave
 
     def test_positive_cos_concave_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'concave', 'unknown', Bound(0.0, 0.5*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'concave', 'unknown', Interval(0.0, 0.5*pi))
         assert cvx == Convexity.Concave
 
     def test_negative_cos_linear_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Bound(0.6*pi, 1.4*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'linear', 'constant', Interval(0.6*pi, 1.4*pi))
         assert cvx == Convexity.Convex
 
     def test_negative_cos_concave_child_but_wrong_interval(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'concave', 'unknown', Bound(0.6*pi, 0.9*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'concave', 'unknown', Interval(0.6*pi, 0.9*pi))
         assert cvx == Convexity.Unknown
 
     def test_negative_cos_concave_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'concave', 'unknown', Bound(1.1*pi, 1.4*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'concave', 'unknown', Interval(1.1*pi, 1.4*pi))
         assert cvx == Convexity.Convex
 
     def test_negative_cos_convex_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.CosExpression, 'convex', 'unknown', Bound(0.6*pi, 0.9*pi))
+        cvx = mock_unary_function_visitor(dex.CosExpression, 'convex', 'unknown', Interval(0.6*pi, 0.9*pi))
         assert cvx == Convexity.Convex
 
 
 
 class TestTan(object):
     def test_bound_size_too_big(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.TanExpression, 'linear', 'constant', Bound(-2, 2))
+        cvx = mock_unary_function_visitor(dex.TanExpression, 'linear', 'constant', Interval(-2, 2))
         assert cvx == Convexity.Unknown
 
     def test_bound_opposite_sign(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.TanExpression, 'linear', 'constant', Bound(-0.1, 0.1))
+        cvx = mock_unary_function_visitor(dex.TanExpression, 'linear', 'constant', Interval(-0.1, 0.1))
         assert cvx == Convexity.Unknown
 
     def test_positive_tan_convex_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.TanExpression, 'convex', 'unknown', Bound(pi, 1.5*pi))
+        cvx = mock_unary_function_visitor(dex.TanExpression, 'convex', 'unknown', Interval(pi, 1.5*pi))
         assert cvx == Convexity.Convex
 
     def test_positive_tan_concave_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.TanExpression, 'concave', 'unknown', Bound(pi, 1.5*pi))
+        cvx = mock_unary_function_visitor(dex.TanExpression, 'concave', 'unknown', Interval(pi, 1.5*pi))
         assert cvx == Convexity.Unknown
 
     def test_negative_tan_convex_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.TanExpression, 'convex', 'unknown', Bound(-1.5*pi, -pi))
+        cvx = mock_unary_function_visitor(dex.TanExpression, 'convex', 'unknown', Interval(-1.5*pi, -pi))
         assert cvx == Convexity.Unknown
 
     def test_negative_tan_concave_child(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.TanExpression, 'concave', 'unknown', Bound(-0.49*pi, -0.1))
+        cvx = mock_unary_function_visitor(dex.TanExpression, 'concave', 'unknown', Interval(-0.49*pi, -0.1))
         assert cvx == Convexity.Concave
 
 
 class TestAsin(object):
     def test_is_concave(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.AsinExpression, 'concave', 'unknown', Bound(-1, 0))
+        cvx = mock_unary_function_visitor(dex.AsinExpression, 'concave', 'unknown', Interval(-1, 0))
         assert cvx == Convexity.Concave
 
-    @pytest.mark.parametrize('bound_g', [Bound(-1, 0.1), Bound(-1.1, 0.0), Bound(None, None)])
+    @pytest.mark.parametrize('bound_g', [Interval(-1, 0.1), Interval(-1.1, 0.0), Interval(None, None)])
     def test_is_not_concave(self, mock_unary_function_visitor, bound_g):
         cvx = mock_unary_function_visitor(dex.AsinExpression, 'concave', 'unknown', bound_g)
         assert cvx == Convexity.Unknown
 
     def test_is_convex(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.AsinExpression, 'convex', 'unknown', Bound(0, 1))
+        cvx = mock_unary_function_visitor(dex.AsinExpression, 'convex', 'unknown', Interval(0, 1))
         assert cvx == Convexity.Convex
 
-    @pytest.mark.parametrize('bound_g', [Bound(-0.1, 1), Bound(0.0, 1.1), Bound(None, None)])
+    @pytest.mark.parametrize('bound_g', [Interval(-0.1, 1), Interval(0.0, 1.1), Interval(None, None)])
     def test_is_not_convex(self, mock_unary_function_visitor, bound_g):
         cvx = mock_unary_function_visitor(dex.AsinExpression, 'convex', 'unknown', bound_g)
         assert cvx == Convexity.Unknown
@@ -583,19 +583,19 @@ class TestAsin(object):
 
 class TestAcos(object):
     def test_is_concave(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.AcosExpression, 'convex', 'unknown', Bound(0, 1))
+        cvx = mock_unary_function_visitor(dex.AcosExpression, 'convex', 'unknown', Interval(0, 1))
         assert cvx == Convexity.Concave
 
-    @pytest.mark.parametrize('bound_g', [Bound(-0.1, 1), Bound(0.0, 1.1), Bound(None, None)])
+    @pytest.mark.parametrize('bound_g', [Interval(-0.1, 1), Interval(0.0, 1.1), Interval(None, None)])
     def test_is_not_concave(self, mock_unary_function_visitor, bound_g):
         cvx = mock_unary_function_visitor(dex.AcosExpression, 'convex', 'unknown', bound_g)
         assert cvx == Convexity.Unknown
 
     def test_is_convex(self, mock_unary_function_visitor):
-        cvx = mock_unary_function_visitor(dex.AcosExpression, 'concave', 'unknown', Bound(-1, 0))
+        cvx = mock_unary_function_visitor(dex.AcosExpression, 'concave', 'unknown', Interval(-1, 0))
         assert cvx == Convexity.Convex
 
-    @pytest.mark.parametrize('bound_g', [Bound(-1, 0.1), Bound(-1.1, 0.0), Bound(None, None)])
+    @pytest.mark.parametrize('bound_g', [Interval(-1, 0.1), Interval(-1.1, 0.0), Interval(None, None)])
     def test_is_not_convex(self, mock_unary_function_visitor, bound_g):
         cvx = mock_unary_function_visitor(dex.AcosExpression, 'concave', 'unknown', bound_g)
         assert cvx == Convexity.Unknown
@@ -692,7 +692,7 @@ def mock_pow_constant_exponent_visitor(visitor, ctx):
     def _f(cvx_b, mono_b, bound_b, expo):
         expo = dex.Constant(expo)
         ctx.monotonicity[expo] = mono_description_to_mono('constant')
-        ctx.bound[expo] = Bound(expo.value, expo.value)
+        ctx.bound[expo] = Interval(expo.value, expo.value)
         visitor(expo, ctx)
 
         base = PlaceholderExpression()

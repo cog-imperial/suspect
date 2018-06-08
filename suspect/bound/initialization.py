@@ -15,7 +15,7 @@
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
 from suspect.context import SpecialStructurePropagationContext
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 
 
 def initialize_bounds(dag):
@@ -50,7 +50,7 @@ class BoundsInitializationVisitor(BackwardVisitor):
 
     def handle_result(self, expr, value, ctx):
         if value is None:
-            new_bound = Bound(None, None)
+            new_bound = Interval(None, None)
             has_changed = True
         else:
             new_bound = value
@@ -60,7 +60,7 @@ class BoundsInitializationVisitor(BackwardVisitor):
 
     def visit_constraint(self, expr, ctx):
         child = expr.children[0]
-        bound = Bound(expr.lower_bound, expr.upper_bound)
+        bound = Interval(expr.lower_bound, expr.upper_bound)
         return {
             child: bound
         }
@@ -68,29 +68,29 @@ class BoundsInitializationVisitor(BackwardVisitor):
     def visit_sqrt(self, expr, _ctx):
         child = expr.children[0]
         return {
-            child: Bound(0, None),
+            child: Interval(0, None),
         }
 
     def visit_log(self, expr, _ctx):
         child = expr.children[0]
         return {
-            child: Bound(0, None)
+            child: Interval(0, None)
         }
 
     def visit_asin(self, expr, _ctx):
         child = expr.children[0]
         return {
-            child: Bound(-1, 1)
+            child: Interval(-1, 1)
         }
 
     def visit_acos(self, expr, _ctx):
         child = expr.children[0]
         return {
-            child: Bound(-1, 1)
+            child: Interval(-1, 1)
         }
 
     def visit_expression(self, expr, _ctx):
         result = {}
         for child in expr.children:
-            result[child] = Bound(None, None)
+            result[child] = Interval(None, None)
         return result

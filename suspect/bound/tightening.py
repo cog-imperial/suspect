@@ -14,7 +14,7 @@
 
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from suspect.math.arbitrary_precision import inf, almosteq
 
 
@@ -49,13 +49,13 @@ class BoundsTighteningVisitor(BackwardVisitor):
 
     def handle_result(self, expr, value, ctx):
         if value is None:
-            new_bound = Bound(None, None)
+            new_bound = Interval(None, None)
         else:
             new_bound = value
 
         if expr in ctx.bound:
             old_bound = ctx.bound[expr]
-            new_bound = old_bound.tighten(new_bound)
+            new_bound = old_bound.intersect(new_bound)
             has_changed = old_bound != new_bound
         else:
             has_changed = True
@@ -65,7 +65,7 @@ class BoundsTighteningVisitor(BackwardVisitor):
 
     def visit_constraint(self, expr, ctx):
         child = expr.children[0]
-        bound = Bound(expr.lower_bound, expr.upper_bound)
+        bound = Interval(expr.lower_bound, expr.upper_bound)
         return {
             child: bound
         }
@@ -110,7 +110,7 @@ class BoundsTighteningVisitor(BackwardVisitor):
 
         sqrt_bound = bound.sqrt()
         return {
-            base: Bound(-sqrt_bound.upper_bound, sqrt_bound.upper_bound)
+            base: Interval(-sqrt_bound.upper_bound, sqrt_bound.upper_bound)
         }
 
     def visit_unary_function(self, expr, ctx):
@@ -118,7 +118,7 @@ class BoundsTighteningVisitor(BackwardVisitor):
         bound = ctx.bound[expr]
         if expr.func_name in ['sin', 'cos', 'tan', 'asin', 'acos', 'atan']:
             return {
-                child: Bound(None, None)
+                child: Interval(None, None)
             }
         func = getattr(bound, expr.func_name)
         return {

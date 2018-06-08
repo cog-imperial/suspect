@@ -14,13 +14,14 @@
 
 # pylint: disable=invalid-name
 """Arbitrary precision mathematical constants and comparison."""
-from typing import Any
+from typing import Any, Callable
 import mpmath
 
 
 mpf = mpmath.mpf
 make_number = mpmath.mpf
 inf = make_number('inf')
+zero = make_number(0)
 pi = mpmath.pi
 isnan = mpmath.isnan
 
@@ -32,6 +33,26 @@ def _declare_function(name, fun):
 _FUNCTIONS = ['sqrt', 'log', 'exp', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan']
 for fun in _FUNCTIONS:
     _declare_function(fun, getattr(mpmath, fun))
+
+
+def down(f: Callable[[Any], Any]) -> Any:
+    """Perform computation rounding down."""
+    return f()
+
+
+def up(f: Callable[[Any], Any]) -> Any:
+    """Perform computation rounding down."""
+    return f()
+
+
+def min_(*args):
+    """Returns the minimum."""
+    return min(a for a in args if not isnan(a))
+
+
+def max_(*args):
+    """Return the maximum."""
+    return max(a for a in args if not isnan(a))
 
 
 def almosteq(a: Any, b: Any) -> bool:

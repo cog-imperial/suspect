@@ -35,6 +35,7 @@ A math mode needs to define two constants:
 
  * ``inf``: infinity value
  * ``pi``: the trig constant
+ * ``zero``: 0.0
 
 It also needs to define the following functions:
 
@@ -43,6 +44,8 @@ It also needs to define the following functions:
  * ``almosteq``: predicate to test if two numbers are equal
  * ``almostgte```: predicate to test if two numbers are >=
  * ```almostlte``: predicate to test if two numbers are <=
+ * ``down``: perform computation rounding down
+ * ``up``: perform computation rounding up
 
 The following functions take two parameters, a number and a RoundMode:
 
@@ -84,6 +87,7 @@ _COMMON_MEMBERS = [
     'make_number',
     'inf',
     'pi',
+    'zero',
     'sin',
     'cos',
     'sqrt',
@@ -99,8 +103,13 @@ _COMMON_MEMBERS = [
     'almosteq',
     'almostgte',
     'almostlte',
+    'down',
+    'up',
+    'min_',
+    'max_',
 ]
 
+# TODO(fracek): drop this, for now it's need for compat with old code
 _ARBITRARY_PRECISION_MEMBERS = ['mpf']
 
 __all__ = _COMMON_MEMBERS

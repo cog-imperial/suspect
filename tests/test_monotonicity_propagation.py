@@ -26,7 +26,7 @@ from tests.conftest import (
 )
 import suspect.dag.expressions as dex
 from suspect.math.arbitrary_precision import pi
-from suspect.bound import ArbitraryPrecisionBound as Bound
+from suspect.interval import Interval
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.monotonicity.propagation import (
     MonotonicityPropagationVisitor,
@@ -409,7 +409,7 @@ def nonnegative_cos_bounds(draw):
         allow_infinity=False,
     ))
     mul = draw(st.integers(min_value=-100, max_value=100)) * 2 * pi
-    b = Bound(start + mul, start + end + mul)
+    b = Interval(start + mul, start + end + mul)
     assume(b.size() > 0)
     return b
 
@@ -429,7 +429,7 @@ def nonpositive_cos_bounds(draw):
         allow_infinity=False,
     ))
     mul = draw(st.integers(min_value=-10, max_value=10)) * 2 * pi
-    b = Bound(start + mul, start + end + mul)
+    b = Interval(start + mul, start + end + mul)
     assume(b.size() > 0)
     return b
 
@@ -471,7 +471,7 @@ def nonnegative_sin_bounds(draw):
         allow_infinity=False,
     ))
     mul = draw(st.integers(min_value=-100, max_value=100)) * 2 * pi
-    b = Bound(start + mul, start + end + mul)
+    b = Interval(start + mul, start + end + mul)
     assume(b.size() > 0)
     return b
 
@@ -491,7 +491,7 @@ def nonpositive_sin_bounds(draw):
         allow_infinity=False,
     ))
     mul = draw(st.integers(min_value=-10, max_value=10)) * 2 * pi
-    b = Bound(start + mul, start + end + mul)
+    b = Interval(start + mul, start + end + mul)
     assume(b.size() > 0)
     return b
 
@@ -522,7 +522,7 @@ class TestCos(object):
 def mock_pow_constant_base_visitor(visitor, ctx):
     def _f(base, mono_e, bound_e):
         base = dex.Constant(base)
-        ctx.bound[base] = Bound(base.value, base.value)
+        ctx.bound[base] = Interval(base.value, base.value)
         visitor(base, ctx)
         expo = PlaceholderExpression()
         ctx.monotonicity[expo] = mono_description_to_mono(mono_e)
@@ -575,7 +575,7 @@ class TestPowConstantBase(object):
 def mock_pow_constant_exponent_visitor(visitor, ctx):
     def _f(mono_b, bound_b, expo):
         expo = dex.Constant(expo)
-        ctx.bound[expo] = Bound(expo.value, expo.value)
+        ctx.bound[expo] = Interval(expo.value, expo.value)
         visitor(expo, ctx)
 
         base = PlaceholderExpression()
