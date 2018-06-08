@@ -15,7 +15,7 @@
 import warnings
 import logging
 from suspect.pyomo.convert import dag_from_pyomo_model
-from suspect.bound import propagate_bounds, initialize_bounds, tighten_bounds
+from suspect.fbbt import propagate_bounds, initialize_bounds, tighten_bounds
 from suspect.interval import Interval
 from suspect.propagation import propagate_special_structure
 from suspect.polynomial_degree import polynomial_degree

@@ -17,7 +17,7 @@ import pytest
 from unittest.mock import MagicMock
 from hypothesis import given, assume
 import hypothesis.strategies as st
-from suspect.bound.tightening import *
+from suspect.fbbt.tightening import *
 import suspect.dag.expressions as dex
 from suspect.interval import Interval
 from tests.conftest import (

@@ -16,7 +16,7 @@
 import pytest
 from hypothesis import given, assume
 from hypothesis.strategies import integers
-from suspect.bound.propagation import BoundsPropagationVisitor
+from suspect.fbbt.propagation import BoundsPropagationVisitor
 import suspect.dag.expressions as dex
 from suspect.interval import Interval
 from tests.conftest import (
