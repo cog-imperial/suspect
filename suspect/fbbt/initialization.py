@@ -13,13 +13,12 @@
 # limitations under the License.
 
 """FBBT bounds initialization."""
-from typing import Dict
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
 from suspect.interval import Interval
 
 
-class BoundsInitializationVisitor(BackwardVisitor[Interval, Dict[dex.Expression, Interval]]):
+class BoundsInitializationVisitor(BackwardVisitor):
     """Initialize problem bounds using function domains as bound."""
     def register_callbacks(self):
         return {

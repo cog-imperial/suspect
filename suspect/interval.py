@@ -14,7 +14,6 @@
 
 """Numerical interval object."""
 
-from typing import Any, Callable, Generic, SupportsFloat, TypeVar, Union
 from functools import wraps
 # pylint: disable=no-name-in-module
 from suspect.math import (
@@ -42,12 +41,8 @@ from suspect.math import (
 from suspect.math import RoundMode as RM
 
 
-# Internal type used for math.
-T = TypeVar('T', bound=SupportsFloat)
-
-
 class _FunctionOnInterval(object):
-    def __init__(self, func: Callable[[], 'Interval[T]'], inv_func: Callable[[], 'Interval[T]']):
+    def __init__(self, func, inv_func):
         self._func = func
         self._inv_func = inv_func
 
@@ -80,9 +75,9 @@ def monotonic_decreasing(func):
     return _wrapper
 
 
-class Interval(Generic[T]):
+class Interval(object): # pylint: disable=too-many-public-methods
     """Numerical interval."""
-    def __init__(self, lower: Any, upper: Any) -> None:
+    def __init__(self, lower, upper):
         if lower is None:
             lower = -inf
         if upper is None:
@@ -94,58 +89,58 @@ class Interval(Generic[T]):
         if lower > upper:
             raise ValueError('lower must be <= upper')
 
-        self._lower: T = lower
-        self._upper: T = upper
+        self._lower = lower
+        self._upper = upper
 
     @staticmethod
-    def zero() -> 'Interval[T]':
+    def zero():
         """Return Interval = [0, 0]."""
         return Interval(zero, zero)
 
     @property
-    def lower_bound(self) -> float:
-        """Return interval lower bound."""
+    def lower_bound(self):
+        """Return interval lower bound as float."""
         return float(self._lower)
 
     @property
-    def upper_bound(self) -> float:
-        """Return interval upper bound."""
+    def upper_bound(self):
+        """Return interval upper bound as float."""
         return float(self._upper)
 
-    def size(self) -> T:
+    def size(self):
         """Return interval size."""
         if self._lower == -inf or self._upper == inf:
             return inf
         return self._upper - self._lower
 
-    def is_zero(self) -> bool:
+    def is_zero(self):
         """Check if the interval is [0, 0]."""
         return almosteq(self._lower, 0) and almosteq(self._upper, 0)
 
-    def is_positive(self) -> bool:
+    def is_positive(self):
         """Check if the interval [a, b] has a > 0."""
         return self._lower > zero
 
-    def is_negative(self) -> bool:
+    def is_negative(self):
         """Check if the interval [a, b] has b < 0."""
         return self._upper < zero
 
-    def is_nonpositive(self) -> bool:
+    def is_nonpositive(self):
         """Check if the interval [a, b] has b <= 0."""
         return almostlte(self._upper, zero)
 
-    def is_nonnegative(self) -> bool:
+    def is_nonnegative(self):
         """Check if the interval [a, b] has a >= 0."""
         return almostgte(self._lower, zero)
 
-    def inverse(self) -> 'Interval[T]':
+    def inverse(self):
         """Return the inverse of self, or 1/self."""
         return Interval(
             down(lambda: 1.0 / self._upper),
             up(lambda: 1.0 / self._lower),
         )
 
-    def intersect(self, other: 'Interval[T]') -> 'Interval[T]':
+    def intersect(self, other):
         """Intersect this interval with another."""
         if not isinstance(other, Interval):
             raise ValueError('intersect with non Interval value')
@@ -159,6 +154,7 @@ class Interval(Generic[T]):
 
     @property
     def negation(self):
+        """Return the negation of self, or 0-self"""
         return _FunctionOnInterval(lambda: -self, lambda: -self)
 
     @property
@@ -212,7 +208,7 @@ class Interval(Generic[T]):
     def __neg__(self):
         return Interval(-self._upper, -self._lower)
 
-    def __add__(self, other: Union[SupportsFloat, 'Interval[T]']) -> 'Interval[T]':
+    def __add__(self, other):
         if not isinstance(other, Interval):
             return self + Interval(float(other), float(other))
         # pylint: disable=protected-access
@@ -221,16 +217,16 @@ class Interval(Generic[T]):
             up(lambda: self._upper + other._upper),
         )
 
-    def __radd__(self, other: 'Interval[T]') -> 'Interval[T]':
+    def __radd__(self, other):
         return self + other
 
-    def __sub__(self, other: 'Interval[T]') -> 'Interval[T]':
+    def __sub__(self, other):
         return self + (-other)
 
-    def __rsub__(self, other: 'Interval[T]') -> 'Interval[T]':
+    def __rsub__(self, other):
         return (-self) + other
 
-    def __mul__(self, other: Union[SupportsFloat, 'Interval[T]']) -> 'Interval[T]':
+    def __mul__(self, other):
         if not isinstance(other, Interval):
             return self * Interval(float(other), float(other))
         if self.is_zero() or other.is_zero():
@@ -245,10 +241,10 @@ class Interval(Generic[T]):
             up(lambda: max_(sl*ol, sl*ou, su*ol, su*ou)),
         )
 
-    def __rmul__(self, other: Union[SupportsFloat, 'Interval[T]']) -> 'Interval[T]':
+    def __rmul__(self, other):
         return self * other
 
-    def __div__(self, other: Union[SupportsFloat, 'Interval[T]']) -> 'Interval[T]':
+    def __div__(self, other):
         if not isinstance(other, Interval):
             return self / Interval(float(other), float(other))
         if 0 in other:
@@ -257,7 +253,7 @@ class Interval(Generic[T]):
 
     __truediv__ = __div__
 
-    def __rdiv__(self, other: Union[SupportsFloat, 'Interval[T]']) -> 'Interval[T]':
+    def __rdiv__(self, other):
         if not isinstance(other, Interval):
             return Interval(float(other), float(other)) / self
         if 0 in self:
@@ -266,7 +262,7 @@ class Interval(Generic[T]):
 
     __rtruediv__ = __rdiv__
 
-    def __eq__(self, other: 'Interval[T]') -> bool:
+    def __eq__(self, other):
         if not isinstance(other, Interval):
             return False
         # pylint: disable=protected-access
@@ -275,7 +271,7 @@ class Interval(Generic[T]):
             almosteq(self._upper, other._upper)
         )
 
-    def __contains__(self, other: Union['Interval[T]', SupportsFloat]) -> bool:
+    def __contains__(self, other):
         # pylint: disable=protected-access
         if isinstance(other, Interval):
             return (
@@ -364,5 +360,5 @@ class Interval(Generic[T]):
 
 class EmptyInterval(Interval):
     """An empty interval."""
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__(0, 0)

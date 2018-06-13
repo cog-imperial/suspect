@@ -14,34 +14,28 @@
 
 """Interfaces used in SUSPECT.
 
-You don't need them unless you are using a type checker on your codebase.
+You don't need them, but they are nice for documentation purpose.
 """
 import abc
-from typing import Any, Generic, List, TypeVar
 
 
-V = TypeVar('V')
-C = TypeVar('C')
-
-
-class Problem(Generic[V]):
+class Problem(object):
     """Generic problem with vertices of type V."""
     pass
 
 
-class Visitor(Generic[V, C], metaclass=abc.ABCMeta):
-    """Visitor for vertices of type V."""
+class Visitor(metaclass=abc.ABCMeta):
+    """Visitor for vertices of Problem."""
     @abc.abstractmethod
-    def visit(self, vertex: V, ctx: C) -> bool:
+    def visit(self, vertex, ctx):
         """Visit vertex. Return True if the vertex should be considered "dirty"."""
         pass
 
 
-class Iterator(Generic[V, C], metaclass=abc.ABCMeta):
-    """Iterator over vertices of Problem[V]."""
+class Iterator(metaclass=abc.ABCMeta):
+    """Iterator over vertices of Problem."""
     @abc.abstractmethod
-    def iterate(self, problem: Problem[V], visitor: Visitor[V, C], ctx: C,
-                *args: Any, **kwargs: Any) -> List[V]:
+    def iterate(self, problem, visitor, ctx, *args, **kwargs):
         """Iterate over vertices of problem, calling visitor on each one of them.
 
         Returns the list of vertices for which the visitor returned a True value.
@@ -49,11 +43,11 @@ class Iterator(Generic[V, C], metaclass=abc.ABCMeta):
         pass
 
 
-class ForwardIterator(Iterator[V, C]):
+class ForwardIterator(Iterator): # pylint: disable=abstract-method
     """An iterator for iterating over nodes in ascending depth order."""
     pass
 
 
-class BackwardIterator(Iterator[V, C]):
+class BackwardIterator(Iterator): # pylint: disable=abstract-method
     """An iterator for iterating over nodes in descending depth order."""
     pass

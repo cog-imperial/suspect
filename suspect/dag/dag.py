@@ -15,11 +15,10 @@
 """Directed Acyclic Graph representation of an optimization problem."""
 
 from suspect.interfaces import Problem
-from suspect.dag.expressions import Expression
 from suspect.dag.vertices_list import VerticesList
 
 
-class ProblemDag(Problem[Expression]):
+class ProblemDag(Problem):
     r"""The optimization problem represented as Directed Acyclic Graph (DAG).
 
     The vertices in the DAG are sorted by depth, defined as

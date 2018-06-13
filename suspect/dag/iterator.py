@@ -14,8 +14,7 @@
 
 """Iterators over vertices of ProblemDag."""
 import abc
-from typing import List
-from suspect.interfaces import ForwardIterator, BackwardIterator, Visitor, C
+from suspect.interfaces import ForwardIterator, BackwardIterator
 from suspect.dag.dag import ProblemDag
 from suspect.dag.expressions import Expression
 from suspect.dag.vertices_list import VerticesList
@@ -23,15 +22,14 @@ from suspect.dag.vertices_list import VerticesList
 
 class _DagIterator(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def _get_next_vertices(self, expr: Expression) -> List[Expression]:
+    def _get_next_vertices(self, expr):
         pass
 
     @abc.abstractproperty
     def _reverse(self) -> bool:
         pass
 
-    def _iterate(self, _problem: ProblemDag, visitor: Visitor[Expression, C], ctx: C,
-                 starting_vertices) -> List[Expression]:
+    def _iterate(self, _problem, visitor, ctx, starting_vertices):
         changed_vertices = []
         vertices = VerticesList(starting_vertices, reverse=self._reverse)
         seen = set()
@@ -51,9 +49,9 @@ class _DagIterator(metaclass=abc.ABCMeta):
         return changed_vertices
 
 
-class DagForwardIterator(_DagIterator, ForwardIterator[ProblemDag, C]):
+class DagForwardIterator(_DagIterator, ForwardIterator):
     """Forward iterator over suspect.dag.ProblemDag vertices."""
-    def _get_next_vertices(self, expr: Expression) -> List[Expression]:
+    def _get_next_vertices(self, expr):
         return expr.parents
 
     @property
@@ -76,9 +74,9 @@ class DagForwardIterator(_DagIterator, ForwardIterator[ProblemDag, C]):
         )
 
 
-class DagBackwardIterator(_DagIterator, BackwardIterator[ProblemDag, C]):
+class DagBackwardIterator(_DagIterator, BackwardIterator):
     """Backward iterator over suspect.dag.ProblemDag vertices."""
-    def _get_next_vertices(self, expr: Expression) -> List[Expression]:
+    def _get_next_vertices(self, expr):
         return expr.children
 
     @property

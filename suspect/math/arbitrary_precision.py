@@ -14,7 +14,6 @@
 
 # pylint: disable=invalid-name
 """Arbitrary precision mathematical constants and comparison."""
-from typing import Any, Callable
 import mpmath
 
 
@@ -35,12 +34,12 @@ for fun in _FUNCTIONS:
     _declare_function(fun, getattr(mpmath, fun))
 
 
-def down(f: Callable[[Any], Any]) -> Any:
+def down(f):
     """Perform computation rounding down."""
     return f()
 
 
-def up(f: Callable[[Any], Any]) -> Any:
+def up(f):
     """Perform computation rounding down."""
     return f()
 
@@ -55,7 +54,7 @@ def max_(*args):
     return max(a for a in args if not isnan(a))
 
 
-def almosteq(a: Any, b: Any) -> bool:
+def almosteq(a, b):
     """Floating point equality check between `a` and `b`."""
     # in mpmath inf != inf, but we want inf == inf
     if abs(a) == inf and abs(b) == inf:
@@ -63,11 +62,11 @@ def almosteq(a: Any, b: Any) -> bool:
     return mpmath.almosteq(a, b)
 
 
-def almostgte(a: Any, b: Any) -> bool:
+def almostgte(a, b):
     """Return True if a >= b."""
     return a > b or almosteq(a, b)
 
 
-def almostlte(a: Any, b: Any) -> bool:
+def almostlte(a, b):
     """Return True if a <= b."""
     return a < b or almosteq(a, b)

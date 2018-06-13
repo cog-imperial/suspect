@@ -14,50 +14,46 @@
 
 """Visitor implementation for ProblemDag."""
 import abc
-from typing import Any, Callable, Dict, Generic, TypeVar
 from suspect.util import deprecated
-from suspect.interfaces import Visitor as IVisitor, C
+from suspect.interfaces import Visitor as IVisitor
 from suspect.dag.expressions import Expression
 
 
-R = TypeVar('R')
-
-
-class Visitor(Generic[R, C], IVisitor[Expression, C]):
+class Visitor(IVisitor):
     """Visitor over vertices of ProblemDag."""
-    def __init__(self, *_args: Any) -> None:
+    def __init__(self, *_args):
         try:
             self._registered_callbacks = self.register_callbacks()
         except NotImplementedError:
             self._registered_callbacks = self.register_handlers()
 
     # @abc.abstractmethod
-    def register_callbacks(self) -> Dict[type, Callable[[Expression, C], R]]:
+    def register_callbacks(self):
         """Register callbacks for each expression type."""        
         raise NotImplementedError()
 
     @deprecated('register_callbacks')
-    def register_handlers(self) -> Dict[type, Callable[[Expression, C], R]]:
+    def register_handlers(self):
         """Register callbacks for each expression type.
 
         DEPRECATED: use register_callbacks instead.
         """
         pass
-        # return self.register_callbacks()
 
     @abc.abstractmethod
-    def handle_result(self, expr: Expression, result: R, ctx: C) -> bool:
+    def handle_result(self, expr, result, ctx):
         """Handle visit result."""
         pass
 
-    def _handle_result(self, expr: Expression, result: R, ctx: C) -> bool:
+    def _handle_result(self, expr, result, ctx):
         return self.handle_result(expr, result, ctx)
 
-    def _visit_expr(self, expr: Expression, ctx: C, cb: Callable[[Expression, C], R]) -> bool:
+    def _visit_expr(self, expr, ctx, cb):
         result = cb(expr, ctx)
         return self._handle_result(expr, result, ctx)
 
-    def visit(self, expr: Expression, ctx: C) -> bool: # pylint: disable=missing-docstring
+    def visit(self, vertex, ctx): # pylint: disable=missing-docstring
+        expr = vertex
         type_ = type(expr)
         cb = self._registered_callbacks.get(type_)
         if cb is not None:
@@ -72,14 +68,14 @@ class Visitor(Generic[R, C], IVisitor[Expression, C]):
         return True
 
 
-class ForwardVisitor(Generic[R, C], Visitor[R, C]): # pylint: disable=missing-docstring,abstract-method
+class ForwardVisitor(Visitor): # pylint: disable=abstract-method
     """Visitor when visiting ProblemDag forward."""
     pass
 
 
-class BackwardVisitor(Generic[R, C], Visitor[R, C]): # pylint: disable=missing-docstring,abstract-method
+class BackwardVisitor(Visitor): # pylint: disable=abstract-method
     """Visitor when visiting ProblemDag backward."""
-    def _handle_result(self, _expr: Expression, result: R, ctx: C) -> bool:
+    def _handle_result(self, _expr, result, ctx):
         if result is None:
             return False
         any_change = False

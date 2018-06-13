@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Error types."""
 
 class DomainError(ValueError):
+    """Exception raised when a function domain is incorrect."""
     pass

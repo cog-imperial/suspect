@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict
 import suspect.dag.expressions as dex
 from suspect.dag.iterator import DagForwardIterator
 from suspect.dag.visitor import ForwardVisitor
@@ -71,8 +70,7 @@ class PolynomialDegree(object):
         return '<{} at {}>'.format(str(self), hex(id(self)))
 
 
-class PolynomialDegreeVisitor(ForwardVisitor[PolynomialDegree,
-                                             Dict[dex.Expression, PolynomialDegree]]):
+class PolynomialDegreeVisitor(ForwardVisitor):
     """Visitor to compute polynomial degree of expressions."""
     def register_callbacks(self):
         return {

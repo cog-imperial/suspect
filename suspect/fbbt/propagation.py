@@ -15,14 +15,13 @@
 """FBBT bounds propagation."""
 import operator
 from functools import reduce
-from typing import Dict
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import ForwardVisitor
 from suspect.interval import Interval
 from suspect.math import almosteq # pylint: disable=no-name-in-module
 
 
-class BoundsPropagationVisitor(ForwardVisitor[Interval, Dict[dex.Expression, Interval]]):
+class BoundsPropagationVisitor(ForwardVisitor):
     """Propagate bounds from sources to sinks."""
     def register_callbacks(self):
         return {

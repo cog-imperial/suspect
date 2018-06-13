@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """FBBT bounds tightening."""
-from typing import Dict
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
 from suspect.interval import Interval
@@ -23,7 +22,7 @@ from suspect.math import inf, almosteq # pylint: disable=no-name-in-module
 MAX_EXPR_CHILDREN = 1000
 
 
-class BoundsTighteningVisitor(BackwardVisitor[Interval, Dict[dex.Expression, Interval]]):
+class BoundsTighteningVisitor(BackwardVisitor):
     """Tighten bounds from sinks to sources."""
     def register_callbacks(self):
         return {

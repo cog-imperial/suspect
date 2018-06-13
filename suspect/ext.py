@@ -15,11 +15,12 @@
 # from suspect.monotonicity.monotonicity import Monotonicity
 # from suspect.convexity.convexity import Convexity
 
+"""Module with classes for extending SUSPECT."""
 from suspect.dag.visitor import ForwardVisitor
-from suspect.convexity import Convexity
 
 
 class ConvexityDetector(ForwardVisitor):
+    """Convexity Detector base class."""
     def handle_result(self, expr, result, ctx):
         if result is None:
             return False
