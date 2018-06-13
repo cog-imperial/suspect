@@ -22,29 +22,8 @@ from suspect.monotonicity.linear import linear_monotonicity
 from suspect.monotonicity.pow import pow_monotonicity
 
 
-def propagate_monotonicity(dag, bounds):
-    """Compute monotonicity of expressions in the problem.
-
-    Arguments
-    ---------
-    dag: ProblemDag
-      the problem
-    bounds: dict-like
-      bounds of the expressions.
-
-    Returns
-    -------
-    monotonicity: dict-like
-      monotonicity information for the problem
-    """
-    visitor = MonotonicityPropagationVisitor()
-    ctx = SpecialStructurePropagationContext(bounds)
-    dag.forward_visit(visitor, ctx)
-    return ctx.monotonicity
-
-
 class MonotonicityPropagationVisitor(ForwardVisitor):
-    def register_handlers(self):
+    def register_callbacks(self):
         return {
             dex.Variable: self.visit_variable,
             dex.Constant: self.visit_constant,
@@ -70,6 +49,8 @@ class MonotonicityPropagationVisitor(ForwardVisitor):
         }
 
     def handle_result(self, expr, result, ctx):
+        if result is None:
+            return False
         ctx.monotonicity[expr] = result
         return not result.is_unknown()
 

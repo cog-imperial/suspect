@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""SUSPECT monotonicity detection module."""
 from .monotonicity import Monotonicity
-from .propagation import MonotonicityPropagationVisitor, propagate_monotonicity
+from .propagation import MonotonicityPropagationVisitor
+
+__all__ = ['Monotonicity', 'MonotonicityPropagationVisitor']

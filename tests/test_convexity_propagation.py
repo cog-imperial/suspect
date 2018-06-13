@@ -42,13 +42,13 @@ def visitor():
 
 def test_variable_is_linear(visitor, ctx):
     var = dex.Variable('x0', None, None)
-    visitor(var, ctx)
+    visitor.visit(var, ctx)
     assert ctx.convexity[var].is_linear()
 
 
 def test_constant_is_linear(visitor, ctx):
     const = dex.Constant(-1.0)
-    visitor(const, ctx)
+    visitor.visit(const, ctx)
     assert ctx.convexity[const].is_linear()
 
 
@@ -63,7 +63,7 @@ def mock_constraint_visitor(visitor, ctx):
             upper_bound=upper_bound,
             children=[f],
         )
-        visitor(con, ctx)
+        visitor.visit(con, ctx)
         return ctx.convexity[con]
     return _f
 
@@ -99,7 +99,7 @@ def mock_objective_visitor(visitor, ctx):
         f = PlaceholderExpression()
         ctx.convexity[f] = cvx_description_to_cvx(children_cvx)
         obj = dex.Objective('obj', sense, children=[f])
-        visitor(obj, ctx)
+        visitor.visit(obj, ctx)
         return ctx.convexity[obj]
     return _f
 
@@ -138,8 +138,8 @@ def mock_product_visitor(visitor, ctx):
         ctx.bound[g] = bound_description_to_bound(bound_g)
         prod_fg = dex.ProductExpression([f, g])
         prod_gf = dex.ProductExpression([g, f])
-        visitor(prod_fg, ctx)
-        visitor(prod_gf, ctx)
+        visitor.visit(prod_fg, ctx)
+        visitor.visit(prod_gf, ctx)
         # product is commutative
         assert ctx.convexity[prod_fg] == ctx.convexity[prod_gf]
         return ctx.convexity[prod_fg]
@@ -174,7 +174,7 @@ def mock_division_visitor(visitor, ctx):
         ctx.bound[g] = bound_description_to_bound(bound_g)
 
         div = dex.DivisionExpression([f, g])
-        visitor(div, ctx)
+        visitor.visit(div, ctx)
         return ctx.convexity[div]
     return _f
 
@@ -228,7 +228,7 @@ def mock_linear_visitor(visitor, ctx):
         for child, cvx in zip(children, cvxs):
             ctx.convexity[child] = cvx_description_to_cvx(cvx)
         linear = dex.LinearExpression(coefs, children)
-        visitor(linear, ctx)
+        visitor.visit(linear, ctx)
         return ctx.convexity[linear]
     return _f
 
@@ -300,7 +300,7 @@ def mock_sum_visitor(visitor, ctx):
         for child, cvx in zip(children, cvxs):
             ctx.convexity[child] = cvx_description_to_cvx(cvx)
         sum_ = dex.SumExpression(children)
-        visitor(sum_, ctx)
+        visitor.visit(sum_, ctx)
         return ctx.convexity[sum_]
     return _f
 
@@ -346,7 +346,7 @@ def mock_unary_function_visitor(visitor, ctx):
         ctx.monotonicity[g] = mono_description_to_mono(mono_g)
         ctx.bound[g] = bound_description_to_bound(bound_g)
         expr = func([g])
-        visitor(expr, ctx)
+        visitor.visit(expr, ctx)
         return ctx.convexity[expr]
     return _f
 
@@ -632,7 +632,7 @@ def mock_pow_constant_base_visitor(visitor, ctx):
         ctx.monotonicity[e] = mono_description_to_mono(mono_e)
         ctx.bound[e] = bound_description_to_bound(bound_e)
         p = dex.PowExpression([b, e])
-        visitor(p, ctx)
+        visitor.visit(p, ctx)
         return ctx.convexity[p]
     return _f
 
@@ -693,14 +693,14 @@ def mock_pow_constant_exponent_visitor(visitor, ctx):
         expo = dex.Constant(expo)
         ctx.monotonicity[expo] = mono_description_to_mono('constant')
         ctx.bound[expo] = Interval(expo.value, expo.value)
-        visitor(expo, ctx)
+        visitor.visit(expo, ctx)
 
         base = PlaceholderExpression()
         ctx.convexity[base] = cvx_description_to_cvx(cvx_b)
         ctx.monotonicity[base] = mono_description_to_mono(mono_b)
         ctx.bound[base] = bound_description_to_bound(bound_b)
         p = dex.PowExpression([base, expo])
-        visitor(p, ctx)
+        visitor.visit(p, ctx)
         return ctx.convexity[p]
     return _f
 

@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""SUSPECT utility functions."""
+
+from functools import wraps
+import warnings
 from suspect.pyomo.util import (
     model_variables,
     model_constraints,
@@ -20,3 +24,20 @@ from suspect.pyomo.util import (
     numeric_types,
     numeric_value,
 )
+
+
+def deprecated(new_func):
+    """Mark a function as deprecated."""
+    def _deprecated_decorator(func):
+        @wraps(func)
+        def _wrapper(*args, **kwargs):
+            warnings.warn(
+                '{} has been renamed to {}.'.format(
+                    func.__name__,
+                    new_func,
+                ),
+                DeprecationWarning,
+            )
+            return func(*args, **kwargs)
+        return _wrapper
+    return _deprecated_decorator

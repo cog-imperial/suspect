@@ -45,7 +45,7 @@ class PlaceholderExpression(object):
 
 @pytest.fixture
 def ctx():
-    return SpecialStructurePropagationContext({})
+    return SpecialStructurePropagationContext()
 
 
 def bound_description_to_bound(bound_str):

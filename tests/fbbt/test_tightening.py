@@ -26,7 +26,6 @@ from tests.conftest import (
     mono_description_to_mono,
     coefficients,
     reals,
-    ctx,
 )
 
 @pytest.fixture
@@ -39,15 +38,17 @@ class TestPower(object):
         c = dex.Constant(2.0)
         p = PlaceholderExpression()
         pow_ = dex.PowExpression(children=[p, c])
-        ctx.bound[pow_] = Interval(0, 4)
-        visitor(pow_, ctx)
-        assert ctx.bound[p] == Interval(-2, 2)
+        bounds = {}
+        bounds[pow_] = Interval(0, 4)
+        visitor.visit(pow_, bounds)
+        assert bounds[p] == Interval(-2, 2)
 
     def test_non_square(self, visitor, ctx):
         c = dex.Constant(3.0)
         p = PlaceholderExpression()
-        ctx.bound[p] = Interval(None, None)
+        bounds = {}
+        bounds[p] = Interval(None, None)
         pow_ = dex.PowExpression(children=[p, c])
-        ctx.bound[pow_] = Interval(0, 4)
-        visitor(pow_, ctx)
-        assert ctx.bound[p] == Interval(None, None)
+        bounds[pow_] = Interval(0, 4)
+        visitor.visit(pow_, bounds)
+        assert bounds[p] == Interval(None, None)

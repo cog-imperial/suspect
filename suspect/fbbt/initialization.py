@@ -12,40 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""FBBT bounds initialization."""
+from typing import Dict
 import suspect.dag.expressions as dex
 from suspect.dag.visitor import BackwardVisitor
-from suspect.context import SpecialStructurePropagationContext
 from suspect.interval import Interval
 
 
-def initialize_bounds(dag):
-    """Initialize problem bounds using function domains as bound.
-
-    Parameters
-    ----------
-    dag: ProblemDag
-       the DAG representation of the optimization problem
-
-    Returns
-    -------
-    ctx: SpecialStructurePropagationContex
-       the initial context
-    """
-    visitor = BoundsInitializationVisitor()
-    ctx = SpecialStructurePropagationContext({})
-    dag.backward_visit(visitor, ctx)
-    return ctx
-
-
-class BoundsInitializationVisitor(BackwardVisitor):
-    def register_handlers(self):
+class BoundsInitializationVisitor(BackwardVisitor[Interval, Dict[dex.Expression, Interval]]):
+    """Initialize problem bounds using function domains as bound."""
+    def register_callbacks(self):
         return {
-            # dex.Constraint: self.visit_constraint,
-            dex.SqrtExpression: self.visit_sqrt,
-            dex.LogExpression: self.visit_log,
-            dex.AsinExpression: self.visit_asin,
-            dex.AcosExpression: self.visit_acos,
-            dex.Expression: self.visit_expression,
+            dex.SqrtExpression: self._visit_sqrt,
+            dex.LogExpression: self._visit_log,
+            dex.AsinExpression: self._visit_asin,
+            dex.AcosExpression: self._visit_acos,
         }
 
     def handle_result(self, expr, value, ctx):
@@ -55,42 +36,29 @@ class BoundsInitializationVisitor(BackwardVisitor):
         else:
             new_bound = value
             has_changed = True
-        ctx.bound[expr] = new_bound
+        ctx[expr] = new_bound
         return has_changed
 
-    def visit_constraint(self, expr, ctx):
-        child = expr.children[0]
-        bound = Interval(expr.lower_bound, expr.upper_bound)
-        return {
-            child: bound
-        }
-
-    def visit_sqrt(self, expr, _ctx):
+    def _visit_sqrt(self, expr, _ctx):
         child = expr.children[0]
         return {
             child: Interval(0, None),
         }
 
-    def visit_log(self, expr, _ctx):
+    def _visit_log(self, expr, _ctx):
         child = expr.children[0]
         return {
             child: Interval(0, None)
         }
 
-    def visit_asin(self, expr, _ctx):
+    def _visit_asin(self, expr, _ctx):
         child = expr.children[0]
         return {
             child: Interval(-1, 1)
         }
 
-    def visit_acos(self, expr, _ctx):
+    def _visit_acos(self, expr, _ctx):
         child = expr.children[0]
         return {
             child: Interval(-1, 1)
         }
-
-    def visit_expression(self, expr, _ctx):
-        result = {}
-        for child in expr.children:
-            result[child] = Interval(None, None)
-        return result

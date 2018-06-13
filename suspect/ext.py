@@ -21,5 +21,7 @@ from suspect.convexity import Convexity
 
 class ConvexityDetector(ForwardVisitor):
     def handle_result(self, expr, result, ctx):
+        if result is None:
+            return False
         ctx.convexity[expr] = result
         return not result.is_unknown()

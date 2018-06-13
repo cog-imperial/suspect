@@ -11,61 +11,78 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Visitor implementation for ProblemDag."""
 import abc
+from typing import Any, Callable, Dict, Generic, TypeVar
+from suspect.util import deprecated
+from suspect.interfaces import Visitor as IVisitor, C
+from suspect.dag.expressions import Expression
 
 
-class Visitor(object, metaclass=abc.ABCMeta):
-    def __init__(self, *args):
-        self._registered_handlers = self.register_handlers()
+R = TypeVar('R')
+
+
+class Visitor(Generic[R, C], IVisitor[Expression, C]):
+    """Visitor over vertices of ProblemDag."""
+    def __init__(self, *_args: Any) -> None:
+        try:
+            self._registered_callbacks = self.register_callbacks()
+        except NotImplementedError:
+            self._registered_callbacks = self.register_handlers()
+
+    # @abc.abstractmethod
+    def register_callbacks(self) -> Dict[type, Callable[[Expression, C], R]]:
+        """Register callbacks for each expression type."""        
+        raise NotImplementedError()
+
+    @deprecated('register_callbacks')
+    def register_handlers(self) -> Dict[type, Callable[[Expression, C], R]]:
+        """Register callbacks for each expression type.
+
+        DEPRECATED: use register_callbacks instead.
+        """
+        pass
+        # return self.register_callbacks()
 
     @abc.abstractmethod
-    def register_handlers(self):
+    def handle_result(self, expr: Expression, result: R, ctx: C) -> bool:
+        """Handle visit result."""
         pass
 
-    @abc.abstractmethod
-    def handle_result(self, expr, result, ctx):
-        pass
+    def _handle_result(self, expr: Expression, result: R, ctx: C) -> bool:
+        return self.handle_result(expr, result, ctx)
 
-    def visit(self, expr, ctx):
+    def _visit_expr(self, expr: Expression, ctx: C, cb: Callable[[Expression, C], R]) -> bool:
+        result = cb(expr, ctx)
+        return self._handle_result(expr, result, ctx)
+
+    def visit(self, expr: Expression, ctx: C) -> bool: # pylint: disable=missing-docstring
         type_ = type(expr)
-        cb = self._registered_handlers.get(type_)
+        cb = self._registered_callbacks.get(type_)
         if cb is not None:
-            return cb(expr, ctx)
+            return self._visit_expr(expr, ctx, cb)
 
         # try superclasses, for most cases this will work fine
         # but since dicts are not ordered it could cause
         # unexpected behaviour
-        for target_type, cb in self._registered_handlers.items():
+        for target_type, cb in self._registered_callbacks.items():
             if isinstance(expr, target_type):
-                return cb(expr, ctx)
-
-    def __call__(self, expr, ctx):
-        return self.visit(expr, ctx)
+                return self._visit_expr(expr, ctx, cb)
+        return True
 
 
-class ForwardVisitor(Visitor):
-    def __call__(self, expr, ctx):
-        result = self.visit(expr, ctx)
-        if result is not None:
-            has_changed = self.handle_result(expr, result, ctx)
-            if has_changed:
-                return [expr]
+class ForwardVisitor(Generic[R, C], Visitor[R, C]): # pylint: disable=missing-docstring,abstract-method
+    """Visitor when visiting ProblemDag forward."""
+    pass
 
 
-class BackwardVisitor(Visitor):
-    @abc.abstractmethod
-    def handle_result(self, expr, result, ctx):
-        pass
-
-    def __call__(self, expr, ctx):
-        result = self.visit(expr, ctx)
-        if isinstance(result, dict):
-            changes = []
-            for k, v in result.items():
-                has_changed = self.handle_result(k, v, ctx)
-                if has_changed:
-                    changes.append(k)
-            if len(changes) > 0:
-                return changes
-        elif result is not None:
-            raise RuntimeError('BackwardVisitor must return dict')
+class BackwardVisitor(Generic[R, C], Visitor[R, C]): # pylint: disable=missing-docstring,abstract-method
+    """Visitor when visiting ProblemDag backward."""
+    def _handle_result(self, _expr: Expression, result: R, ctx: C) -> bool:
+        if result is None:
+            return False
+        any_change = False
+        for child, value in result.items():
+            any_change |= self.handle_result(child, value, ctx)
+        return any_change

@@ -12,70 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import bisect
-from suspect.dag.visitor import ForwardVisitor, BackwardVisitor
+"""Directed Acyclic Graph representation of an optimization problem."""
+
+from suspect.interfaces import Problem
+from suspect.dag.expressions import Expression
+from suspect.dag.vertices_list import VerticesList
 
 
-def _reverse_bisect_right(arr, x):
-    """Like bisect.bisect_right, but insert in a descending list"""
-    lo = 0
-    hi = len(arr)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if x > arr[mid]:
-            hi = mid
-        else:
-            lo = mid + 1
-    return lo
-
-
-class VerticesList(object):
-    """A list of vertices sorted by their depth."""
-    def __init__(self, vertices=None, reverse=False):
-        if vertices is None:
-            vertices = []
-        else:
-            vertices = sorted(vertices, key=lambda v: v.depth, reverse=reverse)
-
-        self._vertices = vertices
-        self._vertices_depth = [v.depth for v in self._vertices]
-        self._vertices_set = set([id(v) for v in self._vertices])
-        self._reverse = reverse
-
-        if self._reverse:
-            self._find_insertion_idx = _reverse_bisect_right
-        else:
-            self._find_insertion_idx = bisect.bisect_right
-
-    def append(self, vertex):
-        """Append vertex to the list, keeping the vertices sorted by depth"""
-        if id(vertex) in self._vertices_set:
-            return
-        depth = vertex.depth
-        insertion_idx = self._find_insertion_idx(self._vertices_depth, depth)
-        self._vertices.insert(insertion_idx, vertex)
-        self._vertices_depth.insert(insertion_idx, depth)
-        self._vertices_set.add(id(vertex))
-
-    def pop(self):
-        """Pop an element from the front of the list"""
-        self._vertices_depth.pop(0)
-        vertex = self._vertices.pop(0)
-        if id(vertex) in self._vertices_set:
-            self._vertices_set.remove(id(vertex))
-        return vertex
-
-    def __iter__(self):
-        return iter(self._vertices)
-
-    def __len__(self):
-        return len(self._vertices)
-
-    def __contains__(self, vertex):
-        return id(vertex) in self._vertices_set
-
-
-class ProblemDag(object):
+class ProblemDag(Problem[Expression]):
     r"""The optimization problem represented as Directed Acyclic Graph (DAG).
 
     The vertices in the DAG are sorted by depth, defined as
@@ -120,92 +64,8 @@ class ProblemDag(object):
 
     @property
     def vertices(self):
+        """Return an iterator over the problem vertices."""
         return iter(self._vertices)
-
-    def visit(self, visitor, ctx, starting_vertices=None):
-        """Visit all vertices in the DAG.
-
-        Parameters
-        ----------
-        visitor : Visitor
-           the visitor.
-        ctx : dict-like
-           a context passed to the callbacks.
-        starting_vertices : Expression list
-           a list of starting vertices.
-        """
-        if isinstance(visitor, ForwardVisitor):
-            return self.forward_visit(visitor, ctx, starting_vertices)
-        elif isinstance(visitor, BackwardVisitor):
-            return self.backward_visit(visitor, ctx, starting_vertices)
-
-    def forward_visit(self, cb, ctx, starting_vertices=None):
-        """Forward visit all vertices in the DAG.
-
-        Parameters
-        ----------
-        visitor : ForwardVisitor
-           the visitor.
-        ctx : dict-like
-           a context passed to the callbacks.
-        starting_vertices : Expression list
-           a list of starting vertices.
-        """
-        if starting_vertices is None:
-            starting_vertices = self._sources
-        else:
-            starting_vertices = self._sources + starting_vertices
-        return self._visit(
-            cb,
-            ctx,
-            starting_vertices,
-            get_next_vertices=lambda c: c.parents,
-            reverse=False,
-        )
-
-    def backward_visit(self, cb, ctx, starting_vertices=None):
-        """Backward visit all vertices in the DAG.
-
-        Parameters
-        ----------
-        visitor : BackwardVisitor
-           the visitor.
-        ctx : dict-like
-           a context passed to the callbacks.
-        starting_vertices : Expression list
-           a list of starting vertices.
-        """
-        if starting_vertices is None:
-            starting_vertices = self._sinks
-        else:
-            starting_vertices = self._sinks + starting_vertices
-        return self._visit(
-            cb,
-            ctx,
-            starting_vertices,
-            get_next_vertices=lambda c: [c],
-            reverse=True,
-        )
-
-    def _visit(self, cb, ctx, starting_vertices, get_next_vertices, reverse):
-        changed_vertices = []
-        vertices = VerticesList(starting_vertices, reverse=reverse)
-        seen = set()
-        while len(vertices) > 0:
-            curr_vertex = vertices.pop()
-            if id(curr_vertex) in seen:
-                continue
-            changes = cb(curr_vertex, ctx)
-            seen.add(id(curr_vertex))
-
-            if changes is not None:
-                for v in changes:
-                    changed_vertices.append(v)
-                    for next_vertex in get_next_vertices(v):
-                        if id(next_vertex) not in seen:
-                            vertices.append(next_vertex)
-
-        return changed_vertices
 
     def add_vertex(self, vertex):
         """Add a vertex to the DAG.
@@ -272,7 +132,6 @@ class ProblemDag(object):
         """
         return {
             'num_vertices': len(self.vertices),
-            'max_depth': max(self._vertices_depth),
             'num_variables': len(self.variables),
             'num_constraints': len(self.constraints),
             'num_objectives': len(self.objectives),

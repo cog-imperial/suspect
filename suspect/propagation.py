@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import logging
+import pkg_resources
 from suspect.monotonicity import MonotonicityPropagationVisitor
 from suspect.convexity import ConvexityPropagationVisitor
-import pkg_resources
+from suspect.dag.iterator import DagForwardIterator
 
 
 logger = logging.getLogger('suspect')
@@ -51,14 +52,14 @@ class SpecialStructurePropagationVisitor(object):
             len(self._cvx_visitors), ', '.join([str(cvx) for cvx in self._cvx_visitors])
         )
 
-    def __call__(self, expr, ctx):
+    def visit(self, expr, ctx):
         for mono_visitor in self._mono_visitors:
-            mono_known = mono_visitor(expr, ctx)
+            mono_known = mono_visitor.visit(expr, ctx)
             if mono_known:
                 break
 
         for cvx_visitor in self._cvx_visitors:
-            cvx_known = cvx_visitor(expr, ctx)
+            cvx_known = cvx_visitor.visit(expr, ctx)
             if cvx_known:
                 break
         return [expr]
@@ -82,5 +83,6 @@ def propagate_special_structure(problem, ctx):
         convexity information for the problem.
     """
     visitor = SpecialStructurePropagationVisitor(problem)
-    problem.forward_visit(visitor, ctx)
+    iterator = DagForwardIterator()
+    iterator.iterate(problem, visitor, ctx)
     return ctx.monotonicity, ctx.convexity

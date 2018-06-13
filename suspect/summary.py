@@ -15,11 +15,13 @@
 import warnings
 import logging
 from suspect.pyomo.convert import dag_from_pyomo_model
-from suspect.fbbt import propagate_bounds, initialize_bounds, tighten_bounds
+from suspect.fbbt import BoundsTightener, FBBTStopCriterion
+from suspect.dag.iterator import DagForwardIterator, DagBackwardIterator
+from suspect.context import SpecialStructurePropagationContext
 from suspect.interval import Interval
 from suspect.propagation import propagate_special_structure
 from suspect.polynomial_degree import polynomial_degree
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel # pylint: disable=no-name-in-module,import-error
 
 
 logger = logging.getLogger('suspect')
@@ -121,17 +123,12 @@ def detect_special_structure(problem, max_iter=10):
     if isinstance(problem, ConcreteModel):
         problem = dag_from_pyomo_model(problem)
 
-    ctx = initialize_bounds(problem)
-    changes_tigh = None
-    for i in range(max_iter):
-        changes_prop = propagate_bounds(problem, ctx, changes_tigh)
-        changes_tigh = tighten_bounds(problem, ctx, changes_prop)
-        logger.info('FBBT(%s/%s): changes_propagation=%s, changes_tightening=%s',
-                    i, max_iter, len(changes_prop), len(changes_tigh))
-        if len(changes_tigh) == 0 and len(changes_prop) == 0:
-            break
+    ctx = SpecialStructurePropagationContext()
+    
+    bounds_tightener = BoundsTightener(DagForwardIterator(), DagBackwardIterator(), FBBTStopCriterion())
+    bounds_tightener.tighten(problem, ctx.bounds)
 
-    polynomial = polynomial_degree(problem, ctx)
+    polynomial = polynomial_degree(problem, ctx.polynomial)
     monotonicity, convexity = propagate_special_structure(problem, ctx)
 
     variables = {}

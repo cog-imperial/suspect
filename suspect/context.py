@@ -17,8 +17,9 @@
 
 
 class SpecialStructurePropagationContext(object):
-    def __init__(self, bounds):
-        self.bound = bounds
+    def __init__(self):
+        self.bounds = {}
+        self.bound = self.bounds # TODO(fracek): for now, remove this later
         self.monotonicity = {}
         self.convexity = {}
         self.polynomial = {}
