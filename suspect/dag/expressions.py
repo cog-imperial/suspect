@@ -14,7 +14,8 @@
 
 from enum import Enum
 import abc
-from suspect.math.arbitrary_precision import inf
+from suspect.expression import ExpressionType
+from suspect.math import inf # pylint: disable=no-name-in-module
 
 
 class Domain(Enum):
@@ -73,6 +74,9 @@ class Expression(metaclass=abc.ABCMeta):
                 max_depth = child.depth + 1
         self._depth = max_depth
 
+    def is_constant(self):
+        return False
+
     def __hash__(self):
         return hash(id(self))
 
@@ -84,22 +88,24 @@ class Expression(metaclass=abc.ABCMeta):
 
 
 class ProductExpression(Expression):
-    pass
+    expression_type = ExpressionType.Product
 
 
 class DivisionExpression(Expression):
-    pass
+    expression_type = ExpressionType.Division
 
 
 class SumExpression(Expression):
-    pass
+    expression_type = ExpressionType.Sum
 
 
 class PowExpression(Expression):
-    pass
+    expression_type = ExpressionType.Power
 
 
 class LinearExpression(Expression):
+    expression_type = ExpressionType.Linear
+
     def __init__(self, coefficients=None, children=None, constant_term=None):
         super().__init__(children)
         if coefficients is None:
@@ -115,56 +121,69 @@ class LinearExpression(Expression):
 
 
 class UnaryFunctionExpression(Expression):
+    expression_type = ExpressionType.UnaryFunction
     def __init__(self, children=None):
         super().__init__(children)
         assert len(self.children) == 1
 
 
 class NegationExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.Negation
     func_name = 'negation'
 
 
 class AbsExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'abs'
 
 
 class SqrtExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'sqrt'
 
 
 class ExpExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'exp'
 
 
 class LogExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'log'
 
 
 class SinExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'sin'
 
 
 class CosExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'cos'
 
 
 class TanExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'tan'
 
 
 class AsinExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'asin'
 
 
 class AcosExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'acos'
 
 
 class AtanExpression(UnaryFunctionExpression):
+    expression_type = ExpressionType.UnaryFunction
     func_name = 'atan'
 
 
 class Objective(Expression):
+    expression_type = ExpressionType.Objective
     is_sink = True
 
     def __init__(self, name, sense=None, children=None):
@@ -195,6 +214,7 @@ class BoundedExpression(Expression):
 
 
 class Constraint(BoundedExpression):
+    expression_type = ExpressionType.Constraint
     is_sink = True
 
     def __init__(self, name, lower_bound, upper_bound, children=None):
@@ -241,6 +261,7 @@ class Constraint(BoundedExpression):
 
 
 class Variable(BoundedExpression):
+    expression_type = ExpressionType.Variable
     is_source = True
 
     def __init__(self, name, lower_bound, upper_bound, domain=None):
@@ -257,6 +278,10 @@ class Variable(BoundedExpression):
     def is_real(self):
         return self.domain == Domain.REALS
 
+    def is_constant(self):
+        # TODO(fracek): if we ever support fixing variables, change this
+        return False
+
     def __str__(self):
         return 'Variable(name={}, lower_bound={}, upper_bound={}, domain={})'.format(
             self.name, self.lower_bound, self.upper_bound, self.domain
@@ -264,6 +289,7 @@ class Variable(BoundedExpression):
 
 
 class Constant(BoundedExpression):
+    expression_type = ExpressionType.Constant
     is_source = True
 
     def __init__(self, value):
@@ -273,3 +299,6 @@ class Constant(BoundedExpression):
     def value(self):
         assert self.lower_bound == self.upper_bound
         return self.lower_bound
+
+    def is_constant(self):
+        return True

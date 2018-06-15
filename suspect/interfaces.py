@@ -51,3 +51,20 @@ class ForwardIterator(Iterator): # pylint: disable=abstract-method
 class BackwardIterator(Iterator): # pylint: disable=abstract-method
     """An iterator for iterating over nodes in descending depth order."""
     pass
+
+
+class Rule(object):
+    """Represent a series of contraints on an expression yielding a value."""
+    root_expr = None
+
+    def checked_apply(self, expr, ctx):
+        """Apply rule to ``expr`` and ``ctx`` after checking matching ``expression_type``."""
+        if expr.expression_type != self.root_expr:
+            raise ValueError('expected {} expression type, but had {}'.format(
+                self.root_expr, expr.expression_type
+            ))
+        return self.apply(expr, ctx)
+
+    def apply(self, expr, ctx):
+        """Apply rule to ``expr`` and ``ctx``."""
+        pass

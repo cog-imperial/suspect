@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from suspect.dag.iterator import DagForwardIterator
-from suspect.polynomial import PolynomialDegreeVisitor
-
-
-def polynomial_degree(dag, ctx):
-    """Compute polynomial degree of expressions in dag."""
-    iterator = DagForwardIterator()
-    iterator.iterate(dag, PolynomialDegreeVisitor(), ctx)
-    return ctx
+"""Polynomiality rules."""
+from .degree import PolynomialDegree
+from .visitor import PolynomialDegreeVisitor

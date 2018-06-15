@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: skip-file
 import pytest
 import hypothesis.strategies as st
 from suspect import set_pyomo4_expression_tree
@@ -41,6 +42,11 @@ def coefficients(draw, min_value=None, max_value=None):
 
 class PlaceholderExpression(object):
     depth = 0
+    def __init__(self, expression_type=None, children=None, is_constant=False, value=None):
+        self.expression_type = expression_type
+        self.children = children
+        self.is_constant = lambda: is_constant
+        self.value = value
 
 
 @pytest.fixture
