@@ -15,3 +15,5 @@
 """Polynomiality rules."""
 from .degree import PolynomialDegree
 from .visitor import PolynomialDegreeVisitor
+
+__all__ = ['PolynomialDegree', 'PolynomialDegreeVisitor']

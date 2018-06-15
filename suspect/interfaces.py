@@ -17,6 +17,7 @@
 You don't need them, but they are nice for documentation purpose.
 """
 import abc
+from suspect.expression import ExpressionType
 
 
 class Problem(object): # pragma: no cover
@@ -68,3 +69,46 @@ class Rule(object): # pragma: no cover
     def apply(self, expr, ctx):
         """Apply rule to ``expr`` and ``ctx``."""
         pass
+
+
+class UnaryFunctionRule(Rule): # pragma: no cover
+    """Represent a series of contraints on an unary function expression yielding a value."""
+    root_expr = ExpressionType.UnaryFunction
+    func_type = None
+
+    def checked_apply(self, expr, ctx):
+        """Apply rule to ``expr`` and ``ctx`` after checking matching ``expression_type``."""
+        if expr.expression_type != self.root_expr:
+            raise ValueError('expected {} expression type, but had {}'.format(
+                self.root_expr, expr.expression_type
+            ))
+        if expr.func_type != self.func_type:
+            raise ValueError('expected {} function type, but had {}'.format(
+                self.func_type, expr.func_type
+            ))
+        return self.apply(expr, ctx)
+
+
+class CombineUnaryFunctionRules(Rule): # pragma: no cover
+    """Rule to combine a collection of UnaryFunctionRule."""
+    root_expr = ExpressionType.UnaryFunction
+
+    def __init__(self, *args):
+        self._rules = list(args)
+        self._apply_funcs = {}
+        for rule in self._rules:
+            if not rule.root_expr == ExpressionType.UnaryFunction:
+                raise ValueError('Non unary function rule in CombineUnaryFunctionRules')
+            self._apply_funcs[rule.func_type] = rule.apply
+
+
+    def apply(self, expr, ctx):
+        apply_func = self._apply_funcs.get(expr.func_type)
+        if not apply_func:
+            raise RuntimeError(
+                'Could not find rule for expression of root_expr={} and func_type={}'.format(
+                    getattr(expr, 'root_expr'),
+                    getattr(expr, 'func_type'),
+                )
+            )
+        return apply_func(expr, ctx)

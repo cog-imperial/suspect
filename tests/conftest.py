@@ -42,11 +42,19 @@ def coefficients(draw, min_value=None, max_value=None):
 
 class PlaceholderExpression(object):
     depth = 0
-    def __init__(self, expression_type=None, children=None, is_constant=False, value=None):
+    def __init__(self, expression_type=None, children=None, coefficients=None,
+                 is_constant=False, value=None,
+                 bounded_above=False, bounded_below=False,
+                 is_minimizing=False, func_type=None):
         self.expression_type = expression_type
         self.children = children
+        self.coefficients = coefficients
         self.is_constant = lambda: is_constant
         self.value = value
+        self.bounded_above = lambda: bounded_above
+        self.bounded_below = lambda: bounded_below
+        self.is_minimizing = lambda: is_minimizing
+        self.func_type = func_type
 
 
 @pytest.fixture

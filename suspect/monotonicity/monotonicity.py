@@ -12,25 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Define enum to describe monotonicity of expressions."""
 from enum import Enum
 
 
 class Monotonicity(Enum):
+    """Monotonicity information.
+
+    Monotonicity can be:
+
+     * Nondecreasing: f(x) >= f(y) for all x > y
+     * Nonincreasing: f(x) <= f(y) for all x > y
+     * Constant: f(x) = f(y) for all x > y
+     * Unknown
+    """
     Nondecreasing = 0
     Nonincreasing = 1
     Constant = 2
     Unknown = 3
 
     def is_nondecreasing(self):
+        """Predicate to check if monotonicity is nondecreasing."""
         return self == self.Nondecreasing or self == self.Constant
 
     def is_nonincreasing(self):
+        """Predicate to check if monotonicity is nonincreasing."""
         return self == self.Nonincreasing or self == self.Constant
 
     def is_constant(self):
+        """Predicate to check if monotonicity is constant."""
         return self == self.Constant
 
     def is_unknown(self):
+        """Predicate to check if monotonicity is unknown."""
         return self == self.Unknown
 
     def negate(self):
@@ -45,5 +59,4 @@ class Monotonicity(Enum):
             return self
         if self.is_nondecreasing():
             return Monotonicity.Nonincreasing
-        else:
-            return Monotonicity.Nondecreasing
+        return Monotonicity.Nondecreasing

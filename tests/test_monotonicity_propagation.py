@@ -22,15 +22,43 @@ from tests.conftest import (
     mono_description_to_mono,
     coefficients,
     reals,
-    ctx,
 )
 import suspect.dag.expressions as dex
 from suspect.math.arbitrary_precision import pi
 from suspect.interval import Interval
 from suspect.monotonicity.monotonicity import Monotonicity
-from suspect.monotonicity.propagation import (
+from suspect.monotonicity import (
     MonotonicityPropagationVisitor,
 )
+
+
+class MonotonicityContext:
+    def __init__(self, ctx=None, bounds=None):
+        if ctx is None:
+            ctx = {}
+        if bounds is None:
+            bounds = {}
+        self.ctx = ctx
+        self._bounds = bounds
+
+    def monotonicity(self, expr):
+        return self.ctx[expr]
+
+    def set_monotonicity(self, expr, value):
+        self.ctx[expr] = value
+
+    def bounds(self, expr):
+        return self._bounds[expr]
+
+    def set_bounds(self, expr, value):
+        self._bounds[expr] = value
+
+    set_bound = set_bounds
+
+
+@pytest.fixture
+def ctx():
+    return MonotonicityContext()
 
 
 @pytest.fixture
@@ -41,13 +69,13 @@ def visitor():
 def test_variable_is_increasing(visitor, ctx):
     var = dex.Variable('x0', None, None)
     visitor.visit(var, ctx)
-    assert ctx.monotonicity[var].is_nondecreasing()
+    assert ctx.monotonicity(var).is_nondecreasing()
 
 
 def test_constant_is_constant(visitor, ctx):
     const = dex.Constant(2.0)
     visitor.visit(const, ctx)
-    assert ctx.monotonicity[const].is_constant()
+    assert ctx.monotonicity(const).is_constant()
 
 
 class TestConstraint(object):
@@ -64,47 +92,47 @@ class TestConstraint(object):
     def test_lower_upper_bound(self):
         c0 = dex.Constraint('c0', 0, 1, [self.x0])
         self.v.visit(c0, self.ctx)
-        assert self.ctx.monotonicity[c0].is_unknown()
+        assert self.ctx.monotonicity(c0).is_unknown()
 
         c1 = dex.Constraint('c1', 0, 1, [self.const])
         self.v.visit(c1, self.ctx)
-        assert self.ctx.monotonicity[c1].is_constant()
+        assert self.ctx.monotonicity(c1).is_constant()
 
     def test_lower_bound_only(self):
         c0 = dex.Constraint('c0', 0, None, [self.x0])
         self.v.visit(c0, self.ctx)
-        assert self.ctx.monotonicity[c0].is_nonincreasing()
+        assert self.ctx.monotonicity(c0).is_nonincreasing()
 
         c1 = dex.Constraint('c1', 0, None, [self.const])
         self.v.visit(c1, self.ctx)
-        assert self.ctx.monotonicity[c1].is_constant()
+        assert self.ctx.monotonicity(c1).is_constant()
 
         c2 = dex.Constraint('c2', 0, None, [self.x1])
         self.v.visit(c2, self.ctx)
-        assert self.ctx.monotonicity[c2].is_nondecreasing()
+        assert self.ctx.monotonicity(c2).is_nondecreasing()
 
     def test_upper_bound_only(self):
         c0 = dex.Constraint('c0', None, 1, [self.x0])
         self.v.visit(c0, self.ctx)
-        assert self.ctx.monotonicity[c0].is_nondecreasing()
+        assert self.ctx.monotonicity(c0).is_nondecreasing()
 
         c1 = dex.Constraint('c1', None, 1, [self.const])
         self.v.visit(c1, self.ctx)
-        assert self.ctx.monotonicity[c1].is_constant()
+        assert self.ctx.monotonicity(c1).is_constant()
 
         c2 = dex.Constraint('c2', None, 1, [self.x1])
         self.v.visit(c2, self.ctx)
-        assert self.ctx.monotonicity[c2].is_nonincreasing()
+        assert self.ctx.monotonicity(c2).is_nonincreasing()
 
 
 @pytest.fixture
 def mock_objective_visitor(visitor, ctx):
     def _f(sense, children_mono):
         c = PlaceholderExpression()
-        ctx.monotonicity[c] = mono_description_to_mono(children_mono)
+        ctx.set_monotonicity(c, mono_description_to_mono(children_mono))
         obj = dex.Objective('obj', sense, [c])
         visitor.visit(obj, ctx)
-        return ctx.monotonicity[obj]
+        return ctx.monotonicity(obj)
     return _f
 
 
@@ -134,12 +162,12 @@ class TestObjective(object):
 def mock_product_visitor(visitor, ctx):
     def _f(mono_f, bound_f, mono_g, bound_g):
         f = PlaceholderExpression()
-        ctx.monotonicity[f] = mono_description_to_mono(mono_f)
-        ctx.bound[f] = bound_description_to_bound(bound_f)
+        ctx.set_monotonicity(f, mono_description_to_mono(mono_f))
+        ctx.set_bound(f, bound_description_to_bound(bound_f))
 
         g = PlaceholderExpression()
-        ctx.monotonicity[g] = mono_description_to_mono(mono_g)
-        ctx.bound[g] = bound_description_to_bound(bound_g)
+        ctx.set_monotonicity(g, mono_description_to_mono(mono_g))
+        ctx.set_bound(g, bound_description_to_bound(bound_g))
 
         prod_fg = dex.ProductExpression([f, g])
         prod_gf = dex.ProductExpression([g, f])
@@ -147,8 +175,8 @@ def mock_product_visitor(visitor, ctx):
         visitor.visit(prod_fg, ctx)
         visitor.visit(prod_gf, ctx)
         # product is commutative
-        assert ctx.monotonicity[prod_fg] == ctx.monotonicity[prod_gf]
-        return ctx.monotonicity[prod_fg]
+        assert ctx.monotonicity(prod_fg) == ctx.monotonicity(prod_gf)
+        return ctx.monotonicity(prod_fg)
     return _f
 
 
@@ -167,6 +195,7 @@ def mock_product_visitor(visitor, ctx):
 
     ('constant', 'nonpositive', 'nondecreasing', 'unbounded', Monotonicity.Nonincreasing),
     ('constant', 'nonnegative', 'nonincreasing', 'unbounded', Monotonicity.Nonincreasing),
+
 
     ('nondecreasing', 'nonnegative', 'nondecreasing', 'nonnegative', Monotonicity.Nondecreasing),
     ('nondecreasing', 'nonpositive', 'nonincreasing', 'nonnegative', Monotonicity.Nondecreasing),
@@ -187,16 +216,16 @@ def test_product(mock_product_visitor, mono_f, bound_f, mono_g, bound_g, expecte
 def mock_division_visitor(visitor, ctx):
     def _f(mono_f, bound_f, mono_g, bound_g):
         f = PlaceholderExpression()
-        ctx.monotonicity[f] = mono_description_to_mono(mono_f)
-        ctx.bound[f] = bound_description_to_bound(bound_f)
+        ctx.set_monotonicity(f, mono_description_to_mono(mono_f))
+        ctx.set_bound(f, bound_description_to_bound(bound_f))
 
         g = PlaceholderExpression()
-        ctx.monotonicity[g] = mono_description_to_mono(mono_g)
-        ctx.bound[g] = bound_description_to_bound(bound_g)
+        ctx.set_monotonicity(g, mono_description_to_mono(mono_g))
+        ctx.set_bound(g, bound_description_to_bound(bound_g))
 
         div = dex.DivisionExpression([f, g])
         visitor.visit(div, ctx)
-        return ctx.monotonicity[div]
+        return ctx.monotonicity(div)
     return _f
 
 
@@ -234,10 +263,10 @@ def mock_linear_visitor(visitor, ctx):
         children = [PlaceholderExpression() for _ in range(len(terms))]
         monos = [m for _, m in terms]
         for c, m in zip(children, monos):
-            ctx.monotonicity[c] = mono_description_to_mono(m)
+            ctx.set_monotonicity(c, mono_description_to_mono(m))
         linear = dex.LinearExpression(coefs, children)
         visitor.visit(linear, ctx)
-        return ctx.monotonicity[linear]
+        return ctx.monotonicity(linear)
     return _f
 
 
@@ -306,10 +335,10 @@ def mock_sum_visitor(visitor, ctx):
     def _f(terms):
         children = [PlaceholderExpression() for _ in terms]
         for c, m in zip(children, terms):
-            ctx.monotonicity[c] = mono_description_to_mono(m)
+            ctx.set_monotonicity(c, mono_description_to_mono(m))
         sum_ = dex.SumExpression(children)
         visitor.visit(sum_, ctx)
-        return ctx.monotonicity[sum_]
+        return ctx.monotonicity(sum_)
     return _f
 
 
@@ -349,11 +378,11 @@ class TestSum(object):
 def mock_func_visitor(visitor, ctx):
     def _f(mono, bound, func):
         g = PlaceholderExpression()
-        ctx.monotonicity[g] = mono_description_to_mono(mono)
-        ctx.bound[g] = bound_description_to_bound(bound)
+        ctx.set_monotonicity(g, mono_description_to_mono(mono))
+        ctx.set_bound(g, bound_description_to_bound(bound))
         f = func([g])
         visitor.visit(f, ctx)
-        return ctx.monotonicity[f]
+        return ctx.monotonicity(f)
     return _f
 
 
@@ -522,14 +551,14 @@ class TestCos(object):
 def mock_pow_constant_base_visitor(visitor, ctx):
     def _f(base, mono_e, bound_e):
         base = dex.Constant(base)
-        ctx.bound[base] = Interval(base.value, base.value)
+        ctx.set_bound(base, Interval(base.value, base.value))
         visitor.visit(base, ctx)
         expo = PlaceholderExpression()
-        ctx.monotonicity[expo] = mono_description_to_mono(mono_e)
-        ctx.bound[expo] = bound_description_to_bound(bound_e)
+        ctx.set_monotonicity(expo, mono_description_to_mono(mono_e))
+        ctx.set_bound(expo, bound_description_to_bound(bound_e))
         p = dex.PowExpression([base, expo])
         visitor.visit(p, ctx)
-        return ctx.monotonicity[p]
+        return ctx.monotonicity(p)
     return _f
 
 
@@ -575,15 +604,15 @@ class TestPowConstantBase(object):
 def mock_pow_constant_exponent_visitor(visitor, ctx):
     def _f(mono_b, bound_b, expo):
         expo = dex.Constant(expo)
-        ctx.bound[expo] = Interval(expo.value, expo.value)
+        ctx.set_bound(expo, Interval(expo.value, expo.value))
         visitor.visit(expo, ctx)
 
         base = PlaceholderExpression()
-        ctx.monotonicity[base] = mono_description_to_mono(mono_b)
-        ctx.bound[base] = bound_description_to_bound(bound_b)
+        ctx.set_monotonicity(base, mono_description_to_mono(mono_b))
+        ctx.set_bound(base, bound_description_to_bound(bound_b))
         p = dex.PowExpression([base, expo])
         visitor.visit(p, ctx)
-        return ctx.monotonicity[p]
+        return ctx.monotonicity(p)
     return _f
 
 
@@ -656,13 +685,13 @@ def mock_pow_visitor(visitor, ctx):
     def _f(mono_b, bound_b, mono_e, bound_e):
         b = PlaceholderExpression()
         e = PlaceholderExpression()
-        ctx.monotonicity[b] = mono_description_to_mono(mono_b)
-        ctx.monotonicity[e] = mono_description_to_mono(mono_e)
-        ctx.bound[b] = bound_description_to_bound(bound_b)
-        ctx.bound[e] = bound_description_to_bound(bound_e)
+        ctx.set_monotonicity(b, mono_description_to_mono(mono_b))
+        ctx.set_monotonicity(e, mono_description_to_mono(mono_e))
+        ctx.set_bound(b, bound_description_to_bound(bound_b))
+        ctx.set_bound(e, bound_description_to_bound(bound_e))
         p = dex.PowExpression([b, e])
         visitor.visit(p, ctx)
-        return ctx.monotonicity[p]
+        return ctx.monotonicity(p)
     return _f
 
 

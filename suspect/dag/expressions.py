@@ -14,7 +14,7 @@
 
 from enum import Enum
 import abc
-from suspect.expression import ExpressionType
+from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.math import inf # pylint: disable=no-name-in-module
 
 
@@ -134,51 +134,61 @@ class NegationExpression(UnaryFunctionExpression):
 
 class AbsExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Abs
     func_name = 'abs'
 
 
 class SqrtExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Sqrt
     func_name = 'sqrt'
 
 
 class ExpExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Exp
     func_name = 'exp'
 
 
 class LogExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Log
     func_name = 'log'
 
 
 class SinExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Sin
     func_name = 'sin'
 
 
 class CosExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Cos
     func_name = 'cos'
 
 
 class TanExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Tan
     func_name = 'tan'
 
 
 class AsinExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Asin
     func_name = 'asin'
 
 
 class AcosExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Acos
     func_name = 'acos'
 
 
 class AtanExpression(UnaryFunctionExpression):
     expression_type = ExpressionType.UnaryFunction
+    func_type = UnaryFunctionType.Atan
     func_name = 'atan'
 
 
