@@ -19,12 +19,12 @@ You don't need them, but they are nice for documentation purpose.
 import abc
 
 
-class Problem(object):
+class Problem(object): # pragma: no cover
     """Generic problem with vertices of type V."""
     pass
 
 
-class Visitor(metaclass=abc.ABCMeta):
+class Visitor(metaclass=abc.ABCMeta): # pragma: no cover
     """Visitor for vertices of Problem."""
     @abc.abstractmethod
     def visit(self, vertex, ctx):
@@ -32,7 +32,7 @@ class Visitor(metaclass=abc.ABCMeta):
         pass
 
 
-class Iterator(metaclass=abc.ABCMeta):
+class Iterator(metaclass=abc.ABCMeta): # pragma: no cover
     """Iterator over vertices of Problem."""
     @abc.abstractmethod
     def iterate(self, problem, visitor, ctx, *args, **kwargs):
@@ -43,17 +43,17 @@ class Iterator(metaclass=abc.ABCMeta):
         pass
 
 
-class ForwardIterator(Iterator): # pylint: disable=abstract-method
+class ForwardIterator(Iterator): # pragma: no cover pylint: disable=abstract-method
     """An iterator for iterating over nodes in ascending depth order."""
     pass
 
 
-class BackwardIterator(Iterator): # pylint: disable=abstract-method
+class BackwardIterator(Iterator): # pragma: no cover pylint: disable=abstract-method
     """An iterator for iterating over nodes in descending depth order."""
     pass
 
 
-class Rule(object):
+class Rule(object): # pragma: no cover
     """Represent a series of contraints on an expression yielding a value."""
     root_expr = None
 
