@@ -48,3 +48,6 @@ class SpecialStructurePropagationContext(object):
 
     def set_monotonicity(self, expr, value):
         self.monotonicity[expr] = value
+
+    def set_convexity(self, expr, value):
+        self.convexity[expr] = value

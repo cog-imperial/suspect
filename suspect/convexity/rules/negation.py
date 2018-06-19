@@ -1,4 +1,4 @@
-# Copyright 2017 Francesco Ceccon
+# Copyright 2018 Francesco Ceccon
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Convexity detection module."""
-from .convexity import Convexity
-from .visitor import ConvexityPropagationVisitor
+"""Convexity detection rules for negation."""
+from suspect.expression import ExpressionType
+from suspect.interfaces import Rule
 
-__all__ = ['Convexity', 'ConvexityPropagationVisitor']
+
+class NegationRule(Rule):
+    """Return convexity of negation."""
+    root_expr = ExpressionType.Negation
+
+    def apply(self, expr, ctx):
+        child = expr.children[0]
+        cvx = ctx.convexity(child)
+        return cvx.negate()

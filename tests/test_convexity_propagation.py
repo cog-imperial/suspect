@@ -30,7 +30,7 @@ import suspect.dag.expressions as dex
 from suspect.math.arbitrary_precision import pi
 from suspect.interval import Interval
 from suspect.convexity.convexity import Convexity
-from suspect.convexity.propagation import (
+from suspect.convexity.visitor import (
     ConvexityPropagationVisitor,
 )
 
