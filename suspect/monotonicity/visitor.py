@@ -14,31 +14,15 @@
 
 """Visitor applying rules for monotonicity propagation."""
 from suspect.interfaces import CombineUnaryFunctionRules
-from suspect.monotonicity.rules import *
+from suspect.visitor import Visitor
+from suspect.monotonicity.rules import * # pylint: disable=wildcard-import
 
 
-class MonotonicityPropagationVisitor(object):
-    def __init__(self):
-        self._rules = self.register_rules()
-        self._callbacks = self._init_callbacks()
-
-    def _init_callbacks(self):
-        callbacks = {}
-        for rule in self._rules:
-            callbacks[rule.root_expr] = rule.apply
-        return callbacks
-
+class MonotonicityPropagationVisitor(Visitor):
+    """Visitor applying monotonicity rules."""
     def handle_result(self, expr, result, ctx):
-        """Handle visit result."""
         ctx.set_monotonicity(expr, result)
         return True
-
-    def _handle_result(self, expr, result, ctx):
-        return self.handle_result(expr, result, ctx)
-
-    def _visit_expression(self, expr, ctx, callback):
-        result = callback(expr, ctx)
-        return self._handle_result(expr, result, ctx)
 
     def register_rules(self):
         return [
@@ -65,9 +49,3 @@ class MonotonicityPropagationVisitor(object):
                 AcosRule(),
             )
         ]
-
-    def visit(self, expr, ctx):
-        callback = self._callbacks.get(expr.expression_type)
-        if callback is not None:
-            return self._visit_expression(expr, ctx, callback)
-        raise RuntimeError('visiting expression with no callback associated.')

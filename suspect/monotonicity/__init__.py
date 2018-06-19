@@ -14,7 +14,6 @@
 
 """SUSPECT monotonicity detection module."""
 from .monotonicity import Monotonicity
-# from .propagation import MonotonicityPropagationVisitor
 from .visitor import MonotonicityPropagationVisitor
 
 __all__ = ['Monotonicity', 'MonotonicityPropagationVisitor']

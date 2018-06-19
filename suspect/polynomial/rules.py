@@ -17,6 +17,11 @@ from suspect.polynomial.degree import PolynomialDegree
 from suspect.expression import ExpressionType
 from suspect.interfaces import Rule
 
+__all__ = [
+    'VariableRule', 'ConstantRule', 'ConstraintRule', 'ObjectiveRule', 'DivisionRule',
+    'ProductRule', 'LinearRule', 'SumRule', 'NegationRule', 'PowerRule', 'UnaryFunctionRule',
+]
+
 
 class VariableRule(Rule):
     """Return polynomial degree of variable."""

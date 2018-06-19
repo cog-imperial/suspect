@@ -13,32 +13,15 @@
 # limitations under the License.
 
 """Visitor applying rules for polynomial degree computation."""
+from suspect.visitor import Visitor
+from suspect.polynomial.rules import * # pylint: disable=wildcard-import
 
-from suspect.polynomial.rules import *
 
-
-class PolynomialDegreeVisitor(object):
-    def __init__(self):
-        self._rules = self.register_rules()
-        self._callbacks = self._init_callbacks()
-
-    def _init_callbacks(self):
-        callbacks = {}
-        for rule in self._rules:
-            callbacks[rule.root_expr] = rule.apply
-        return callbacks
-
+class PolynomialDegreeVisitor(Visitor):
+    """Visitor applying polynomiality rules."""
     def handle_result(self, expr, result, ctx):
-        """Handle visit result."""
         ctx[expr] = result
         return True
-
-    def _handle_result(self, expr, result, ctx):
-        return self.handle_result(expr, result, ctx)
-
-    def _visit_expression(self, expr, ctx, callback):
-        result = callback(expr, ctx)
-        return self._handle_result(expr, result, ctx)
 
     def register_rules(self):
         return [
@@ -54,9 +37,3 @@ class PolynomialDegreeVisitor(object):
             PowerRule(),
             UnaryFunctionRule(),
         ]
-
-    def visit(self, expr, ctx):
-        callback = self._callbacks.get(expr.expression_type)
-        if callback is not None:
-            return self._visit_expression(expr, ctx, callback)
-        raise RuntimeError('visiting expression with no callback associated.')
