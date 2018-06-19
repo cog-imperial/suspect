@@ -44,8 +44,7 @@ class ProductRule(Rule):
             return _product_convexity(f, g, ctx)
         elif mono_f.is_constant():
             return _product_convexity(g, f, ctx)
-        return Convexity.Convex
-
+        return Convexity.Unknown
 
 
 def _product_as_square_convexity(f, ctx):

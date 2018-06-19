@@ -121,7 +121,6 @@ def _integer_negative_odd_expo_pow_convexity(_expo, cvx_base, bounds_base):
 def _noninteger_expo_pow_convexity(expo, cvx_base, bounds_base):
     if not bounds_base.is_nonnegative():
         return Convexity.Unknown
-
     if cvx_base.is_convex() and expo > 1:
         return Convexity.Convex
     elif cvx_base.is_concave() and expo < 0:
