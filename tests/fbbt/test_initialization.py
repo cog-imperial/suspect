@@ -6,6 +6,17 @@ from suspect.interval import Interval
 from suspect.fbbt.initialization import BoundsInitializationVisitor
 
 
+class InitContext:
+    def __init__(self):
+        self._bounds = {}
+
+    def set_bounds(self, expr, value):
+        self._bounds[expr] = value
+
+    def bounds(self,  expr):
+        return self._bounds[expr]
+
+
 @pytest.fixture
 def visitor():
     return BoundsInitializationVisitor()
@@ -14,9 +25,9 @@ def visitor():
 def _visit(visitor, root_cls):
     p = PlaceholderExpression()
     root = root_cls([p])
-    ctx = {}
+    ctx = InitContext()
     visitor.visit(root, ctx)
-    return ctx[p]
+    return ctx.bounds(p)
 
 
 def test_sqrt(visitor):

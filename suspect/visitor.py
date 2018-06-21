@@ -18,6 +18,8 @@ import abc
 
 class Visitor(metaclass=abc.ABCMeta):
     """Base class for visitors applying rules to DAG vertices."""
+    needs_matching_rules = True
+
     def __init__(self):
         self._rules = self.register_rules()
         self._callbacks = self._init_callbacks()
@@ -37,7 +39,9 @@ class Visitor(metaclass=abc.ABCMeta):
         callback = self._callbacks.get(expr.expression_type)
         if callback is not None:
             return self._visit_expression(expr, ctx, callback)
-        raise RuntimeError('visiting expression with no callback associated.')
+        if self.needs_matching_rules:
+            raise RuntimeError('visiting expression with no rule associated.')
+        return True
 
     def _init_callbacks(self):
         callbacks = {}
@@ -51,3 +55,20 @@ class Visitor(metaclass=abc.ABCMeta):
     def _visit_expression(self, expr, ctx, callback):
         result = callback(expr, ctx)
         return self._handle_result(expr, result, ctx)
+
+
+class ForwardVisitor(Visitor): # pylint: disable=abstract-method
+    """Visitor when visiting DAG forward."""
+    pass
+
+
+class BackwardVisitor(Visitor): # pylint: disable=abstract-method
+    """Visitor when visiting DAG backward."""
+    def _handle_result(self, _expr, result, ctx):
+        if result is None:
+            # if we allow matching rules, then continue iteration
+            return not self.needs_matching_rules
+        any_change = False
+        for child, value in result.items():
+            any_change |= self.handle_result(child, value, ctx)
+        return any_change

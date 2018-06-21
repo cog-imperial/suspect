@@ -46,6 +46,12 @@ class SpecialStructurePropagationContext(object):
         self.convexity = _HackDict()
         self.polynomial = _HackDict()
 
+    def set_bounds(self, expr, value):
+        self.bounds[expr] = value
+
+    def get_bounds(self, expr):
+        return self.bounds.get(expr)
+
     def set_monotonicity(self, expr, value):
         self.monotonicity[expr] = value
 

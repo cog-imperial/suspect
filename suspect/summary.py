@@ -124,9 +124,9 @@ def detect_special_structure(problem, max_iter=10):
         problem = dag_from_pyomo_model(problem)
 
     ctx = SpecialStructurePropagationContext()
-    
+
     bounds_tightener = BoundsTightener(DagForwardIterator(), DagBackwardIterator(), FBBTStopCriterion())
-    bounds_tightener.tighten(problem, ctx.bounds)
+    bounds_tightener.tighten(problem, ctx)
 
     polynomial = polynomial_degree(problem, ctx.polynomial)
     monotonicity, convexity = propagate_special_structure(problem, ctx)

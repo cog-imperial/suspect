@@ -141,6 +141,7 @@ class TestContains(object):
 
     @given(intervals(allow_infinity=False))
     def test_bound_contains_midpoint(self, a):
+        assume((a.upper_bound - a.lower_bound) != inf)
         m = a.lower_bound + (a.upper_bound - a.lower_bound) / 2.0
         assert m in a
 

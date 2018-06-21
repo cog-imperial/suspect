@@ -90,24 +90,34 @@ class UnaryFunctionRule(Rule): # pragma: no cover
 
 
 class CombineUnaryFunctionRules(Rule): # pragma: no cover
-    """Rule to combine a collection of UnaryFunctionRule."""
+    """Rule to combine a collection of UnaryFunctionRule.
+
+    Parameters
+    ----------
+    *args: UnaryFunctionRule list
+       list of unary functions rules
+    needs_matching_rules : bool
+       if True, will raise an exception if no rule matched
+    """
     root_expr = ExpressionType.UnaryFunction
 
-    def __init__(self, *args):
+    def __init__(self, *args, needs_matching_rules=True):
         self._rules = list(args)
+        self._needs_matching_rules = needs_matching_rules
         self._apply_funcs = {}
         for rule in self._rules:
             if not rule.root_expr == ExpressionType.UnaryFunction:
                 raise ValueError('Non unary function rule in CombineUnaryFunctionRules')
             self._apply_funcs[rule.func_type] = rule.apply
 
-
     def apply(self, expr, ctx):
         apply_func = self._apply_funcs.get(expr.func_type)
         if not apply_func:
+            if not self._needs_matching_rules:
+                return None
             raise RuntimeError(
-                'Could not find rule for expression of root_expr={} and func_type={}'.format(
-                    getattr(expr, 'root_expr'),
+                'Could not find rule for expression of expression_type={} and func_type={}'.format(
+                    getattr(expr, 'expression_type'),
                     getattr(expr, 'func_type'),
                 )
             )

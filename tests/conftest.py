@@ -43,16 +43,20 @@ def coefficients(draw, min_value=None, max_value=None):
 class PlaceholderExpression(object):
     depth = 0
     def __init__(self, expression_type=None, children=None, coefficients=None,
-                 is_constant=False, value=None,
+                 is_constant=False, value=None, constant_term=None,
                  bounded_above=False, bounded_below=False,
+                 lower_bound=None, upper_bound=None,
                  is_minimizing=False, func_type=None):
         self.expression_type = expression_type
         self.children = children
         self.coefficients = coefficients
         self.is_constant = lambda: is_constant
+        self.constant_term = constant_term
         self.value = value
         self.bounded_above = lambda: bounded_above
         self.bounded_below = lambda: bounded_below
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
         self.is_minimizing = lambda: is_minimizing
         self.func_type = func_type
 
