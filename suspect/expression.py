@@ -13,34 +13,34 @@
 # limitations under the License.
 
 """Generic expression support."""
-from enum import Enum, auto
+from enum import Enum
 
 class ExpressionType(Enum):
     """Expression types supported by SUSPECT."""
-    Variable = auto()
-    Constant = auto()
-    Constraint = auto()
-    Objective = auto()
-    Division = auto()
-    Product = auto()
-    Linear = auto()
-    Sum = auto()
-    Power = auto()
+    Variable = 1
+    Constant = 2
+    Constraint = 3
+    Objective = 4
+    Division = 5
+    Product = 6
+    Linear = 7
+    Sum = 8
+    Power = 9
     # While negation is technically an unary function, it's equivalent to a linear
     # expression with coefficient -1
-    Negation = auto()
-    UnaryFunction = auto()
+    Negation = 10
+    UnaryFunction = 11
 
 
 class UnaryFunctionType(Enum):
     """Unary function type supported by SUSPECT."""
-    Abs = auto()
-    Sqrt = auto()
-    Exp = auto()
-    Log = auto()
-    Sin = auto()
-    Cos = auto()
-    Tan = auto()
-    Asin = auto()
-    Acos = auto()
-    Atan = auto()
+    Abs = 1
+    Sqrt = 2
+    Exp = 3
+    Log = 4
+    Sin = 5
+    Cos = 6
+    Tan = 7
+    Asin = 8
+    Acos = 9
+    Atan = 10
