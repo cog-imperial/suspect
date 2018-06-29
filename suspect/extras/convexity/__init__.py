@@ -12,21 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# from suspect.monotonicity.monotonicity import Monotonicity
-# from suspect.convexity.convexity import Convexity
+"""SUSPECT extra convexity detectors."""
+from .quadratic import QuadraticFormConvexityDetector
+from .fractional import FractionalConvexityDetector
+from .norm import L2NormConvexityDetector
+from .perspective import PerspectiveFunctionConvexityDetector
 
-"""Module with classes for extending SUSPECT."""
-from suspect.visitor import ForwardVisitor
 
-
-class ConvexityDetector(ForwardVisitor):
-    """Convexity Detector base class."""
-
-    def register_rules(self):
-        raise NotImplementedError('register_rules')
-
-    def handle_result(self, expr, result, ctx):
-        if result is None:
-            return False
-        ctx.convexity[expr] = result
-        return not result.is_unknown()
+__all__ = [
+    'QuadraticFormConvexityDetector', 'FractionalConvexityDetector',
+    'L2NormConvexityDetector', 'PerspectiveFunctionConvexityDetector',
+]
