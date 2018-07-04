@@ -23,14 +23,21 @@ version_path = project_root / 'suspect' / '__version__.py'
 with version_path.open() as f:
     exec(f.read(), about)
 
+with open('README.rst') as f:
+    readme = f.read()
+
+with open('CHANGELOG.rst') as f:
+    changelog = f.read()
 
 setup(
-    name='suspect',
+    name='cog-suspect',
     author=about['__author__'],
     author_email=about['__author_email__'],
     license=about['__license__'],
     version=about['__version__'],
     url=about['__url__'],
+    description=about['__description__'],
+    long_description=readme + '\n\n' + changelog,
     packages=find_packages(exclude=['tests.*', 'tests']),
     entry_points={
         'suspect.convexity_detection': [

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 __author__ = 'Francesco Ceccon'
 __author_email__ = 'francesco@ceccon.me'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2018 Francesco Ceccon'
 __url__ = 'https://github.com/cog-imperial/suspect'
+__description__ = 'Special Structure Detection for Pyomo'
