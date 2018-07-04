@@ -59,8 +59,8 @@ Library Usage
 -------------
 
     from suspect import (
-	set_pyomo4_expression_tree,
-	detect_special_structure,
+	    set_pyomo4_expression_tree,
+	    detect_special_structure,
     )
     import pyomo.environ as aml
 
