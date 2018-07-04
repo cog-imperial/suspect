@@ -41,11 +41,11 @@ setup(
     },
     scripts=[
         'scripts/model_summary.py',
-        'scripts/osil_to_dot.py',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Mathematics',
     ],
