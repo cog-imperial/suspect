@@ -49,7 +49,11 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Mathematics',
     ],
-    install_requires=['pyomo', 'numpy', 'mpmath'],
+    install_requires=[
+        'pyomo==5.2',
+        'numpy>=1.14',
+        'mpmath>=1.0',
+    ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-cov', 'hypothesis'],
 )
