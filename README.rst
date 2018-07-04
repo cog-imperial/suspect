@@ -1,7 +1,14 @@
 Special Structure Detection for Pyomo
 =====================================
 
-[![DOI](https://zenodo.org/badge/127118649.svg)](https://zenodo.org/badge/latestdoi/127118649) [![Build Status](https://travis-ci.org/cog-imperial/suspect.svg?branch=master)](https://travis-ci.org/cog-imperial/suspect) [![codecov](https://codecov.io/gh/cog-imperial/suspect/branch/master/graph/badge.svg)](https://codecov.io/gh/cog-imperial/suspect)
+|DOI|_ |travis|_ |codecov|_
+
+.. |DOI| image:: https://zenodo.org/badge/127118649.svg
+.. _DOI: https://zenodo.org/badge/latestdoi/127118649
+.. |travis| image:: https://travis-ci.org/cog-imperial/suspect.svg?branch=master
+.. _travis: https://travis-ci.org/cog-imperial/suspect
+.. |codecov| image:: https://codecov.io/gh/cog-imperial/suspect/branch/master/graph/badge.svg
+.. _codecov: https://codecov.io/gh/cog-imperial/suspect
 
 
 This library implements methods to:
@@ -24,12 +31,12 @@ Installation
 SUSPECT requires Python 3.5 or later. We recommend installing SUSPECT in
 a virtual environment
 
-To create the virtual environment run:
+To create the virtual environment run::
 
     $ python3 -m venv myenv
     $ source myenv/bin/activate
 
-Then you are ready to clone and install SUSPECT
+Then you are ready to clone and install SUSPECT::
 
     $ git clone https://github.com/cog-imperial/suspect.git
     $ cd suspect
@@ -43,11 +50,11 @@ Command Line Usage
 The package contains an utility to display structure information about
 a single problem.
 
-You can run the utility as:
+You can run the utility as::
 
     model_summary.py -p /path/to/problem.osil
 
-or, if you want to check variables bounds include the solution:
+or, if you want to check variables bounds include the solution::
 
     model_summary.py -p /path/to/problem.osil -s /path/to/problem.sol
 
@@ -57,6 +64,8 @@ batch mode in a cloud environment. Refer to the `batch` folder for more informat
 
 Library Usage
 -------------
+
+.. code-block:: python
 
     from suspect import (
 	    set_pyomo4_expression_tree,
@@ -88,7 +97,7 @@ Copyright 2018 Francesco Ceccon
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+You may obtain a copy of the License at::
 
     http://www.apache.org/licenses/LICENSE-2.0
 

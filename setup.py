@@ -30,7 +30,8 @@ setup(
     author_email=about['__author_email__'],
     license=about['__license__'],
     version=about['__version__'],
-    packages=find_packages(exclude=['tests']),
+    url=about['__url__'],
+    packages=find_packages(exclude=['tests.*', 'tests']),
     entry_points={
         'suspect.convexity_detection': [
             'perspective=suspect.extras.convexity:PerspectiveFunctionConvexityDetector',
