@@ -41,7 +41,7 @@ class Visitor(metaclass=abc.ABCMeta):
             return self._visit_expression(expr, ctx, callback)
         if self.needs_matching_rules:
             raise RuntimeError('visiting expression with no rule associated.')
-        return True
+        return False
 
     def _init_callbacks(self):
         callbacks = {}

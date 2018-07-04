@@ -22,7 +22,7 @@ class ConvexityPropagationVisitor(Visitor):
     """Visitor applying convexity rules."""
     def handle_result(self, expr, result, ctx):
         ctx.set_convexity(expr, result)
-        return True
+        return not result.is_unknown()
 
     def register_rules(self):
         return [

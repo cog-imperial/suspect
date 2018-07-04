@@ -37,7 +37,6 @@ class L2NormRule(UnaryFunctionRule):
 
     def apply(self, expr, _ctx):
         child = expr.children[0]
-        print(child.expression_type)
         if child.expression_type != ExpressionType.Sum:
             return None
 

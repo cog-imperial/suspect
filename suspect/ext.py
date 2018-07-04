@@ -21,6 +21,7 @@ from suspect.visitor import ForwardVisitor
 
 class ConvexityDetector(ForwardVisitor):
     """Convexity Detector base class."""
+    needs_matching_rules = False
 
     def register_rules(self):
         raise NotImplementedError('register_rules')
