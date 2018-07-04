@@ -61,6 +61,7 @@ setup(
         'pyomo>=5.2',
         'numpy>=1.14',
         'mpmath>=1.0',
+        'boto3>=1.7.4',
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-cov', 'hypothesis'],
