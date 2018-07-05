@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """Generic expression support."""
-from enum import Enum
+from enum import IntEnum
 
-class ExpressionType(Enum):
+class ExpressionType(IntEnum):
     """Expression types supported by SUSPECT."""
     Variable = 1
     Constant = 2
@@ -32,7 +32,7 @@ class ExpressionType(Enum):
     UnaryFunction = 11
 
 
-class UnaryFunctionType(Enum):
+class UnaryFunctionType(IntEnum):
     """Unary function type supported by SUSPECT."""
     Abs = 1
     Sqrt = 2
