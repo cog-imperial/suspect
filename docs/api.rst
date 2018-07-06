@@ -13,6 +13,28 @@ Main Module
    :members:
 
 
+Expression Types
+----------------
+
+.. automodule:: suspect.expression
+   :members:
+   :undoc-members:
+
+
+Interfaces
+----------
+
+.. automodule:: suspect.interfaces
+   :members:
+
+
+Interval
+--------
+
+.. automodule:: suspect.interval
+   :members:
+
+
 Pyomo Compatibility
 -------------------
 
@@ -24,14 +46,4 @@ Directed Acyclic Graph
 ----------------------
 
 .. autoclass:: suspect.dag.ProblemDag
-   :members:
-
-.. automodule:: suspect.dag.dot
-   :members: dump, dumps
-
-
-Expression Types
-----------------
-
-.. automodule:: suspect.dag.expressions
    :members:

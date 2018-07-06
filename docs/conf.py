@@ -6,6 +6,8 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/stable/config
 
+# pylint: skip-file
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -165,3 +167,4 @@ texinfo_documents = [
 
 
 # -- Extension configuration -------------------------------------------------
+numpydoc_show_class_members = False
