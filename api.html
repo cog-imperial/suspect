@@ -51,20 +51,21 @@ function should be called at the beginning of every program.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>model</strong> : suspect.dag.ProblemDag or ConcreteModel</p>
-<blockquote>
-<div><p>the problem DAG or a Pyomo ConcreteModel.</p>
-</div></blockquote>
-<p><strong>max_iter</strong> : int</p>
-<blockquote>
-<div><p>number of maximum bound propagation/tightening iterations.</p>
-</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>model</strong> <span class="classifier-delimiter">:</span> <span class="classifier">suspect.dag.ProblemDag or ConcreteModel</span></dt>
+<dd><p class="first last">the problem DAG or a Pyomo ConcreteModel.</p>
+</dd>
+<dt><strong>max_iter</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">number of maximum bound propagation/tightening iterations.</p>
+</dd>
+</dl>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ModelInformation</p>
-<blockquote class="last">
-<div><p>an object containing the detected infomation about the problem.</p>
-</div></blockquote>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>ModelInformation</strong></dt>
+<dd><p class="first last">an object containing the detected infomation about the problem.</p>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -75,25 +76,25 @@ function should be called at the beginning of every program.</p>
 <dt id="suspect.summary.ModelInformation">
 <em class="property">class </em><code class="descclassname">suspect.summary.</code><code class="descname">ModelInformation</code><span class="sig-paren">(</span><em>name</em>, <em>variables</em>, <em>objectives</em>, <em>constraints</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hold structure information about a problem.</p>
-<p class="rubric">Attributes</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="23%" />
-<col width="77%" />
-</colgroup>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
 <tbody valign="top">
-<tr class="row-odd"><td><strong>variables</strong></td>
-<td>(dict) map variables names to their information</td>
-</tr>
-<tr class="row-even"><td><strong>objectives</strong></td>
-<td>(dict) map objectives names to their information</td>
-</tr>
-<tr class="row-odd"><td><strong>constraints</strong></td>
-<td>(dict) map constraints names to their information</td>
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>variables</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">map variables names to their information</p>
+</dd>
+<dt><strong>objectives</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">map objectives names to their information</p>
+</dd>
+<dt><strong>constraints</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">map constraints names to their information</p>
+</dd>
+</dl>
+</td>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Methods</p>
 <dl class="method">
 <dt id="suspect.summary.ModelInformation.conscurvature">
 <code class="descname">conscurvature</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.summary.ModelInformation.conscurvature" title="Permalink to this definition">¶</a></dt>
@@ -139,6 +140,387 @@ function should be called at the beginning of every program.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-suspect.expression">
+<span id="expression-types"></span><h2>Expression Types<a class="headerlink" href="#module-suspect.expression" title="Permalink to this headline">¶</a></h2>
+<p>Generic expression support.</p>
+<dl class="class">
+<dt id="suspect.expression.ExpressionType">
+<em class="property">class </em><code class="descclassname">suspect.expression.</code><code class="descname">ExpressionType</code><a class="headerlink" href="#suspect.expression.ExpressionType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expression types supported by SUSPECT.</p>
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Constant">
+<code class="descname">Constant</code><em class="property"> = 2</em><a class="headerlink" href="#suspect.expression.ExpressionType.Constant" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Constraint">
+<code class="descname">Constraint</code><em class="property"> = 3</em><a class="headerlink" href="#suspect.expression.ExpressionType.Constraint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Division">
+<code class="descname">Division</code><em class="property"> = 5</em><a class="headerlink" href="#suspect.expression.ExpressionType.Division" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Linear">
+<code class="descname">Linear</code><em class="property"> = 7</em><a class="headerlink" href="#suspect.expression.ExpressionType.Linear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Negation">
+<code class="descname">Negation</code><em class="property"> = 10</em><a class="headerlink" href="#suspect.expression.ExpressionType.Negation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Objective">
+<code class="descname">Objective</code><em class="property"> = 4</em><a class="headerlink" href="#suspect.expression.ExpressionType.Objective" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Power">
+<code class="descname">Power</code><em class="property"> = 9</em><a class="headerlink" href="#suspect.expression.ExpressionType.Power" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Product">
+<code class="descname">Product</code><em class="property"> = 6</em><a class="headerlink" href="#suspect.expression.ExpressionType.Product" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Sum">
+<code class="descname">Sum</code><em class="property"> = 8</em><a class="headerlink" href="#suspect.expression.ExpressionType.Sum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.UnaryFunction">
+<code class="descname">UnaryFunction</code><em class="property"> = 11</em><a class="headerlink" href="#suspect.expression.ExpressionType.UnaryFunction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.ExpressionType.Variable">
+<code class="descname">Variable</code><em class="property"> = 1</em><a class="headerlink" href="#suspect.expression.ExpressionType.Variable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.expression.UnaryFunctionType">
+<em class="property">class </em><code class="descclassname">suspect.expression.</code><code class="descname">UnaryFunctionType</code><a class="headerlink" href="#suspect.expression.UnaryFunctionType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unary function type supported by SUSPECT.</p>
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Abs">
+<code class="descname">Abs</code><em class="property"> = 1</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Abs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Acos">
+<code class="descname">Acos</code><em class="property"> = 9</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Acos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Asin">
+<code class="descname">Asin</code><em class="property"> = 8</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Asin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Atan">
+<code class="descname">Atan</code><em class="property"> = 10</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Atan" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Cos">
+<code class="descname">Cos</code><em class="property"> = 6</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Cos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Exp">
+<code class="descname">Exp</code><em class="property"> = 3</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Exp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Log">
+<code class="descname">Log</code><em class="property"> = 4</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Log" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Sin">
+<code class="descname">Sin</code><em class="property"> = 5</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Sin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Sqrt">
+<code class="descname">Sqrt</code><em class="property"> = 2</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Sqrt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.expression.UnaryFunctionType.Tan">
+<code class="descname">Tan</code><em class="property"> = 7</em><a class="headerlink" href="#suspect.expression.UnaryFunctionType.Tan" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-suspect.interfaces">
+<span id="interfaces"></span><h2>Interfaces<a class="headerlink" href="#module-suspect.interfaces" title="Permalink to this headline">¶</a></h2>
+<p>Interfaces used in SUSPECT.</p>
+<p>You don’t need them, but they are nice for documentation purpose.</p>
+<dl class="class">
+<dt id="suspect.interfaces.BackwardIterator">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">BackwardIterator</code><a class="headerlink" href="#suspect.interfaces.BackwardIterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>An iterator for iterating over nodes in descending depth order.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interfaces.CombineUnaryFunctionRules">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">CombineUnaryFunctionRules</code><span class="sig-paren">(</span><em>*args</em>, <em>needs_matching_rules=True</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interfaces.CombineUnaryFunctionRules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rule to combine a collection of UnaryFunctionRule.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>*args: UnaryFunctionRule list</strong></dt>
+<dd><p class="first last">list of unary functions rules</p>
+</dd>
+<dt><strong>needs_matching_rules</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">if True, will raise an exception if no rule matched</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="suspect.interfaces.CombineUnaryFunctionRules.apply">
+<code class="descname">apply</code><span class="sig-paren">(</span><em>expr</em>, <em>ctx</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interfaces.CombineUnaryFunctionRules.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply rule to <code class="docutils literal notranslate"><span class="pre">expr</span></code> and <code class="docutils literal notranslate"><span class="pre">ctx</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interfaces.ForwardIterator">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">ForwardIterator</code><a class="headerlink" href="#suspect.interfaces.ForwardIterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>An iterator for iterating over nodes in ascending depth order.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interfaces.Iterator">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">Iterator</code><a class="headerlink" href="#suspect.interfaces.Iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterator over vertices of Problem.</p>
+<dl class="method">
+<dt id="suspect.interfaces.Iterator.iterate">
+<code class="descname">iterate</code><span class="sig-paren">(</span><em>problem</em>, <em>visitor</em>, <em>ctx</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interfaces.Iterator.iterate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over vertices of problem, calling visitor on each one of them.</p>
+<p>Returns the list of vertices for which the visitor returned a True value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interfaces.Problem">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">Problem</code><a class="headerlink" href="#suspect.interfaces.Problem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic problem with vertices of type V.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interfaces.Rule">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">Rule</code><a class="headerlink" href="#suspect.interfaces.Rule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent a series of contraints on an expression yielding a value.</p>
+<dl class="method">
+<dt id="suspect.interfaces.Rule.apply">
+<code class="descname">apply</code><span class="sig-paren">(</span><em>expr</em>, <em>ctx</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interfaces.Rule.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply rule to <code class="docutils literal notranslate"><span class="pre">expr</span></code> and <code class="docutils literal notranslate"><span class="pre">ctx</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interfaces.Rule.checked_apply">
+<code class="descname">checked_apply</code><span class="sig-paren">(</span><em>expr</em>, <em>ctx</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interfaces.Rule.checked_apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply rule to <code class="docutils literal notranslate"><span class="pre">expr</span></code> and <code class="docutils literal notranslate"><span class="pre">ctx</span></code> after checking matching <code class="docutils literal notranslate"><span class="pre">expression_type</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interfaces.UnaryFunctionRule">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">UnaryFunctionRule</code><a class="headerlink" href="#suspect.interfaces.UnaryFunctionRule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent a series of contraints on an unary function expression yielding a value.</p>
+<dl class="method">
+<dt id="suspect.interfaces.UnaryFunctionRule.checked_apply">
+<code class="descname">checked_apply</code><span class="sig-paren">(</span><em>expr</em>, <em>ctx</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interfaces.UnaryFunctionRule.checked_apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply rule to <code class="docutils literal notranslate"><span class="pre">expr</span></code> and <code class="docutils literal notranslate"><span class="pre">ctx</span></code> after checking matching <code class="docutils literal notranslate"><span class="pre">expression_type</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interfaces.Visitor">
+<em class="property">class </em><code class="descclassname">suspect.interfaces.</code><code class="descname">Visitor</code><a class="headerlink" href="#suspect.interfaces.Visitor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Visitor for vertices of Problem.</p>
+<dl class="method">
+<dt id="suspect.interfaces.Visitor.visit">
+<code class="descname">visit</code><span class="sig-paren">(</span><em>vertex</em>, <em>ctx</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interfaces.Visitor.visit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Visit vertex. Return True if the vertex should be considered “dirty”.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-suspect.interval">
+<span id="interval"></span><h2>Interval<a class="headerlink" href="#module-suspect.interval" title="Permalink to this headline">¶</a></h2>
+<p>Numerical interval object.</p>
+<dl class="class">
+<dt id="suspect.interval.EmptyInterval">
+<em class="property">class </em><code class="descclassname">suspect.interval.</code><code class="descname">EmptyInterval</code><a class="headerlink" href="#suspect.interval.EmptyInterval" title="Permalink to this definition">¶</a></dt>
+<dd><p>An empty interval.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="suspect.interval.Interval">
+<em class="property">class </em><code class="descclassname">suspect.interval.</code><code class="descname">Interval</code><span class="sig-paren">(</span><em>lower</em>, <em>upper</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Numerical interval.</p>
+<dl class="attribute">
+<dt id="suspect.interval.Interval.acos">
+<code class="descname">acos</code><a class="headerlink" href="#suspect.interval.Interval.acos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of acos(self)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.asin">
+<code class="descname">asin</code><a class="headerlink" href="#suspect.interval.Interval.asin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of asin(self)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.atan">
+<code class="descname">atan</code><a class="headerlink" href="#suspect.interval.Interval.atan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of atan(self)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.cos">
+<code class="descname">cos</code><a class="headerlink" href="#suspect.interval.Interval.cos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of cos(self)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.exp">
+<code class="descname">exp</code><a class="headerlink" href="#suspect.interval.Interval.exp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of exp(self)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.intersect">
+<code class="descname">intersect</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.intersect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Intersect this interval with another.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.inverse">
+<code class="descname">inverse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.inverse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the inverse of self, or 1/self.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.is_negative">
+<code class="descname">is_negative</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.is_negative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the interval [a, b] has b &lt; 0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.is_nonnegative">
+<code class="descname">is_nonnegative</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.is_nonnegative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the interval [a, b] has a &gt;= 0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.is_nonpositive">
+<code class="descname">is_nonpositive</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.is_nonpositive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the interval [a, b] has b &lt;= 0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.is_positive">
+<code class="descname">is_positive</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.is_positive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the interval [a, b] has a &gt; 0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.is_zero">
+<code class="descname">is_zero</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.is_zero" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the interval is [0, 0].</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.log">
+<code class="descname">log</code><a class="headerlink" href="#suspect.interval.Interval.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of log(self)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.lower_bound">
+<code class="descname">lower_bound</code><a class="headerlink" href="#suspect.interval.Interval.lower_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return interval lower bound as float.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.negation">
+<code class="descname">negation</code><a class="headerlink" href="#suspect.interval.Interval.negation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the negation of self, or 0-self</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.sin">
+<code class="descname">sin</code><a class="headerlink" href="#suspect.interval.Interval.sin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of sin(self)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="suspect.interval.Interval.size">
+<code class="descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return interval size.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.sqrt">
+<code class="descname">sqrt</code><a class="headerlink" href="#suspect.interval.Interval.sqrt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of sqrt(self)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.tan">
+<code class="descname">tan</code><a class="headerlink" href="#suspect.interval.Interval.tan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the bound of tan(self)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="suspect.interval.Interval.upper_bound">
+<code class="descname">upper_bound</code><a class="headerlink" href="#suspect.interval.Interval.upper_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return interval upper bound as float.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="suspect.interval.Interval.zero">
+<em class="property">static </em><code class="descname">zero</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.Interval.zero" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return Interval = [0, 0].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="suspect.interval.monotonic_decreasing">
+<code class="descclassname">suspect.interval.</code><code class="descname">monotonic_decreasing</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.monotonic_decreasing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Correctly round monotonic decreasing function.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="suspect.interval.monotonic_increasing">
+<code class="descclassname">suspect.interval.</code><code class="descname">monotonic_increasing</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.interval.monotonic_increasing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Correctly round monotonic increasing function.</p>
+</dd></dl>
+
+</div>
 <div class="section" id="pyomo-compatibility">
 <h2>Pyomo Compatibility<a class="headerlink" href="#pyomo-compatibility" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
@@ -149,16 +531,18 @@ function should be called at the beginning of every program.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>model</strong> : ConcreteModel</p>
-<blockquote>
-<div><p>the Pyomo model.</p>
-</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>model</strong> <span class="classifier-delimiter">:</span> <span class="classifier">ConcreteModel</span></dt>
+<dd><p class="first last">the Pyomo model.</p>
+</dd>
+</dl>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ProblemDag</p>
-<blockquote class="last">
-<div><p>SUSPECT problem DAG.</p>
-</div></blockquote>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>ProblemDag</strong></dt>
+<dd><p class="first last">SUSPECT problem DAG.</p>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -175,24 +559,24 @@ to avoid name clashes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filename</strong> : str</p>
-<blockquote>
-<div><p>the OSiL file path.</p>
-</div></blockquote>
-<p><strong>objective_prefix</strong> : str</p>
-<blockquote>
-<div><p>a prefix to give all objectives.</p>
-</div></blockquote>
-<p><strong>constraint_prefix</strong> : str</p>
-<blockquote>
-<div><p>a prefix to give all constraints.</p>
-</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>filename</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">the OSiL file path.</p>
+</dd>
+<dt><strong>objective_prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">a prefix to give all objectives.</p>
+</dd>
+<dt><strong>constraint_prefix</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">a prefix to give all constraints.</p>
+</dd>
+</dl>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ConcreteModel</p>
-<blockquote class="last">
-<div><p>a Pyomo concrete model.</p>
-</div></blockquote>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>ConcreteModel</strong></dt>
+<dd><p class="first last">a Pyomo concrete model.</p>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -213,31 +597,31 @@ to avoid name clashes.</p>
   \max\{d(u) | u \in c(v)\} &amp; \text{otherwise}
 \end{cases}\end{split}\]</div>
 <p>where <span class="math notranslate">\(c(v)\)</span> are the children of vertex <span class="math notranslate">\(v\)</span>.</p>
-<p class="rubric">Attributes</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="20%" />
-<col width="80%" />
-</colgroup>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
 <tbody valign="top">
-<tr class="row-odd"><td><strong>name</strong></td>
-<td>(str) the problem name.</td>
-</tr>
-<tr class="row-even"><td><strong>variables</strong></td>
-<td>(dict) the problem variables.</td>
-</tr>
-<tr class="row-odd"><td><strong>constraints</strong></td>
-<td>(dict) the problem constraints.</td>
-</tr>
-<tr class="row-even"><td><strong>objectives</strong></td>
-<td>(dict) the problem objectives.</td>
-</tr>
-<tr class="row-odd"><td><strong>vertices</strong></td>
-<td>(iter) an iterator over the vertices sorted by <span class="math notranslate">\(d(v)\)</span>.</td>
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>name</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">the problem name.</p>
+</dd>
+<dt><strong>variables</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">the problem variables.</p>
+</dd>
+<dt><strong>constraints</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">the problem constraints.</p>
+</dd>
+<dt><strong>objectives</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">the problem objectives.</p>
+</dd>
+<dt><a class="reference internal" href="#suspect.dag.ProblemDag.vertices" title="suspect.dag.ProblemDag.vertices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vertices</span></code></a> <span class="classifier-delimiter">:</span> <span class="classifier">iter</span></dt>
+<dd><p class="first last">Return an iterator over the problem vertices.</p>
+</dd>
+</dl>
+</td>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Methods</p>
 <dl class="method">
 <dt id="suspect.dag.ProblemDag.add_constraint">
 <code class="descname">add_constraint</code><span class="sig-paren">(</span><em>cons</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.add_constraint" title="Permalink to this definition">¶</a></dt>
@@ -246,10 +630,11 @@ to avoid name clashes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cons</strong> : Constraint</p>
-<blockquote class="last">
-<div><p>the constraint.</p>
-</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>cons</strong> <span class="classifier-delimiter">:</span> <span class="classifier">Constraint</span></dt>
+<dd><p class="first last">the constraint.</p>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -264,10 +649,11 @@ to avoid name clashes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>obj</strong> : Objective</p>
-<blockquote class="last">
-<div><p>the objective.</p>
-</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>obj</strong> <span class="classifier-delimiter">:</span> <span class="classifier">Objective</span></dt>
+<dd><p class="first last">the objective.</p>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -282,10 +668,11 @@ to avoid name clashes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>var</strong> : Variable</p>
-<blockquote class="last">
-<div><p>the variable.</p>
-</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>var</strong> <span class="classifier-delimiter">:</span> <span class="classifier">Variable</span></dt>
+<dd><p class="first last">the variable.</p>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -300,62 +687,11 @@ to avoid name clashes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>vertex</strong> : Expression</p>
-<blockquote class="last">
-<div><p>the vertex to add.</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="suspect.dag.ProblemDag.backward_visit">
-<code class="descname">backward_visit</code><span class="sig-paren">(</span><em>cb</em>, <em>ctx</em>, <em>starting_vertices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.backward_visit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Backward visit all vertices in the DAG.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>visitor</strong> : BackwardVisitor</p>
-<blockquote>
-<div><p>the visitor.</p>
-</div></blockquote>
-<p><strong>ctx</strong> : dict-like</p>
-<blockquote>
-<div><p>a context passed to the callbacks.</p>
-</div></blockquote>
-<p><strong>starting_vertices</strong> : Expression list</p>
-<blockquote class="last">
-<div><p>a list of starting vertices.</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="suspect.dag.ProblemDag.forward_visit">
-<code class="descname">forward_visit</code><span class="sig-paren">(</span><em>cb</em>, <em>ctx</em>, <em>starting_vertices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.forward_visit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Forward visit all vertices in the DAG.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>visitor</strong> : ForwardVisitor</p>
-<blockquote>
-<div><p>the visitor.</p>
-</div></blockquote>
-<p><strong>ctx</strong> : dict-like</p>
-<blockquote>
-<div><p>a context passed to the callbacks.</p>
-</div></blockquote>
-<p><strong>starting_vertices</strong> : Expression list</p>
-<blockquote class="last">
-<div><p>a list of starting vertices.</p>
-</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>vertex</strong> <span class="classifier-delimiter">:</span> <span class="classifier">Expression</span></dt>
+<dd><p class="first last">the vertex to add.</p>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -370,10 +706,10 @@ to avoid name clashes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">dict</p>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>dict</strong></dt>
+<dd><p class="first">A dictionary containing information about the DAG:</p>
 <blockquote class="last">
-<div><p>A dictionary containing information about the DAG:</p>
-<blockquote>
 <div><ul class="simple">
 <li>Number of vertices</li>
 <li>Maximum depth</li>
@@ -382,225 +718,20 @@ to avoid name clashes.</p>
 <li>Number of objectives</li>
 </ul>
 </div></blockquote>
-</div></blockquote>
+</dd>
+</dl>
 </td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="suspect.dag.ProblemDag.visit">
-<code class="descname">visit</code><span class="sig-paren">(</span><em>visitor</em>, <em>ctx</em>, <em>starting_vertices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.ProblemDag.visit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Visit all vertices in the DAG.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>visitor</strong> : Visitor</p>
-<blockquote>
-<div><p>the visitor.</p>
-</div></blockquote>
-<p><strong>ctx</strong> : dict-like</p>
-<blockquote>
-<div><p>a context passed to the callbacks.</p>
-</div></blockquote>
-<p><strong>starting_vertices</strong> : Expression list</p>
-<blockquote class="last">
-<div><p>a list of starting vertices.</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<span class="target" id="module-suspect.dag.dot"></span></div>
-<div class="section" id="module-suspect.dag.expressions">
-<span id="expression-types"></span><h2>Expression Types<a class="headerlink" href="#module-suspect.dag.expressions" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="suspect.dag.expressions.AbsExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AbsExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AbsExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.AcosExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AcosExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AcosExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.AsinExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AsinExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AsinExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.AtanExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">AtanExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.AtanExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.BoundedExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">BoundedExpression</code><span class="sig-paren">(</span><em>lower_bound</em>, <em>upper_bound</em>, <em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.BoundedExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.Constant">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Constant</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Constant" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.Constraint">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Constraint</code><span class="sig-paren">(</span><em>name</em>, <em>lower_bound</em>, <em>upper_bound</em>, <em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Constraint" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.CosExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">CosExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.CosExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.DivisionExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">DivisionExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.DivisionExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.Domain">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Domain</code><a class="headerlink" href="#suspect.dag.expressions.Domain" title="Permalink to this definition">¶</a></dt>
-<dd><p>The variable domain</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.ExpExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">ExpExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.ExpExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.Expression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Expression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Expression" title="Permalink to this definition">¶</a></dt>
-<dd><p>The base class for all expressions objects in the DAG</p>
-<p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
 <dl class="attribute">
-<dt id="suspect.dag.expressions.Expression.depth">
-<code class="descname">depth</code><a class="headerlink" href="#suspect.dag.expressions.Expression.depth" title="Permalink to this definition">¶</a></dt>
-<dd><p>The depth of the expression.</p>
-<p>The depth of the expression is defined as <cite>0</cite> if the
-expression is a source (Variables and Constants), otherwise
-it is the maximum depth of its children plus <cite>1</cite>.</p>
+<dt id="suspect.dag.ProblemDag.vertices">
+<code class="descname">vertices</code><a class="headerlink" href="#suspect.dag.ProblemDag.vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an iterator over the problem vertices.</p>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.LinearExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">LinearExpression</code><span class="sig-paren">(</span><em>coefficients=None</em>, <em>children=None</em>, <em>constant_term=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.LinearExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.LogExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">LogExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.LogExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.NegationExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">NegationExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.NegationExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.Objective">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Objective</code><span class="sig-paren">(</span><em>name</em>, <em>sense=None</em>, <em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Objective" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.PowExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">PowExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.PowExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.ProductExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">ProductExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.ProductExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.Sense">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Sense</code><a class="headerlink" href="#suspect.dag.expressions.Sense" title="Permalink to this definition">¶</a></dt>
-<dd><p>The objective function sense</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.SinExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">SinExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.SinExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.SqrtExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">SqrtExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.SqrtExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.SumExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">SumExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.SumExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.TanExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">TanExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.TanExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.UnaryFunctionExpression">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">UnaryFunctionExpression</code><span class="sig-paren">(</span><em>children=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.UnaryFunctionExpression" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="suspect.dag.expressions.Variable">
-<em class="property">class </em><code class="descclassname">suspect.dag.expressions.</code><code class="descname">Variable</code><span class="sig-paren">(</span><em>name</em>, <em>lower_bound</em>, <em>upper_bound</em>, <em>domain=None</em><span class="sig-paren">)</span><a class="headerlink" href="#suspect.dag.expressions.Variable" title="Permalink to this definition">¶</a></dt>
-<dd><p class="rubric">Attributes</p>
-<p class="rubric">Methods</p>
 </dd></dl>
 
 </div>
@@ -619,6 +750,7 @@ it is the maximum depth of its children plus <cite>1</cite>.</p>
 <h3>Useful Links</h3>
 <ul>
   <li><a href="https://github.com/cog-imperial/suspect">SUSPECT @ GitHub</a></li>
+  <li><a href="https://cog-imperial.github.io/suspect">Official Documentation</a></li>
 
   <p></p>
 
@@ -629,9 +761,11 @@ it is the maximum depth of its children plus <cite>1</cite>.</p>
   <ul>
 <li><a class="reference internal" href="#">Developer Interface</a><ul>
 <li><a class="reference internal" href="#main-module">Main Module</a></li>
+<li><a class="reference internal" href="#module-suspect.expression">Expression Types</a></li>
+<li><a class="reference internal" href="#module-suspect.interfaces">Interfaces</a></li>
+<li><a class="reference internal" href="#module-suspect.interval">Interval</a></li>
 <li><a class="reference internal" href="#pyomo-compatibility">Pyomo Compatibility</a></li>
 <li><a class="reference internal" href="#directed-acyclic-graph">Directed Acyclic Graph</a></li>
-<li><a class="reference internal" href="#module-suspect.dag.expressions">Expression Types</a></li>
 </ul>
 </li>
 </ul>

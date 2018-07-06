@@ -51,29 +51,40 @@ environment, see <a class="reference internal" href="index.html#installation"><s
 <div class="section" id="task-overview">
 <h3>Task Overview<a class="headerlink" href="#task-overview" title="Permalink to this headline">¶</a></h3>
 <p>The objective of this tutorial is writing an extension for SUSPECT to detect
-the convexity of the expression</p>
+the convexity of the Reciprocal Log Mean Temperature equation:</p>
 <div class="math notranslate">
-\[f(x) = \frac{1}{x}\]</div>
-<p>When <span class="math notranslate">\(x &gt; 0\)</span>, <span class="math notranslate">\(f(x)\)</span> is convex, while when <span class="math notranslate">\(x &lt; 0\)</span>,
-<span class="math notranslate">\(f(x)\)</span> is concave.</p>
-<p>In SUSPECT, this expression is represented by a root vertex of type
-<a class="reference internal" href="api.html#suspect.dag.expressions.DivisionExpression" title="suspect.dag.expressions.DivisionExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">suspect.dag.expressions.DivisionExpression</span></code></a> with two children: a
-<a class="reference internal" href="api.html#suspect.dag.expressions.Constant" title="suspect.dag.expressions.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">suspect.dag.expressions.Constant</span></code></a> numerator and a
-<a class="reference internal" href="api.html#suspect.dag.expressions.Variable" title="suspect.dag.expressions.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">suspect.dag.expressions.Variable</span></code></a> denominator.</p>
-<p>In this tutorial we will use the <a class="reference external" href="http://www.minlplib.org/procsyn.html">procsyn</a> instance
-as an example.</p>
-<p>At the moment, SUSPECT fails at detecting convexity of the constraints
-containing the expression <span class="math notranslate">\(1/x\)</span>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ model_summary.py -p /path/to/minlplib2/data/osil/procsyn.osil
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-INFO:root:Starting ../minlplib2/data/osil/procsyn.osil / None. timeout=300
-INFO:root:    Reading Problem
-INFO:root:    Converting DAG
-INFO:root:    Starting Special Structure Detection
-INFO:root:    Special Structure Detection Finished
-{&quot;conscurvature&quot;: &quot;indefinite&quot;, &quot;name&quot;: &quot;procsyn&quot;, &quot;nbinvars&quot;: 0, &quot;ncons&quot;: 27, &quot;nintvars&quot;: 0,
- &quot;nvars&quot;: 20, &quot;objcurvature&quot;: &quot;convex&quot;, &quot;objsense&quot;: &quot;min&quot;, &quot;objtype&quot;: &quot;polynomial&quot;,
- &quot;runtime&quot;: 0.020023822784423828, &quot;status&quot;: &quot;ok&quot;}
+\[\begin{split}\text{RecLMTD}^\beta (x, y) = \begin{cases}
+(\frac{\ln{(x/y)}}{x-y})^\beta &amp; x \neq y\\
+\frac{1}{x^\beta} &amp; x = y
+\end{cases}\end{split}\]</div>
+<p>With <span class="math notranslate">\(x,y &gt; 0\)</span> and <span class="math notranslate">\(\beta \geq -1\)</span>. This expression <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0098135416302216">has
+been proved</a> to be concave when <span class="math notranslate">\(-1 \leq \beta \leq 0\)</span> and
+convex when <span class="math notranslate">\(\beta \geq 0\)</span>.</p>
+<div class="figure" id="id2">
+<img alt="_images/funct_3d.png" src="_images/funct_3d.png" />
+<p class="caption"><span class="caption-text">Plot of RecLMTD when <span class="math notranslate">\(x \neq y\)</span>.</span></p>
+</div>
+<p>To test our implementation we use the following model in <code class="docutils literal notranslate"><span class="pre">example.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pprint</span>
+<span class="kn">from</span> <span class="nn">suspect</span> <span class="kn">import</span> <span class="n">set_pyomo4_expression_tree</span><span class="p">,</span> <span class="n">detect_special_structure</span>
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="kn">as</span> <span class="nn">aml</span>
+
+<span class="n">set_pyomo4_expression_tree</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">aml</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">aml</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+<span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">aml</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">rec</span> <span class="o">=</span> <span class="n">aml</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">lmtd0</span> <span class="o">=</span> <span class="n">aml</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+    <span class="n">expr</span><span class="o">=</span><span class="p">(</span><span class="n">aml</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">/</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="mf">1e-6</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">info</span> <span class="o">=</span> <span class="n">detect_special_structure</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="n">pp</span> <span class="o">=</span> <span class="n">pprint</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">()</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">constraints</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -81,118 +92,164 @@ INFO:root:    Special Structure Detection Finished
 <h3>Detector Implementation<a class="headerlink" href="#detector-implementation" title="Permalink to this headline">¶</a></h3>
 <p>At the root of your project directory, create a new directory
 containing the source of the convexity detector:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ mkdir example_ext
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ mkdir reclmtd
 </pre></div>
 </div>
 <p>And write the detector in <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ $EDITOR example_ext/__init__.py
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ $EDITOR reclmtd/__init__.py
 </pre></div>
 </div>
-<p>In this way we can later on package the detector. The content of the file is as follows</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span> <span class="nn">suspect.ext</span> <span class="kn">import</span> <span class="n">ConvexityDetector</span><span class="p">,</span> <span class="n">Convexity</span>
- <span class="kn">import</span> <span class="nn">suspect.dag.expressions</span> <span class="kn">as</span> <span class="nn">dex</span>
+<p>In this way we can later on package the detector.</p>
+<p>We start by importing SUSPECT classes used in the detector:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">suspect.ext</span> <span class="kn">import</span> <span class="n">ConvexityDetector</span>
+<span class="kn">from</span> <span class="nn">suspect.convexity</span> <span class="kn">import</span> <span class="n">Convexity</span>
+<span class="kn">from</span> <span class="nn">suspect.interfaces</span> <span class="kn">import</span> <span class="n">Rule</span>
+<span class="kn">from</span> <span class="nn">suspect.expression</span> <span class="kn">import</span> <span class="n">ExpressionType</span><span class="p">,</span> <span class="n">UnaryFunctionType</span>
+<span class="kn">from</span> <span class="nn">suspect.math</span> <span class="kn">import</span> <span class="n">almosteq</span><span class="p">,</span> <span class="n">almostlte</span>
+</pre></div>
+</div>
+<p>After that we create a class for the detector:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">RectLMTDDetector</span><span class="p">(</span><span class="n">ConvexityDetector</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convexity detector for RecLMTD expressions.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_problem</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
+    <span class="k">def</span> <span class="nf">register_rules</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">RecLMTDRule</span><span class="p">(),</span> <span class="n">RecRule</span><span class="p">()]</span>
+</pre></div>
+</div>
+<p>The method <code class="docutils literal notranslate"><span class="pre">register_rules</span></code> returns a list of rules that are implemented
+by this detector: the first to detect convexity when <span class="math notranslate">\(x \neq y\)</span> and
+the second for the other cases.</p>
+<p>The detector for <span class="math notranslate">\(1/x^\beta\)</span> is the simpler of the two so we
+look at it first. To detect if the current expression <code class="docutils literal notranslate"><span class="pre">expr</span></code> matches
+the expression we check the expression and its children types. In the
+highlighted line we use the bounds value stored in <code class="docutils literal notranslate"><span class="pre">ctx</span></code> to check
+whether the variable is non negative.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="k">class</span> <span class="nc">RecRule</span><span class="p">(</span><span class="n">Rule</span><span class="p">):</span>
+     <span class="n">root_expr</span> <span class="o">=</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Division</span>
 
- <span class="k">class</span> <span class="nc">ConstOverVarDetector</span><span class="p">(</span><span class="n">ConvexityDetector</span><span class="p">):</span>
-     <span class="sd">&quot;&quot;&quot;Convexity detector for expressions of the type:</span>
-
-<span class="sd">     .. math::</span>
-
-<span class="sd">         \frac{c}{x}</span>
-
-<span class="sd">     where c is a constant and x is a variable.</span>
-<span class="sd">     &quot;&quot;&quot;</span>
-
-     <span class="k">def</span> <span class="nf">register_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-         <span class="sd">&quot;&quot;&quot;Register interest in DivisionExpression.&quot;&quot;&quot;</span>
-         <span class="k">return</span> <span class="p">{</span>
-             <span class="n">dex</span><span class="o">.</span><span class="n">DivisionExpression</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit_division</span><span class="p">,</span>
-         <span class="p">}</span>
-
-     <span class="k">def</span> <span class="nf">visit_division</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
-         <span class="sd">&quot;&quot;&quot;Visit a division expression.</span>
-
-<span class="sd">         Return `Convexity.Convex` if the numerator is constant and the</span>
-<span class="sd">         denominator is nonnegative.</span>
-
-<span class="sd">         Return `Convexity.Concave` if the numerator is constant and the</span>
-<span class="sd">         denominator is nonpositive.</span>
-<span class="sd">         &quot;&quot;&quot;</span>
-         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+     <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
          <span class="n">num</span><span class="p">,</span> <span class="n">den</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">children</span>
-
-         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">dex</span><span class="o">.</span><span class="n">Constant</span><span class="p">):</span>
+         <span class="c1"># numerator has to be 1.0</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">num</span><span class="o">.</span><span class="n">is_constant</span><span class="p">()</span> <span class="ow">or</span> <span class="n">num</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>
              <span class="k">return</span>
-
-         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">den</span><span class="p">,</span> <span class="n">dex</span><span class="o">.</span><span class="n">Variable</span><span class="p">):</span>
+         <span class="c1"># denominator has to be power with beta &gt;= -1.0</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">den</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Power</span><span class="p">:</span>
              <span class="k">return</span>
-
-         <span class="k">if</span> <span class="n">num</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-             <span class="k">return</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Linear</span>
-
-<span class="hll">         <span class="n">bound</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">bound</span><span class="p">[</span><span class="n">den</span><span class="p">]</span>
-</span>
-         <span class="k">if</span> <span class="n">bound</span><span class="o">.</span><span class="n">is_nonnegative</span><span class="p">():</span>
-             <span class="n">cvx</span> <span class="o">=</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Convex</span>
-         <span class="k">elif</span> <span class="n">bound</span><span class="o">.</span><span class="n">is_nonpositive</span><span class="p">():</span>
-             <span class="n">cvx</span> <span class="o">=</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Concave</span>
-         <span class="k">else</span><span class="p">:</span>
+         <span class="n">base</span><span class="p">,</span> <span class="n">expo</span> <span class="o">=</span> <span class="n">den</span><span class="o">.</span><span class="n">children</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">expo</span><span class="o">.</span><span class="n">is_constant</span><span class="p">()</span> <span class="ow">or</span> <span class="n">expo</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">:</span>
              <span class="k">return</span>
-
-         <span class="k">if</span> <span class="n">num</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-             <span class="k">return</span> <span class="n">cvx</span>
-         <span class="k">else</span><span class="p">:</span>
-             <span class="k">return</span> <span class="n">cvx</span><span class="o">.</span><span class="n">negate</span><span class="p">()</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">base</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Variable</span><span class="p">:</span>
+             <span class="k">return</span>
+<span class="hll">         <span class="n">bounds</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">bounds</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+</span>         <span class="k">if</span> <span class="n">bounds</span><span class="o">.</span><span class="n">is_nonnegative</span><span class="p">():</span>
+             <span class="k">return</span> <span class="n">_convexity_from_beta</span><span class="p">(</span><span class="n">expo</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Implementing a convexity detector requires subclassing the
-<code class="docutils literal notranslate"><span class="pre">ConvexityDetector</span></code> base class and implement <code class="docutils literal notranslate"><span class="pre">register_handlers</span></code>
-to tell SUSPECT what kind of expressions our detector can handle.
-In our case, we only handle divisions.</p>
-<p>In the <code class="docutils literal notranslate"><span class="pre">visit_divison</span></code> callback we first check if the numerator is a
-constant and the denominator a variable.</p>
-<p>In the highlighted line, we lookup the bound for the denominator, if
-this bound is nonnegative then the expression is convex, otherwise it
-is concave. We finally handle the case when the constant is negative,
-and in that case we return the negation of our computed convexity
-information.</p>
+<p>The detector for the other case, when <span class="math notranslate">\(x \neq y\)</span>, is more
+complex but follows the same principles. In the highlighted lines are
+needed to handle the case when the modeler added a small
+<span class="math notranslate">\(\epsilon\)</span> to the denominator to avoid a division by 0.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="k">class</span> <span class="nc">RecLMTDRule</span><span class="p">(</span><span class="n">Rule</span><span class="p">):</span>
+     <span class="n">root_expr</span> <span class="o">=</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Power</span>
+
+     <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+         <span class="n">base</span><span class="p">,</span> <span class="n">expo</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">children</span>
+         <span class="c1"># exponent has to be &gt;= -1</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">expo</span><span class="o">.</span><span class="n">is_constant</span><span class="p">()</span> <span class="ow">or</span> <span class="n">expo</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+             <span class="k">return</span>
+         <span class="c1"># base has to be division `ln(x/y) / (x-y)`</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">base</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Division</span><span class="p">:</span>
+             <span class="k">return</span>
+
+         <span class="n">num</span><span class="p">,</span> <span class="n">den</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">children</span>
+         <span class="c1"># numerator must be log function</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">num</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">UnaryFunction</span><span class="p">:</span>
+             <span class="k">return</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">num</span><span class="o">.</span><span class="n">func_type</span> <span class="o">==</span> <span class="n">UnaryFunctionType</span><span class="o">.</span><span class="n">Log</span><span class="p">:</span>
+             <span class="k">return</span>
+         <span class="c1"># denominator must be linear expression of 2 variables</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">den</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Linear</span><span class="p">:</span>
+             <span class="k">return</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+             <span class="k">return</span>
+
+         <span class="n">inner_div</span> <span class="o">=</span> <span class="n">num</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+         <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">inner_div</span><span class="o">.</span><span class="n">children</span>
+         <span class="c1"># x and y must be variables</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">x</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Variable</span><span class="p">:</span>
+             <span class="k">return</span>
+<span class="hll">         <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Linear</span><span class="p">:</span>
+</span><span class="hll">             <span class="c1"># If we include a small eps then the denominator is a</span>
+</span><span class="hll">             <span class="c1"># linear expression.</span>
+</span><span class="hll">             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+</span><span class="hll">                 <span class="k">return</span>
+</span><span class="hll">             <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span>         <span class="k">if</span> <span class="ow">not</span> <span class="n">y</span><span class="o">.</span><span class="n">expression_type</span> <span class="o">==</span> <span class="n">ExpressionType</span><span class="o">.</span><span class="n">Variable</span><span class="p">:</span>
+             <span class="k">return</span>
+
+         <span class="c1"># Check x and y are in R_+</span>
+         <span class="n">x_bounds</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">bounds</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+         <span class="n">y_bounds</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">bounds</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="n">x_bounds</span><span class="o">.</span><span class="n">is_nonnegative</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">y_bounds</span><span class="o">.</span><span class="n">is_nonnegative</span><span class="p">():</span>
+             <span class="k">return</span>
+
+         <span class="c1"># check that linear expression is x - y</span>
+         <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="n">den</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">y</span> <span class="ow">is</span> <span class="n">den</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+             <span class="k">if</span> <span class="n">almosteq</span><span class="p">(</span><span class="n">den</span><span class="o">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">almosteq</span><span class="p">(</span><span class="n">den</span><span class="o">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                 <span class="k">return</span> <span class="n">_convexity_from_beta</span><span class="p">(</span><span class="n">expo</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+         <span class="k">elif</span> <span class="n">x</span> <span class="ow">is</span> <span class="n">den</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">y</span> <span class="ow">is</span> <span class="n">den</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+             <span class="k">if</span> <span class="n">almosteq</span><span class="p">(</span><span class="n">den</span><span class="o">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">almosteq</span><span class="p">(</span><span class="n">den</span><span class="o">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">):</span>
+                 <span class="k">return</span> <span class="n">_convexity_from_beta</span><span class="p">(</span><span class="n">expo</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+         <span class="c1"># linear expr has 2 children but they are not the same</span>
+         <span class="c1"># variables as the one inside log(x/y)</span>
+         <span class="k">return</span> <span class="bp">None</span>
+</pre></div>
+</div>
+<p>Finally we implement the function that returns convexity information
+based on the value of <span class="math notranslate">\(\beta\)</span>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_convexity_from_beta</span><span class="p">(</span><span class="n">beta</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">almosteq</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Linear</span>
+    <span class="k">elif</span> <span class="n">almostlte</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">almostlte</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Concave</span>
+    <span class="k">elif</span> <span class="n">almostlte</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Convex</span>
+    <span class="k">return</span> <span class="n">Convexity</span><span class="o">.</span><span class="n">Unknown</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="packaging">
 <h3>Packaging<a class="headerlink" href="#packaging" title="Permalink to this headline">¶</a></h3>
 <p>SUSPECT requires extensions to be packaged and registered as an entry
 point. At the root of your project, add the following <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">setup</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">find_packages</span>
 
 
- <span class="n">setup</span><span class="p">(</span>
-     <span class="n">name</span><span class="o">=</span><span class="s1">&#39;example_ext&#39;</span><span class="p">,</span>
-     <span class="n">packages</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;example_ext&#39;</span><span class="p">],</span>
-<span class="hll">     <span class="n">entry_points</span><span class="o">=</span><span class="p">{</span>
-</span><span class="hll">         <span class="s1">&#39;suspect.convexity_detection&#39;</span><span class="p">:</span> <span class="p">[</span>
-</span><span class="hll">             <span class="s1">&#39;const_over_var=example_ext:ConstOverVarDetector&#39;</span>
-</span><span class="hll">         <span class="p">]</span>
-</span><span class="hll">     <span class="p">},</span>
-</span>     <span class="n">requires</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;suspect&#39;</span><span class="p">]</span>
- <span class="p">)</span>
+<span class="n">setup</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;reclmtd_example&#39;</span><span class="p">,</span>
+    <span class="n">packages</span><span class="o">=</span><span class="n">find_packages</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;tests&#39;</span><span class="p">]),</span>
+    <span class="n">entry_points</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;suspect.convexity_detection&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;reclmtd=reclmtd:RectLMTDDetector&#39;</span><span class="p">],</span>
+    <span class="p">},</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-<p>The highlighted lines show how to register the convexity detector with SUSPECT.</p>
-<p>Finally, install the convexity detector:</p>
+<p>Finally install the convexity detector:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python setup.py install
 </pre></div>
 </div>
-<p>If we now run SUSPECT with the same input file as before, we can see
-that the convexity of the constraints is correctly identified:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ model_summary.py -p /path/to/minlplib2/data/osil/procsyn.osil
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-INFO:root:Starting ../minlplib2/data/osil/procsyn.osil / None. timeout=300
-INFO:root:    Reading Problem
-INFO:root:    Converting DAG
-INFO:root:    Starting Special Structure Detection
-INFO:root:    Special Structure Detection Finished
-{&quot;conscurvature&quot;: &quot;convex&quot;, &quot;name&quot;: &quot;procsyn&quot;, &quot;nbinvars&quot;: 0, &quot;ncons&quot;: 27, &quot;nintvars&quot;: 0,
- &quot;nvars&quot;: 20, &quot;objcurvature&quot;: &quot;convex&quot;, &quot;objsense&quot;: &quot;min&quot;, &quot;objtype&quot;: &quot;polynomial&quot;,
- &quot;runtime&quot;: 0.01907968521118164, &quot;status&quot;: &quot;ok&quot;}
+<p>If we run the example again we will see that the SUSPECT detects the
+correct convexity information:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python example.py
+{&#39;lmtd0&#39;: {&#39;convexity&#39;: &lt;Convexity.Concave: 1&gt;,
+         &#39;polynomial_degree&#39;: &lt;PolynomialDegree(degree=None) at 0x7f10091cdd68&gt;,
+         &#39;type&#39;: &#39;inequality&#39;},
+ &#39;rec&#39;: {&#39;convexity&#39;: &lt;Convexity.Convex: 0&gt;,
+         &#39;polynomial_degree&#39;: &lt;PolynomialDegree(degree=None) at 0x7f10091cdcc0&gt;,
+         &#39;type&#39;: &#39;inequality&#39;}}
 </pre></div>
 </div>
 </div>
@@ -212,6 +269,7 @@ INFO:root:    Special Structure Detection Finished
 <h3>Useful Links</h3>
 <ul>
   <li><a href="https://github.com/cog-imperial/suspect">SUSPECT @ GitHub</a></li>
+  <li><a href="https://cog-imperial.github.io/suspect">Official Documentation</a></li>
 
   <p></p>
 

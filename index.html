@@ -33,7 +33,7 @@
             
   <div class="section" id="suspect-special-structure-detection-for-pyomo">
 <h1>SUSPECT: Special Structure Detection for Pyomo<a class="headerlink" href="#suspect-special-structure-detection-for-pyomo" title="Permalink to this headline">¶</a></h1>
-<p>Release v6.</p>
+<p>Release v1.0.6.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">SUSPECT requires Python 3. If you are using Python 2, please
@@ -41,19 +41,8 @@ upgrade.</p>
 </div>
 <div class="section" id="installation">
 <span id="id1"></span><h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>At the moment, SUSPECT is not available as a Python package and you need to manually install it.</p>
-<p>Clone the SUSPECT repository:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone git://github.com/cog-imperial/suspect.git
-</pre></div>
-</div>
-<p>Or download the tarball:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ curl -OL https://github.com/cog-imperial/suspect/tarball/master
-</pre></div>
-</div>
-<p>After you downloaded the source, you can install it in the current environment:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd suspect
-$ pip install -r requirements.txt
-$ python install .
+<p>You can get SUSPECT from <a class="reference external" href="https://pypi.org/project/cog-suspect/">Pypi</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">cog</span><span class="o">-</span><span class="n">suspect</span>
 </pre></div>
 </div>
 </div>
@@ -127,9 +116,11 @@ INFO:root:  Special Structure Detection Finished
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="api.html">Developer Interface</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api.html#main-module">Main Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-suspect.expression">Expression Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-suspect.interfaces">Interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-suspect.interval">Interval</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#pyomo-compatibility">Pyomo Compatibility</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#directed-acyclic-graph">Directed Acyclic Graph</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-suspect.dag.expressions">Expression Types</a></li>
 </ul>
 </li>
 </ul>
@@ -150,6 +141,7 @@ INFO:root:  Special Structure Detection Finished
 <h3>Useful Links</h3>
 <ul>
   <li><a href="https://github.com/cog-imperial/suspect">SUSPECT @ GitHub</a></li>
+  <li><a href="https://cog-imperial.github.io/suspect">Official Documentation</a></li>
 
   <p></p>
 

@@ -24,36 +24,49 @@ Task Overview
 ~~~~~~~~~~~~~
 
 The objective of this tutorial is writing an extension for SUSPECT to detect
-the convexity of the expression
+the convexity of the Reciprocal Log Mean Temperature equation:
 
 .. math::
 
-   f(x) = \frac{1}{x}
+   \text{RecLMTD}^\beta (x, y) = \begin{cases}
+   (\frac{\ln{(x/y)}}{x-y})^\beta & x \neq y\\
+   \frac{1}{x^\beta} & x = y
+   \end{cases}
 
-When :math:`x > 0`, :math:`f(x)` is convex, while when :math:`x < 0`,
-:math:`f(x)` is concave.
+With :math:`x,y > 0` and :math:`\beta \geq -1`. This expression `has
+been proved`__ to be concave when :math:`-1 \leq \beta \leq 0` and
+convex when :math:`\beta \geq 0`.
 
-In SUSPECT, this expression is represented by a root vertex of type
-:class:`suspect.dag.expressions.DivisionExpression` with two children: a
-:class:`suspect.dag.expressions.Constant` numerator and a
-:class:`suspect.dag.expressions.Variable` denominator.
+__ https://www.sciencedirect.com/science/article/pii/S0098135416302216
 
-In this tutorial we will use the `procsyn <http://www.minlplib.org/procsyn.html>`_ instance
-as an example.
+.. figure:: _static/funct_3d.png
 
-At the moment, SUSPECT fails at detecting convexity of the constraints
-containing the expression :math:`1/x`::
+   Plot of RecLMTD when :math:`x \neq y`.
 
-  $ model_summary.py -p /path/to/minlplib2/data/osil/procsyn.osil
-  INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-  INFO:root:Starting ../minlplib2/data/osil/procsyn.osil / None. timeout=300
-  INFO:root:	Reading Problem
-  INFO:root:	Converting DAG
-  INFO:root:	Starting Special Structure Detection
-  INFO:root:	Special Structure Detection Finished
-  {"conscurvature": "indefinite", "name": "procsyn", "nbinvars": 0, "ncons": 27, "nintvars": 0,
-   "nvars": 20, "objcurvature": "convex", "objsense": "min", "objtype": "polynomial",
-   "runtime": 0.020023822784423828, "status": "ok"}
+To test our implementation we use the following model in ``example.py``:
+
+.. code-block:: python
+
+    import pprint
+    from suspect import set_pyomo4_expression_tree, detect_special_structure
+    import pyomo.environ as aml
+
+    set_pyomo4_expression_tree()
+
+    model = aml.ConcreteModel()
+
+    model.x = aml.Var(bounds=(0, None))
+    model.y = aml.Var(bounds=(0, None))
+
+    model.rec = aml.Constraint(expr=1/(model.x**3) <= 0)
+
+    model.lmtd0 = aml.Constraint(
+	expr=(aml.log(model.x/(model.y + 1e-6))/(model.x - model.y))**(-0.5) <= 0)
+
+    info = detect_special_structure(model)
+
+    pp = pprint.PrettyPrinter()
+    pp.pprint(info.constraints)
 
 
 
@@ -63,131 +76,187 @@ Detector Implementation
 At the root of your project directory, create a new directory
 containing the source of the convexity detector::
 
-  $ mkdir example_ext
+  $ mkdir reclmtd
 
 And write the detector in ``__init__.py``::
 
-  $ $EDITOR example_ext/__init__.py
+  $ $EDITOR reclmtd/__init__.py
 
-In this way we can later on package the detector. The content of the file is as follows
+In this way we can later on package the detector.
+
+We start by importing SUSPECT classes used in the detector:
 
 .. code-block:: python
-   :emphasize-lines: 42
 
-    from suspect.ext import ConvexityDetector, Convexity
-    import suspect.dag.expressions as dex
+    from suspect.ext import ConvexityDetector
+    from suspect.convexity import Convexity
+    from suspect.interfaces import Rule
+    from suspect.expression import ExpressionType, UnaryFunctionType
+    from suspect.math import almosteq, almostlte
 
 
-    class ConstOverVarDetector(ConvexityDetector):
-	"""Convexity detector for expressions of the type:
+After that we create a class for the detector:
 
-	.. math::
+.. code-block:: python
 
-	    \frac{c}{x}
+    class RectLMTDDetector(ConvexityDetector):
+	"""Convexity detector for RecLMTD expressions."""
+	def __init__(self, _problem):
+	    super().__init__()
 
-	where c is a constant and x is a variable.
-	"""
+	def register_rules(self):
+	    return [RecLMTDRule(), RecRule()]
 
-	def register_handlers(self):
-	    """Register interest in DivisionExpression."""
-	    return {
-		dex.DivisionExpression: self.visit_division,
-	    }
 
-	def visit_division(self, expr, ctx):
-	    """Visit a division expression.
+The method ``register_rules`` returns a list of rules that are implemented
+by this detector: the first to detect convexity when :math:`x \neq y` and
+the second for the other cases.
 
-	    Return `Convexity.Convex` if the numerator is constant and the
-	    denominator is nonnegative.
+The detector for :math:`1/x^\beta` is the simpler of the two so we
+look at it first. To detect if the current expression ``expr`` matches
+the expression we check the expression and its children types. In the
+highlighted line we use the bounds value stored in ``ctx`` to check
+whether the variable is non negative.
 
-	    Return `Convexity.Concave` if the numerator is constant and the
-	    denominator is nonpositive.
-	    """
-	    assert len(expr.children) == 2
+
+.. code-block:: python
+   :emphasize-lines: 17
+
+    class RecRule(Rule):
+	root_expr = ExpressionType.Division
+
+	def apply(self, expr, ctx):
 	    num, den = expr.children
+	    # numerator has to be 1.0
+	    if not num.is_constant() or num.value != 1.0:
+		return
+	    # denominator has to be power with beta >= -1.0
+	    if not den.expression_type == ExpressionType.Power:
+		return
+	    base, expo = den.children
+	    if not expo.is_constant() or expo.value < -1.0:
+		return
+	    if not base.expression_type == ExpressionType.Variable:
+		return
+	    bounds = ctx.bounds(base)
+	    if bounds.is_nonnegative():
+		return _convexity_from_beta(expo.value)
 
-	    if not isinstance(num, dex.Constant):
+
+The detector for the other case, when :math:`x \neq y`, is more
+complex but follows the same principles. In the highlighted lines are
+needed to handle the case when the modeler added a small
+:math:`\epsilon` to the denominator to avoid a division by 0.
+
+
+.. code-block:: python
+   :emphasize-lines: 31-36
+
+    class RecLMTDRule(Rule):
+	root_expr = ExpressionType.Power
+
+	def apply(self, expr, ctx):
+	    base, expo = expr.children
+	    # exponent has to be >= -1
+	    if not expo.is_constant() or expo.value < -1:
+		return
+	    # base has to be division `ln(x/y) / (x-y)`
+	    if not base.expression_type == ExpressionType.Division:
 		return
 
-	    if not isinstance(den, dex.Variable):
+	    num, den = base.children
+	    # numerator must be log function
+	    if not num.expression_type == ExpressionType.UnaryFunction:
+		return
+	    if not num.func_type == UnaryFunctionType.Log:
+		return
+	    # denominator must be linear expression of 2 variables
+	    if not den.expression_type == ExpressionType.Linear:
+		return
+	    if not len(den.children) == 2:
 		return
 
-	    if num.value == 0:
-		return Convexity.Linear
+	    inner_div = num.children[0]
 
-	    bound = ctx.bound[den]
-
-	    if bound.is_nonnegative():
-		cvx = Convexity.Convex
-	    elif bound.is_nonpositive():
-		cvx = Convexity.Concave
-	    else:
+	    x, y = inner_div.children
+	    # x and y must be variables
+	    if not x.expression_type == ExpressionType.Variable:
+		return
+	    if y.expression_type == ExpressionType.Linear:
+		# If we include a small eps then the denominator is a
+		# linear expression.
+		if len(y.children) != 1:
+		    return
+		y = y.children[0]
+	    if not y.expression_type == ExpressionType.Variable:
 		return
 
-	    if num.value > 0:
-		return cvx
-	    else:
-		return cvx.negate()
+	    # Check x and y are in R_+
+	    x_bounds = ctx.bounds(x)
+	    y_bounds = ctx.bounds(y)
+	    if not x_bounds.is_nonnegative() or not y_bounds.is_nonnegative():
+		return
+
+	    # check that linear expression is x - y
+	    if x is den.children[0] and y is den.children[1]:
+		if almosteq(den.coefficients[0], 1) and almosteq(den.coefficients[1], -1):
+		    return _convexity_from_beta(expo.value)
+	    elif x is den.children[1] and y is den.children[0]:
+		if almosteq(den.coefficients[0], -1) and almosteq(den.coefficients[1], 1):
+		    return _convexity_from_beta(expo.value)
+	    # linear expr has 2 children but they are not the same
+	    # variables as the one inside log(x/y)
+	    return None
 
 
-Implementing a convexity detector requires subclassing the
-``ConvexityDetector`` base class and implement ``register_handlers``
-to tell SUSPECT what kind of expressions our detector can handle.
-In our case, we only handle divisions.
+Finally we implement the function that returns convexity information
+based on the value of :math:`\beta`.
 
-In the ``visit_divison`` callback we first check if the numerator is a
-constant and the denominator a variable.
+.. code-block:: python
 
-In the highlighted line, we lookup the bound for the denominator, if
-this bound is nonnegative then the expression is convex, otherwise it
-is concave. We finally handle the case when the constant is negative,
-and in that case we return the negation of our computed convexity
-information.
-
+    def _convexity_from_beta(beta):
+	if almosteq(beta, 0):
+	    return Convexity.Linear
+	elif almostlte(beta, 0) and almostlte(-1, beta):
+	    return Convexity.Concave
+	elif almostlte(0, beta):
+	    return Convexity.Convex
+	return Convexity.Unknown
 
 
 Packaging
 ~~~~~~~~~
 
+
 SUSPECT requires extensions to be packaged and registered as an entry
 point. At the root of your project, add the following ``setup.py`` file
 
-
 .. code-block:: python
-   :emphasize-lines: 7,8,9,10,11
 
-    from setuptools import setup
+    from setuptools import setup, find_packages
 
 
     setup(
-	name='example_ext',
-	packages=['example_ext'],
+	name='reclmtd_example',
+	packages=find_packages(exclude=['tests']),
 	entry_points={
-	    'suspect.convexity_detection': [
-		'const_over_var=example_ext:ConstOverVarDetector'
-	    ]
+	    'suspect.convexity_detection': ['reclmtd=reclmtd:RectLMTDDetector'],
 	},
-	requires=['suspect']
     )
 
 
-The highlighted lines show how to register the convexity detector with SUSPECT.
-
-Finally, install the convexity detector::
+Finally install the convexity detector::
 
   $ python setup.py install
 
 
-If we now run SUSPECT with the same input file as before, we can see
-that the convexity of the constraints is correctly identified::
+If we run the example again we will see that the SUSPECT detects the
+correct convexity information::
 
-  $ model_summary.py -p /path/to/minlplib2/data/osil/procsyn.osil
-  INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-  INFO:root:Starting ../minlplib2/data/osil/procsyn.osil / None. timeout=300
-  INFO:root:	Reading Problem
-  INFO:root:	Converting DAG
-  INFO:root:	Starting Special Structure Detection
-  INFO:root:	Special Structure Detection Finished
-  {"conscurvature": "convex", "name": "procsyn", "nbinvars": 0, "ncons": 27, "nintvars": 0,
-   "nvars": 20, "objcurvature": "convex", "objsense": "min", "objtype": "polynomial",
-   "runtime": 0.01907968521118164, "status": "ok"}
+  $ python example.py
+  {'lmtd0': {'convexity': <Convexity.Concave: 1>,
+           'polynomial_degree': <PolynomialDegree(degree=None) at 0x7f10091cdd68>,
+           'type': 'inequality'},
+   'rec': {'convexity': <Convexity.Convex: 0>,
+           'polynomial_degree': <PolynomialDegree(degree=None) at 0x7f10091cdcc0>,
+           'type': 'inequality'}}

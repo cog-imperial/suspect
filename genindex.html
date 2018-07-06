@@ -41,6 +41,7 @@
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
+ | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
@@ -51,28 +52,41 @@
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
+ | <a href="#Z"><strong>Z</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.AbsExpression">AbsExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Abs">Abs (suspect.expression.UnaryFunctionType attribute)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.AcosExpression">AcosExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Acos">Acos (suspect.expression.UnaryFunctionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.acos">acos (suspect.interval.Interval attribute)</a>
 </li>
       <li><a href="api.html#suspect.dag.ProblemDag.add_constraint">add_constraint() (suspect.dag.ProblemDag method)</a>
 </li>
       <li><a href="api.html#suspect.dag.ProblemDag.add_objective">add_objective() (suspect.dag.ProblemDag method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#suspect.dag.ProblemDag.add_variable">add_variable() (suspect.dag.ProblemDag method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#suspect.dag.ProblemDag.add_vertex">add_vertex() (suspect.dag.ProblemDag method)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.AsinExpression">AsinExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.interfaces.CombineUnaryFunctionRules.apply">apply() (suspect.interfaces.CombineUnaryFunctionRules method)</a>
+
+      <ul>
+        <li><a href="api.html#suspect.interfaces.Rule.apply">(suspect.interfaces.Rule method)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.AtanExpression">AtanExpression (class in suspect.dag.expressions)</a>
+      </ul></li>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Asin">Asin (suspect.expression.UnaryFunctionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.asin">asin (suspect.interval.Interval attribute)</a>
+</li>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Atan">Atan (suspect.expression.UnaryFunctionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.atan">atan (suspect.interval.Interval attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -80,11 +94,7 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.ProblemDag.backward_visit">backward_visit() (suspect.dag.ProblemDag method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.BoundedExpression">BoundedExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.interfaces.BackwardIterator">BackwardIterator (class in suspect.interfaces)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -92,15 +102,25 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.summary.ModelInformation.conscurvature">conscurvature() (suspect.summary.ModelInformation method)</a>
+      <li><a href="api.html#suspect.interfaces.Rule.checked_apply">checked_apply() (suspect.interfaces.Rule method)</a>
+
+      <ul>
+        <li><a href="api.html#suspect.interfaces.UnaryFunctionRule.checked_apply">(suspect.interfaces.UnaryFunctionRule method)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.Constant">Constant (class in suspect.dag.expressions)</a>
+      </ul></li>
+      <li><a href="api.html#suspect.interfaces.CombineUnaryFunctionRules">CombineUnaryFunctionRules (class in suspect.interfaces)</a>
+</li>
+      <li><a href="api.html#suspect.summary.ModelInformation.conscurvature">conscurvature() (suspect.summary.ModelInformation method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.Constraint">Constraint (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Constant">Constant (suspect.expression.ExpressionType attribute)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.CosExpression">CosExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Constraint">Constraint (suspect.expression.ExpressionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Cos">Cos (suspect.expression.UnaryFunctionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.cos">cos (suspect.interval.Interval attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -110,15 +130,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#suspect.pyomo.dag_from_pyomo_model">dag_from_pyomo_model() (in module suspect.pyomo)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.Expression.depth">depth (suspect.dag.expressions.Expression attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#suspect.detect_special_structure">detect_special_structure() (in module suspect)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.DivisionExpression">DivisionExpression (class in suspect.dag.expressions)</a>
-</li>
-      <li><a href="api.html#suspect.dag.expressions.Domain">Domain (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Division">Division (suspect.expression.ExpressionType attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -126,11 +142,15 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.ExpExpression">ExpExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.interval.EmptyInterval">EmptyInterval (class in suspect.interval)</a>
+</li>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Exp">Exp (suspect.expression.UnaryFunctionType attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.Expression">Expression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.interval.Interval.exp">exp (suspect.interval.Interval attribute)</a>
+</li>
+      <li><a href="api.html#suspect.expression.ExpressionType">ExpressionType (class in suspect.expression)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -138,7 +158,35 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.ProblemDag.forward_visit">forward_visit() (suspect.dag.ProblemDag method)</a>
+      <li><a href="api.html#suspect.interfaces.ForwardIterator">ForwardIterator (class in suspect.interfaces)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#suspect.interval.Interval.intersect">intersect() (suspect.interval.Interval method)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval">Interval (class in suspect.interval)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.inverse">inverse() (suspect.interval.Interval method)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.is_negative">is_negative() (suspect.interval.Interval method)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.is_nonnegative">is_nonnegative() (suspect.interval.Interval method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#suspect.interval.Interval.is_nonpositive">is_nonpositive() (suspect.interval.Interval method)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.is_positive">is_positive() (suspect.interval.Interval method)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.is_zero">is_zero() (suspect.interval.Interval method)</a>
+</li>
+      <li><a href="api.html#suspect.interfaces.Iterator.iterate">iterate() (suspect.interfaces.Iterator method)</a>
+</li>
+      <li><a href="api.html#suspect.interfaces.Iterator">Iterator (class in suspect.interfaces)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -146,11 +194,15 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.LinearExpression">LinearExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Linear">Linear (suspect.expression.ExpressionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Log">Log (suspect.expression.UnaryFunctionType attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.LogExpression">LogExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.interval.Interval.log">log (suspect.interval.Interval attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.lower_bound">lower_bound (suspect.interval.Interval attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -161,12 +213,20 @@
       <li><a href="api.html#suspect.summary.ModelInformation">ModelInformation (class in suspect.summary)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#suspect.interval.monotonic_decreasing">monotonic_decreasing() (in module suspect.interval)</a>
+</li>
+      <li><a href="api.html#suspect.interval.monotonic_increasing">monotonic_increasing() (in module suspect.interval)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.NegationExpression">NegationExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Negation">Negation (suspect.expression.ExpressionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.negation">negation (suspect.interval.Interval attribute)</a>
 </li>
       <li><a href="api.html#suspect.summary.ModelInformation.num_binaries">num_binaries() (suspect.summary.ModelInformation method)</a>
 </li>
@@ -188,7 +248,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.Objective">Objective (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Objective">Objective (suspect.expression.ExpressionType attribute)</a>
 </li>
       <li><a href="api.html#suspect.summary.ModelInformation.objtype">objtype() (suspect.summary.ModelInformation method)</a>
 </li>
@@ -198,13 +258,15 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.PowExpression">PowExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Power">Power (suspect.expression.ExpressionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interfaces.Problem">Problem (class in suspect.interfaces)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#suspect.dag.ProblemDag">ProblemDag (class in suspect.dag)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.ProductExpression">ProductExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Product">Product (suspect.expression.ExpressionType attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -215,30 +277,40 @@
       <li><a href="api.html#suspect.pyomo.read_osil">read_osil() (in module suspect.pyomo)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#suspect.interfaces.Rule">Rule (class in suspect.interfaces)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.Sense">Sense (class in suspect.dag.expressions)</a>
-</li>
       <li><a href="api.html#suspect.set_pyomo4_expression_tree">set_pyomo4_expression_tree() (in module suspect)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.SinExpression">SinExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Sin">Sin (suspect.expression.UnaryFunctionType attribute)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.SqrtExpression">SqrtExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.interval.Interval.sin">sin (suspect.interval.Interval attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.size">size() (suspect.interval.Interval method)</a>
+</li>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Sqrt">Sqrt (suspect.expression.UnaryFunctionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.sqrt">sqrt (suspect.interval.Interval attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#suspect.dag.ProblemDag.stats">stats() (suspect.dag.ProblemDag method)</a>
 </li>
-      <li><a href="api.html#suspect.dag.expressions.SumExpression">SumExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Sum">Sum (suspect.expression.ExpressionType attribute)</a>
 </li>
       <li><a href="api.html#module-suspect">suspect (module)</a>
 </li>
-      <li><a href="api.html#module-suspect.dag.dot">suspect.dag.dot (module)</a>
+      <li><a href="api.html#module-suspect.expression">suspect.expression (module)</a>
 </li>
-      <li><a href="api.html#module-suspect.dag.expressions">suspect.dag.expressions (module)</a>
+      <li><a href="api.html#module-suspect.interfaces">suspect.interfaces (module)</a>
+</li>
+      <li><a href="api.html#module-suspect.interval">suspect.interval (module)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -246,7 +318,11 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.TanExpression">TanExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType.Tan">Tan (suspect.expression.UnaryFunctionType attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#suspect.interval.Interval.tan">tan (suspect.interval.Interval attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -254,7 +330,15 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.UnaryFunctionExpression">UnaryFunctionExpression (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.UnaryFunction">UnaryFunction (suspect.expression.ExpressionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.interfaces.UnaryFunctionRule">UnaryFunctionRule (class in suspect.interfaces)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#suspect.expression.UnaryFunctionType">UnaryFunctionType (class in suspect.expression)</a>
+</li>
+      <li><a href="api.html#suspect.interval.Interval.upper_bound">upper_bound (suspect.interval.Interval attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -262,11 +346,23 @@
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.expressions.Variable">Variable (class in suspect.dag.expressions)</a>
+      <li><a href="api.html#suspect.expression.ExpressionType.Variable">Variable (suspect.expression.ExpressionType attribute)</a>
+</li>
+      <li><a href="api.html#suspect.dag.ProblemDag.vertices">vertices (suspect.dag.ProblemDag attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#suspect.dag.ProblemDag.visit">visit() (suspect.dag.ProblemDag method)</a>
+      <li><a href="api.html#suspect.interfaces.Visitor.visit">visit() (suspect.interfaces.Visitor method)</a>
+</li>
+      <li><a href="api.html#suspect.interfaces.Visitor">Visitor (class in suspect.interfaces)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Z">Z</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#suspect.interval.Interval.zero">zero() (suspect.interval.Interval static method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -285,6 +381,7 @@
 <h3>Useful Links</h3>
 <ul>
   <li><a href="https://github.com/cog-imperial/suspect">SUSPECT @ GitHub</a></li>
+  <li><a href="https://cog-imperial.github.io/suspect">Official Documentation</a></li>
 
   <p></p>
 

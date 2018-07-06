@@ -9,25 +9,15 @@ Release v\ |version|.
 
 .. _installation:
 
+
 Installation
 ------------
 
-At the moment, SUSPECT is not available as a Python package and you need to manually install it.
+You can get SUSPECT from Pypi_::
 
-Clone the SUSPECT repository::
+  pip install cog-suspect
 
-    $ git clone git://github.com/cog-imperial/suspect.git
-
-Or download the tarball::
-
-    $ curl -OL https://github.com/cog-imperial/suspect/tarball/master
-
-After you downloaded the source, you can install it in the current environment::
-
-    $ cd suspect
-    $ pip install -r requirements.txt
-    $ python install .
-
+.. _Pypi: https://pypi.org/project/cog-suspect/
 
 
 Quick Start
