@@ -192,3 +192,26 @@ class TestSize(object):
     def test_finite_bounds_1(self, a, f):
         b = a * f
         assert almostgte(a.size(), b.size())
+
+
+class TestPower(object):
+    @pytest.mark.parametrize('base,p,expected', [
+        (Interval(2, 3), 3, Interval(8, 27)),
+        (Interval(2, 3), 4, Interval(16, 81)),
+        (Interval(-3, 2), 3, Interval(-27, 8)),
+        (Interval(-3, 2), 4, Interval(0, 81)),
+        (Interval(-3, -2), 3, Interval(-27, -8)),
+        (Interval(-3, -2), 4, Interval(16, 81)),
+
+        (Interval(2, 4), -3, Interval(1.0/64.0, 1.0/8.0)),
+        (Interval(2, 4), -4, Interval(1.0/256.0, 1.0/16.0)),
+        (Interval(-4, -2), -3, Interval(-1.0/8.0, -1.0/64.0)),
+        (Interval(-4, -2), -4, Interval(1.0/256.0, 1.0/16.0)),
+
+        (Interval(2, 3), 0, Interval(1, 1)),
+        (Interval(-3, 2), 0, Interval(1, 1)),
+        (Interval(-3, -2), 0, Interval(1, 1)),
+    ])
+    def test_power(self, base, p, expected):
+        result = base ** p
+        assert expected == result

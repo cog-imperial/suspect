@@ -93,6 +93,7 @@ _COMMON_MEMBERS = [
     'sqrt',
     'log',
     'exp',
+    'power',
     'sin',
     'asin',
     'cos',
