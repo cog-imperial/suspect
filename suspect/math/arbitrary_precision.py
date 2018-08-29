@@ -25,13 +25,23 @@ pi = mpmath.pi
 isnan = mpmath.isnan
 
 
-def _declare_function(name, fun):
+def _declare_unary_function(name, fun):
+    # skip rounding mode since we don't round
     globals()[name] = lambda n, _: fun(n)
 
 
-_FUNCTIONS = ['sqrt', 'log', 'exp', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan']
-for fun in _FUNCTIONS:
-    _declare_function(fun, getattr(mpmath, fun))
+def _declare_binary_function(name, fun):
+    # skip rounding mode since we don't round
+    globals()[name] = lambda x, y, _: fun(x, y)
+
+
+_UNARY_FUNCTIONS = ['sqrt', 'log', 'exp', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan']
+for fun in _UNARY_FUNCTIONS:
+    _declare_unary_function(fun, getattr(mpmath, fun))
+
+_BINARY_FUNCTIONS = ['power']
+for fun in _BINARY_FUNCTIONS:
+    _declare_binary_function(fun, getattr(mpmath, fun))
 
 
 def down(f):

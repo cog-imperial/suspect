@@ -30,6 +30,7 @@ from suspect.math import (
     max_,
     exp,
     log,
+    power,
     sqrt,
     sin,
     cos,
@@ -261,6 +262,44 @@ class Interval(object): # pylint: disable=too-many-public-methods
         return self.inverse() * other
 
     __rtruediv__ = __rdiv__
+
+    def __pow__(self, pow_):
+        # Rules and tests from Boost::interval
+        if isinstance(pow_, Interval):
+            if not almosteq(pow_.lower_bound, pow_.upper_bound):
+                return Interval(None, None)
+            pow_ = pow_.lower_bound
+            return self.__pow__(pow_)
+        if not almosteq(pow_, int(pow_)):
+            return Interval(None, None)
+        pow_ = int(pow_)
+
+        if almosteq(pow_, 0.0):
+            return Interval(1, 1)
+
+        if pow_ < 0:
+            return 1.0 / self.__pow__(-pow_)
+
+        is_odd = (abs(pow_) % 2) == 1
+        if self.upper_bound < 0:
+            # [-2, -1]
+            yl = power(-self.upper_bound, pow_, RM.RD)
+            yu = power(-self.lower_bound, pow_, RM.RU)
+            if is_odd:
+                return Interval(-yu, -yl)
+            else:
+                return Interval(yl, yu)
+        elif self.lower_bound < 0:
+            # [-1, 1]
+            if is_odd:
+                yl = power(-self.lower_bound, pow_, RM.RD)
+                yu = power(self.upper_bound, pow_, RM.RU)
+                return Interval(-yl, yu)
+            else:
+                return Interval(0, power(max(-self.lower_bound, self.upper_bound), pow_, RM.RU))
+        else:
+            # [1, 2]
+            return Interval(power(self.lower_bound, pow_, RM.RD), power(self.upper_bound, pow_, RM.RU))
 
     def __eq__(self, other):
         if not isinstance(other, Interval):
