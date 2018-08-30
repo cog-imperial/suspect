@@ -263,6 +263,13 @@ class Interval(object): # pylint: disable=too-many-public-methods
 
     __rtruediv__ = __rdiv__
 
+    def __abs__(self):
+        if almostgte(self.lower_bound, 0):
+            return self
+        if almostlte(self.upper_bound, 0):
+            return -self
+        return Interval(0, up(lambda: max_(-self.lower_bound, self.upper_bound)))
+
     def __pow__(self, pow_):
         # Rules and tests from Boost::interval
         if isinstance(pow_, Interval):
