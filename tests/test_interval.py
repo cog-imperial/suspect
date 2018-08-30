@@ -194,6 +194,17 @@ class TestSize(object):
         assert almostgte(a.size(), b.size())
 
 
+class TestAbs(object):
+    @pytest.mark.parametrize('it,expected', [
+        (Interval(1, 2), Interval(1, 2)),
+        (Interval(-3, -2), Interval(2, 3)),
+        (Interval(-3, 2), Interval(0, 3)),
+        (Interval(-2, 3), Interval(0, 3)),
+    ])
+    def test_abs(self, it, expected):
+        assert expected == abs(it)
+
+
 class TestPower(object):
     @pytest.mark.parametrize('base,p,expected', [
         (Interval(2, 3), 3, Interval(8, 27)),
