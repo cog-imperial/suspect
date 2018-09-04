@@ -309,6 +309,9 @@ class Interval(object): # pylint: disable=too-many-public-methods
             return Interval(power(self.lower_bound, pow_, RM.RD), power(self.upper_bound, pow_, RM.RU))
 
     def __eq__(self, other):
+        if isinstance(other, (int, float)):
+            return self.__eq__(Interval(other, other))
+
         if not isinstance(other, Interval):
             return False
         # pylint: disable=protected-access
