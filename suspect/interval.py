@@ -364,9 +364,10 @@ class Interval(object): # pylint: disable=too-many-public-methods
         new_lower = min_(sin(lower, RM.RD), sin(upper, RM.RD))
         new_upper = max_(sin(lower, RM.RU), sin(upper, RM.RU))
         new = Interval(new_lower, new_upper)
-        if 0.5 * pi in new:
+        translated_interval = Interval(lower, upper)
+        if 0.5 * pi in translated_interval:
             new_upper = 1.0
-        if 1.5 * pi in new:
+        if 1.5 * pi in translated_interval:
             new_lower = -1.0
         return Interval(new_lower, new_upper)
 
