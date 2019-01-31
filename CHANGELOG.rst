@@ -1,10 +1,13 @@
 Changelog
 =========
 
-
 Next
 ----
 
+1.1.0 (2019-01-31)
+------------------
+
+* Add Quadratic expression type
 * Add Interval special case for x*x
 * Fix Interval sin
 * Add Interval comparison with numbers
