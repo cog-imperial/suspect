@@ -33,6 +33,7 @@ class ConvexityPropagationVisitor(Visitor):
             DivisionRule(),
             ProductRule(),
             LinearRule(),
+            QuadraticRule(),
             SumRule(),
             NegationRule(),
             PowerRule(),

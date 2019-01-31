@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """FBBT bounds tightening rules."""
+import numpy as np
 from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.interval import Interval
@@ -175,6 +176,6 @@ def _sum_child_and_siblings(children):
 def _linear_child_and_siblings(coefficients, children):
     for i, child in enumerate(children):
         child_c = coefficients[i]
-        other_children = children[:i] + children[i+1:]
-        other_coefficients = coefficients[:i] + coefficients[i+1:]
+        other_children = np.concatenate((children[:i], children[i+1:]))
+        other_coefficients = np.concatenate((coefficients[:i], coefficients[i+1:]))
         yield (child_c, child), zip(other_coefficients, other_children)

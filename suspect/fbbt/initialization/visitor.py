@@ -35,6 +35,7 @@ class BoundsInitializationVisitor(BackwardVisitor):
                 LogRule(),
                 AsinRule(),
                 AcosRule(),
+                needs_matching_rules=False,
             )
         ]
 

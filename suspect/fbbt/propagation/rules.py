@@ -66,6 +66,17 @@ class ProductRule(Rule):
         return reduce(operator.mul, children_bounds, 1.0)
 
 
+class QuadraticRule(Rule):
+    """Bound propagation rule for quadratic."""
+    root_expr = ExpressionType.Quadratic
+
+    def apply(self, expr, ctx):
+        return sum([
+            ctx.bounds(term.var1) * ctx.bounds(term.var2) * term.coefficient
+            for term in expr.terms
+        ])
+
+
 class DivisionRule(Rule):
     """Bound propagation rule for divisions."""
     root_expr = ExpressionType.Division

@@ -30,6 +30,7 @@ class ExpressionType(IntEnum):
     # expression with coefficient -1
     Negation = 10
     UnaryFunction = 11
+    Quadratic = 12
 
 
 class UnaryFunctionType(IntEnum):

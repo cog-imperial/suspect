@@ -20,6 +20,7 @@ from suspect.interfaces import Rule
 __all__ = [
     'VariableRule', 'ConstantRule', 'ConstraintRule', 'ObjectiveRule', 'DivisionRule',
     'ProductRule', 'LinearRule', 'SumRule', 'NegationRule', 'PowerRule', 'UnaryFunctionRule',
+    'QuadraticRule',
 ]
 
 
@@ -90,6 +91,16 @@ class LinearRule(Rule):
         if not expr.children:
             return PolynomialDegree(0)
         return PolynomialDegree(1)
+
+
+class QuadraticRule(Rule):
+    """Return polynomial degree of a quadratic expression."""
+    root_expr = ExpressionType.Quadratic
+
+    def apply(self, expr, ctx):
+        if not expr.children:
+            return PolynomialDegree(0)
+        return PolynomialDegree(2)
 
 
 class SumRule(Rule):

@@ -22,6 +22,7 @@ from .convex import ExpRule
 from .negation import NegationRule
 from .pow import PowerRule
 from .product import ProductRule
+from .quadratic import QuadraticRule
 from .trig import SinRule, CosRule, TanRule, AsinRule, AcosRule, AtanRule
 
 
@@ -30,4 +31,5 @@ __all__ = [
     'ProductRule', 'DivisionRule', 'LinearRule', 'SumRule', 'AbsRule',
     'SqrtRule', 'ExpRule', 'LogRule', 'TanRule', 'AsinRule', 'AtanRule',
     'AcosRule', 'NegationRule', 'PowerRule', 'SinRule', 'CosRule',
+    'QuadraticRule',
 ]

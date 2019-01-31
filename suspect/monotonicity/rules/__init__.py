@@ -21,6 +21,7 @@ from .nondecreasing import SqrtRule, ExpRule, LogRule, TanRule, AsinRule, AtanRu
 from .nonincreasing import AcosRule, NegationRule
 from .pow import PowerRule
 from .product import ProductRule
+from .quadratic import QuadraticRule
 from .trig import SinRule, CosRule
 
 
@@ -29,4 +30,5 @@ __all__ = [
     'ProductRule', 'DivisionRule', 'LinearRule', 'SumRule', 'AbsRule',
     'SqrtRule', 'ExpRule', 'LogRule', 'TanRule', 'AsinRule', 'AtanRule',
     'AcosRule', 'NegationRule', 'PowerRule', 'SinRule', 'CosRule',
+    'QuadraticRule',
 ]

@@ -1,4 +1,3 @@
-
 # Copyright 2018 Francesco Ceccon
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
