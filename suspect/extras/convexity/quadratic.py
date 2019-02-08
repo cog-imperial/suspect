@@ -87,7 +87,8 @@ class QuadraticRule(Rule):
             return (a, b, 1.0)
 
         def _variable_and_linear(a, b):
-            return (a, b.children[0], b.coefficients[0])
+            bc = b.children[0]
+            return (a, bc, b.coefficient(bc))
 
         def _const_pow_expression(const, powe):
             a, b = powe.children

@@ -24,8 +24,8 @@ class LinearRule(Rule):
 
     def apply(self, expr, ctx):
         monos = [
-            _adjust_monotonicity(ctx.monotonicity(child), coef)
-            for child, coef in zip(expr.children, expr.coefficients)
+            _adjust_monotonicity(ctx.monotonicity(child), expr.coefficient(child))
+            for child in expr.children
         ]
         return _combine_monotonicities(monos)
 

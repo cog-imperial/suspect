@@ -113,11 +113,14 @@ class LinearExpression(Expression):
         if constant_term is None:
             constant_term = 0.0
         self.constant_term = constant_term
-        self.coefficients = coefficients
+        self._coefficients = dict([(child, coef) for child, coef in zip(children, coefficients)])
         self._check_coefficients()
 
+    def coefficient(self, expr):
+        return self._coefficients[expr]
+
     def _check_coefficients(self):
-        assert len(self.coefficients) == len(self.children)
+        assert len(self._coefficients) == len(self.children)
 
 
 class UnaryFunctionExpression(Expression):

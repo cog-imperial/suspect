@@ -24,8 +24,8 @@ class LinearRule(Rule):
 
     def apply(self, expr, ctx):
         cvxs = [
-            _adjust_convexity(ctx.convexity(child), coef)
-            for child, coef in zip(expr.children, expr.coefficients)
+            _adjust_convexity(ctx.convexity(child), expr.coefficient(child))
+            for child in expr.children
         ]
         return _combine_convexities(cvxs)
 

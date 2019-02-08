@@ -99,8 +99,8 @@ class FractionalRule(Rule):
         expr_type = expr.expression_type
         if expr_type == ExpressionType.Linear:
             assert len(expr.children) == 1
-            a = expr.coefficients[0]
             x = expr.children[0]
+            a = expr.coefficient(x)
             b = expr.constant_term
             return a, x, b
         if expr_type == ExpressionType.Constant:

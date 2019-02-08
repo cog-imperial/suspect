@@ -62,7 +62,7 @@ def _product_as_square_convexity(f, ctx):
 
 def _product_linear_by_variable_convexity(f, g):
     if len(f.children) == 1 and f.children[0] is g:
-        if f.coefficients[0] > 0:
+        if f.coefficient(f.children[0]) > 0:
             return Convexity.Convex
         return Convexity.Concave
     return None

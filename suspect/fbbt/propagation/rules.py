@@ -92,8 +92,8 @@ class LinearRule(Rule):
 
     def apply(self, expr, ctx):
         children_contribution = sum(
-            coef * ctx.bounds(child)
-            for coef, child in zip(expr.coefficients, expr.children)
+            expr.coefficient(child) * ctx.bounds(child)
+            for child in expr.children
         )
         constant_contribution = Interval(expr.constant_term, expr.constant_term)
         return children_contribution + constant_contribution
