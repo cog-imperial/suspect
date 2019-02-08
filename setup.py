@@ -58,7 +58,7 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
     ],
     install_requires=[
-        'pyomo>=5.2',
+        'pyomo==5.5',
         'numpy>=1.14',
         'mpmath>=1.0',
         'boto3>=1.7.4',
