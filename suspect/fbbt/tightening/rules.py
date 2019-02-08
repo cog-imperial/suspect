@@ -64,7 +64,8 @@ class LinearRule(Rule):
             return None
         child_bounds = {}
         const = expr.constant_term
-        for (child_c, child), siblings in _linear_child_and_siblings(expr.coefficients, expr.children):
+        coefficients = [expr.coefficient(ch) for ch in expr.children]
+        for (child_c, child), siblings in _linear_child_and_siblings(coefficients, expr.children):
             siblings_bound = sum(ctx.bounds(s) * c for c, s in siblings) + const
             child_bounds[child] = (expr_bound - siblings_bound) / child_c
         return child_bounds

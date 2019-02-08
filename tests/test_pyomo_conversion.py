@@ -14,6 +14,7 @@
 
 import pytest
 import pyomo.environ as aml
+import numpy as np
 from suspect.dag import ProblemDag
 import suspect.dag.expressions as dex
 from suspect.pyomo.convert import ComponentFactory, dag_from_pyomo_model
@@ -117,7 +118,8 @@ class TestConvertExpression(object):
             assert len(num.children) == 1
             num_inner = num.children[0]
             assert isinstance(num_inner, dex.LinearExpression)
-            assert num_inner.coefficients == [2.0, -1.0]
+            assert np.isclose(2.0, num_inner.coefficient(num_inner.children[0]))
+            assert np.isclose(-1.0, num_inner.coefficient(num_inner.children[1]))
             assert isinstance(den, dex.LinearExpression)
             assert den.constant_term == 1.0
 
@@ -139,7 +141,7 @@ class TestConvertExpression(object):
             var = root.children[1]
             assert isinstance(var, dex.Variable)
             assert isinstance(linear, dex.LinearExpression)
-            assert linear.coefficients == [6.0]
+            assert np.isclose(6.0, linear.coefficient(linear.children[0]))
 
     def test_sum(self):
         m = aml.ConcreteModel()

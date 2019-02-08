@@ -49,7 +49,10 @@ class PlaceholderExpression(object):
                  is_minimizing=False, func_type=None):
         self.expression_type = expression_type
         self.children = children
-        self.coefficients = coefficients
+        if coefficients is not None:
+            self._coefficients = dict([(ch, co) for ch, co in zip(children, coefficients)])
+        else:
+            self._coefficients = {}
         self.is_constant = lambda: is_constant
         self.constant_term = constant_term
         self.value = value
@@ -60,6 +63,8 @@ class PlaceholderExpression(object):
         self.is_minimizing = lambda: is_minimizing
         self.func_type = func_type
 
+    def coefficient(self, expr):
+        return self._coefficients[expr]
 
 @pytest.fixture
 def ctx():
