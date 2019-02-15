@@ -71,11 +71,12 @@ class QuadraticRule(Rule):
     root_expr = ExpressionType.Quadratic
 
     def apply(self, expr, ctx):
-        return sum([
-            ctx.bounds(term.var1) * ctx.bounds(term.var2) * term.coefficient
-            for term in expr.terms
-        ])
+        return sum([self._term_bounds(term, ctx) for term in expr.terms])
 
+    def _term_bounds(self, term, ctx):
+        if term.var1 != term.var2:
+            return ctx.bounds(term.var1) * ctx.bounds(term.var2) * term.coefficient
+        return term.coefficient * (ctx.bounds(term.var1) ** 2)
 
 class DivisionRule(Rule):
     """Bound propagation rule for divisions."""

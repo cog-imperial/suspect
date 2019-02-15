@@ -74,3 +74,4 @@ class BoundsTightener(object):
                 problem, tigh_visitor, ctx, starting_vertices=changes_prop
             )
             self._stop_criterion.iteration_end()
+            return

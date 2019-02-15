@@ -14,6 +14,7 @@
 
 """FBBT bounds tightening rules."""
 import numpy as np
+import networkx as nx
 from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.interval import Interval
@@ -41,8 +42,6 @@ class SumRule(Rule):
 
     def apply(self, expr, ctx):
         expr_bound = ctx.bounds(expr)
-        if expr_bound.size() == inf:
-            return None
         if len(expr.children) > MAX_EXPR_CHILDREN: # pragma: no cover
             return None
         child_bounds = {}
@@ -58,8 +57,6 @@ class LinearRule(Rule):
 
     def apply(self, expr, ctx):
         expr_bound = ctx.bounds(expr)
-        if expr_bound.size() == inf:
-            return None
         if len(expr.children) > MAX_EXPR_CHILDREN: # pragma: no cover
             return None
         child_bounds = {}
@@ -69,6 +66,32 @@ class LinearRule(Rule):
             siblings_bound = sum(ctx.bounds(s) * c for c, s in siblings) + const
             child_bounds[child] = (expr_bound - siblings_bound) / child_c
         return child_bounds
+
+
+class QuadraticRule(Rule):
+    """Return new bounds for quadratic expressions."""
+    root_expr = ExpressionType.Quadratic
+
+    def apply(self, expr, ctx):
+        expr_bound = ctx.bounds(expr)
+        child_bounds = {}
+        for term, siblings in self._quadratic_term_and_siblings(expr):
+            siblings_bound = sum(self._term_bound(t, ctx) for t in siblings)
+            term_bound = (expr_bound - siblings_bound) / term.coefficient
+            if term.var1 == term.var2:
+                term_bound = term_bound.intersect(Interval(0, None))
+                child_bounds[term.var1] = term_bound.sqrt() - term_bound.sqrt()
+        return child_bounds
+
+    def _quadratic_term_and_siblings(self, expr):
+        terms = expr.terms
+        for i, term in enumerate(terms):
+            yield term, terms[:i] + terms[i+1:]
+
+    def _term_bound(self, term, ctx):
+        if term.var1 == term.var2:
+            return term.coefficient * (ctx.bounds(term.var1) ** 2)
+        return term.coefficient * ctx.bounds(term.var1) * ctx.bounds(term.var2)
 
 
 class PowerRule(Rule):

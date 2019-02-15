@@ -21,6 +21,7 @@ from suspect.fbbt.tightening.rules import (
     ConstraintRule,
     SumRule,
     LinearRule,
+    QuadraticRule,
     PowerRule,
     AbsRule,
     SqrtRule,
@@ -38,6 +39,7 @@ class BoundsTighteningVisitor(BackwardVisitor):
             ConstraintRule(),
             SumRule(),
             LinearRule(),
+            QuadraticRule(),
             PowerRule(),
             CombineUnaryFunctionRules(
                 AbsRule(),
