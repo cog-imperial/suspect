@@ -14,7 +14,6 @@
 
 """FBBT bounds tightening rules."""
 import numpy as np
-import networkx as nx
 from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.interval import Interval
