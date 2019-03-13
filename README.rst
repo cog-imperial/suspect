@@ -21,6 +21,7 @@ This library implements methods to:
 Please reference this software as
 
 .. code-block:: latex
+
     @Article{Suspect2019,
     author={Ceccon, Francesco and Siirola, John D. and Misener, Ruth},
     title={{SUSPECT}: {MINLP} special structure detector for Pyomo},
