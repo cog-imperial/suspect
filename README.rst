@@ -18,6 +18,21 @@ This library implements methods to:
 * Detect linear, quadratic and polynomial expressions
 * Tighten expression bounds
 
+Please reference this software as
+
+.. code-block:: latex
+    @Article{Suspect2019,
+    author={Ceccon, Francesco and Siirola, John D. and Misener, Ruth},
+    title={{SUSPECT}: {MINLP} special structure detector for Pyomo},
+    journal={Optimization Letters},
+    year={2019},
+    month={Feb},
+    issn="1862-4480",
+    doi="10.1007/s11590-019-01396-y",
+    url="https://doi.org/10.1007/s11590-019-01396-y"
+    }
+
+
 
 Documentation
 -------------
@@ -106,3 +121,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+Acknowledgements
+----------------
+
+This work was funded by an Engineering & Physical Sciences Research Council Research Fellowship to RM [Grant Number EP/P016871/1]. 
