@@ -75,11 +75,37 @@ class QuadraticRule(Rule):
         expr_bound = ctx.bounds(expr)
         child_bounds = {}
         for term, siblings in self._quadratic_term_and_siblings(expr):
+            var1 = term.var1
+            var2 = term.var2
             siblings_bound = sum(self._term_bound(t, ctx) for t in siblings)
             term_bound = (expr_bound - siblings_bound) / term.coefficient
-            if term.var1 == term.var2:
+            if var1 == var2:
                 term_bound = term_bound.intersect(Interval(0, None))
-                child_bounds[term.var1] = term_bound.sqrt() - term_bound.sqrt()
+                upper_bound = term_bound.sqrt().upper_bound
+                new_bound = Interval(-upper_bound, upper_bound)
+
+                if var1 in child_bounds:
+                    existing = child_bounds[var1]
+                    child_bounds[var1] = existing.intersect(new_bound)
+                else:
+                    child_bounds[var1] = Interval(new_bound.lower_bound, new_bound.upper_bound)
+
+            else:
+                new_bound_var1 = term_bound / ctx.bounds(var2)
+                new_bound_var2 = term_bound / ctx.bounds(var1)
+
+                if var1 in child_bounds:
+                    existing = child_bounds[var1]
+                    child_bounds[var1] = existing.intersect(new_bound_var1)
+                else:
+                    child_bounds[var1] = new_bound_var1
+
+                if var2 in child_bounds:
+                    existing = child_bounds[var2]
+                    child_bounds[var2] = existing.intersect(new_bound_var2)
+                else:
+                    child_bounds[var2] = new_bound_var2
+
         return child_bounds
 
     def _quadratic_term_and_siblings(self, expr):

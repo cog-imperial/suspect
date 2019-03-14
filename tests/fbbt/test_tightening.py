@@ -18,11 +18,13 @@ from unittest.mock import MagicMock
 from hypothesis import given, assume
 import hypothesis.strategies as st
 import suspect.dag.expressions as dex
+import numpy as np
 from suspect.interval import Interval as I
 from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
 from suspect.fbbt.tightening.rules import *
 from tests.conftest import (
     PlaceholderExpression as PE,
+    BilinearTerm,
     bound_description_to_bound,
     mono_description_to_mono,
     coefficients,
@@ -73,7 +75,8 @@ class TestSumRule:
 
     def test_unbounded_expr(self):
         new_bounds = self._rule_result([I(0, 1), I(-1, 0)], I(0, None))
-        assert new_bounds is None
+        assert new_bounds[self.children[0]] == I(0, None)
+        assert new_bounds[self.children[1]] == I(-1, None)
 
     def test_bounded_expr(self):
         expr_bounds = I(-5 , 5)
@@ -101,13 +104,42 @@ class TestLinearRule:
 
     def test_unbounded_expr(self):
         new_bounds = self._rule_result([-1, 1], [I(0, 1), I(-1, 0)], I(0, None))
-        assert new_bounds is None
+        assert new_bounds[self.children[0]] == I(None, 0)
+        assert new_bounds[self.children[1]] == I(0, None)
 
     def test_bounded_expr(self):
         expr_bounds = I(-5 , 5)
         children_bounds = [I(-2, -1), I(-2, 2), I(-10, 10)]
         new_bounds = self._rule_result([-1, 1, 2], children_bounds, expr_bounds)
         assert new_bounds[self.children[2]] == I(-4.5, 3)
+
+
+class TestQuadraticRule:
+    children = None
+    expr = None
+
+    def _rule_result(self, terms, children, children_bounds, expr_bounds):
+        expr = PE(ET.Quadratic, children, terms=terms)
+        starting_bounds = {expr: expr_bounds}
+        for child, bounds in zip(children, children_bounds):
+            starting_bounds[child] = bounds
+        ctx = TighteningContext(bounds=starting_bounds)
+        rule = QuadraticRule()
+        self.children = children
+        self.expr = expr
+        return rule.checked_apply(expr, ctx)
+
+    def test_sum_of_squares(self):
+        x = PE()
+        y = PE()
+        new_bounds = self._rule_result(
+            [BilinearTerm(x, x, 1.0), BilinearTerm(y, y, 2.0)],
+            [x, y],
+            [I(None, None), I(None, None)],
+            I(None, 10),
+        )
+        assert new_bounds[self.children[0]] == I(-np.sqrt(10.0), np.sqrt(10))
+        assert new_bounds[self.children[1]] == I(-np.sqrt(5), np.sqrt(5))
 
 
 class TestPowerRuleConstantExpo:

@@ -15,6 +15,7 @@
 # pylint: skip-file
 import pytest
 import hypothesis.strategies as st
+from collections import namedtuple
 from suspect import set_pyomo4_expression_tree
 from suspect.interval import Interval
 from suspect.monotonicity.monotonicity import Monotonicity
@@ -40,10 +41,13 @@ def coefficients(draw, min_value=None, max_value=None):
     ))
 
 
+BilinearTerm = namedtuple('BilinearTerm', ['var1', 'var2', 'coefficient'])
+
+
 class PlaceholderExpression(object):
     depth = 0
     def __init__(self, expression_type=None, children=None, coefficients=None,
-                 is_constant=False, value=None, constant_term=None,
+                 is_constant=False, value=None, constant_term=None, terms=None,
                  bounded_above=False, bounded_below=False,
                  lower_bound=None, upper_bound=None,
                  is_minimizing=False, func_type=None):
@@ -53,8 +57,10 @@ class PlaceholderExpression(object):
             self._coefficients = dict([(ch, co) for ch, co in zip(children, coefficients)])
         else:
             self._coefficients = {}
+
         self.is_constant = lambda: is_constant
         self.constant_term = constant_term
+        self.terms = terms
         self.value = value
         self.bounded_above = lambda: bounded_above
         self.bounded_below = lambda: bounded_below

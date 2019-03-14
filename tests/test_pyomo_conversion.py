@@ -123,7 +123,7 @@ class TestConvertExpression(object):
             assert isinstance(den, dex.LinearExpression)
             assert den.constant_term == 1.0
 
-    def test_product(self):
+    def test_quadratic(self):
         m = aml.ConcreteModel()
         m.I = range(10)
         m.x = aml.Var(m.I)
@@ -135,13 +135,31 @@ class TestConvertExpression(object):
         assert len(dag.constraints) == 9
         for constraint in dag.constraints.values():
             root = constraint.children[0]
+            assert isinstance(root, dex.QuadraticExpression)
+            assert len(root.children) == 2
+            assert isinstance(root.children[0], dex.Variable)
+            assert isinstance(root.children[1], dex.Variable)
+            assert len(root.terms) == 1
+            assert root.terms[0].coefficient == 6.0
+
+    def test_product(self):
+        m = aml.ConcreteModel()
+        m.I = range(10)
+        m.x = aml.Var(m.I)
+
+        m.c = aml.Constraint(range(9), rule=lambda m, i: aml.sin(m.x[i]) * (3*m.x[i+1]) >= 0)
+
+        dag = dag_from_pyomo_model(m)
+
+        assert len(dag.constraints) == 9
+        for constraint in dag.constraints.values():
+            root = constraint.children[0]
             assert isinstance(root, dex.ProductExpression)
             assert len(root.children) == 2
-            linear = root.children[0]
-            var = root.children[1]
-            assert isinstance(var, dex.Variable)
+            sin = root.children[0]
+            linear = root.children[1]
+            assert isinstance(sin, dex.SinExpression)
             assert isinstance(linear, dex.LinearExpression)
-            assert np.isclose(6.0, linear.coefficient(linear.children[0]))
 
     def test_sum(self):
         m = aml.ConcreteModel()
@@ -157,7 +175,7 @@ class TestConvertExpression(object):
             root = constraint.children[0]
             assert isinstance(root, dex.SumExpression)
             for c in root.children:
-                assert isinstance(c, dex.ProductExpression)
+                assert isinstance(c, dex.QuadraticExpression)
 
     def test_negation(self):
         m = aml.ConcreteModel()

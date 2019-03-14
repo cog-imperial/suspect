@@ -232,7 +232,7 @@ class Interval(object): # pylint: disable=too-many-public-methods
             return self * Interval(float(other), float(other))
         if self.is_zero() or other.is_zero():
             return self.zero()
-        if self.__eq__(other):
+        if self is other:
             # equivalent to ** 2
             return self.__pow__(2)
         # pylint: disable=protected-access
