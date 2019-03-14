@@ -99,8 +99,7 @@ def test_linear_rule_with_no_children():
     result = rule.checked_apply(PE(ET.Linear, []), None)
     assert result.degree == 0
 
-
-@given(st.integers(min_value=1))
+@given(st.integers(min_value=1, max_value=100))
 def test_linear_rule_with_children(children_size):
     rule = LinearRule()
     children = [PE(ET.Variable)] * children_size
