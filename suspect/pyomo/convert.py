@@ -118,11 +118,43 @@ class ExpressionConverterHandler(ExpressionHandler):
         raise AssertionError('Invalid EqualityExpression encountered')
 
     def visit_product(self, expr):
+        def _is_bilinear(children):
+            if len(children) != 2:
+                return False
+            a, b = children
+            if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
+                return True
+            if isinstance(a, dex.Variable) and isinstance(b, ex.LinearExpression):
+                return len(b.children) == 1
+            if isinstance(a, dex.LinearExpression) and isinstance(b, dex.Variable):
+                return len(a.children) == 1
+            return False
+
+        def _bilinear_variables_with_coefficient(children):
+            assert len(children) == 2
+            a, b = children
+            if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
+                return a, b, 1.0
+            if isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
+                assert len(b.children) == 1
+                assert b.constant_term == 0.0
+                vb = b.children[0]
+                return a, vb, b.coefficient(vb)
+            if isinstance(a, dex.LinearExpression) and isinstance(b, dex.Variable):
+                assert len(a.children) == 1
+                assert a.constant_term == 0.0
+                va = a.children[0]
+                return va, b, a.coefficient(va)
+
         if self.memo[expr] is not None:
             return self.memo[expr]
         self._check_children(expr)
         children = [self.get(a) for a in expr._args]
-        new_expr = dex.ProductExpression(children)
+        if _is_bilinear(children):
+            a, b, c = _bilinear_variables_with_coefficient(children)
+            new_expr = dex.QuadraticExpression([a], [b], [c], [a, b])
+        else:
+            new_expr = dex.ProductExpression(children)
         self.set(expr, new_expr)
 
     def visit_division(self, expr):

@@ -123,6 +123,53 @@ class LinearExpression(Expression):
         assert len(self._coefficients) == len(self.children)
 
 
+class BilinearTerm(object):
+    def __init__(self, var1, var2, coefficient):
+        assert id(var1) <= id(var2)
+        self.var1 = var1
+        self.var2 = var2
+        self.coefficient = coefficient
+
+
+class QuadraticExpression(Expression):
+    expression_type = ExpressionType.Quadratic
+
+    def __init__(self, vars1=None, vars2=None, coefficients=None,
+                 children=None):
+        super().__init__(children)
+        assert vars1 and vars2 and coefficients
+        assert len(vars1) == len(vars2) == len(coefficients)
+        self.terms = self._build_terms(vars1, vars2, coefficients)
+        self._coefficients = self._build_coefficients(self.terms)
+
+    def coefficient(self, expr1, expr2):
+        assert expr1.expression_type == ExpressionType.Variable
+        assert expr2.expression_type == ExpressionType.Variable
+        var1_id = id(var1)
+        var2_id = id(var2)
+
+        if var1_id < var2_id:
+            return self._coefficients[(var1_id, var2_id)]
+        else:
+            return self._coefficients[(var2_id, var1_id)]
+
+    def _build_terms(self, vars1, vars2, coefficients):
+        terms = []
+        for v1, v2, c in zip(vars1, vars2, coefficients):
+            if id(v1) < id(v2):
+                terms.append(BilinearTerm(v1, v2, c))
+            else:
+                terms.append(BilinearTerm(v2, v1, c))
+        return terms
+
+    def _build_coefficients(self, terms):
+        result = {}
+        for term in terms:
+            result[(id(term.var1), id(term.var2))] = term.coefficient
+        return result
+
+
+
 class UnaryFunctionExpression(Expression):
     expression_type = ExpressionType.UnaryFunction
     def __init__(self, children=None):

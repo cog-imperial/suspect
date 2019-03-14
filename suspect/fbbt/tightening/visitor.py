@@ -63,5 +63,5 @@ class BoundsTighteningVisitor(BackwardVisitor):
         else:
             has_changed = True
         ctx.set_bounds(expr, new_bounds)
-        # return has_changed
-        return True
+        return has_changed
+        # return True

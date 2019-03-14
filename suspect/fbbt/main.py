@@ -73,5 +73,6 @@ class BoundsTightener(object):
             changes_tigh = self._backward_iterator.iterate(
                 problem, tigh_visitor, ctx, starting_vertices=changes_prop
             )
+            if len(changes_prop) == 0 and len(changes_tigh) == 0:
+                return
             self._stop_criterion.iteration_end()
-            return

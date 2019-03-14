@@ -179,7 +179,7 @@ class TestSize(object):
 
     @given(
         intervals(allow_infinity=False, upper_bound=1e10),
-        reals(allow_infinity=False, min_value=1.0)
+        reals(allow_infinity=False, min_value=1.0, max_value=1e20)
     )
     def test_finite_bounds(self, a, f):
         b = a * f
