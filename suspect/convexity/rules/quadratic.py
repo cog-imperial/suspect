@@ -23,7 +23,7 @@ class QuadraticRule(Rule):
     """Return convexity of quadratic."""
     root_expr = ExpressionType.Quadratic
 
-    def apply(self, expr, ctx):
+    def apply(self, expr, _ctx):
         # Sum of squares
         if self._is_sum_of_squares(expr):
             coefficients = np.array([term.coefficient for term in expr.terms])

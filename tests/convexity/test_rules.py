@@ -3,7 +3,8 @@ import pytest
 from hypothesis import assume, given, reproduce_failure
 import hypothesis.strategies as st
 import itertools
-from tests.conftest import coefficients, reals
+import numpy as np
+from tests.conftest import coefficients, reals, BilinearTerm
 from tests.conftest import PlaceholderExpression as PE
 from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
 from suspect.monotonicity import Monotonicity as M
@@ -829,4 +830,57 @@ class TestPowConstantExponent(object):
     def test_positive_0_1_non_integer(self, expo):
         assume(not almosteq(expo, int(expo)))
         cvx = self._rule_result(C.Concave, M.Unknown, I(0, None), expo)
+        assert cvx == C.Concave
+
+
+class TestQuadratic:
+    def _rule_result(self, A):
+        n = A.shape[0]
+        var = [PE(ET.Variable) for _ in range(n)]
+        terms = []
+        for i in range(n):
+            for j in range(i+1):
+                terms.append(BilinearTerm(var[i], var[j], A[i, j]))
+
+        expr = PE(ET.Quadratic, terms=terms, children=var)
+        rule = QuadraticRule()
+        return rule.apply(expr, None)
+
+    @given(coefs=st.lists(reals(min_value=0, allow_infinity=False), min_size=1))
+    def test_sum_of_squares_is_convex_with_positive_coefficients(self, coefs):
+        assume(any([c > 0 and not np.isclose(c, 0) for c in coefs]))
+        A = np.eye(len(coefs)) * coefs
+        cvx = self._rule_result(A)
+        assert cvx == C.Convex
+
+    @given(coefs=st.lists(reals(max_value=0, allow_infinity=False), min_size=1))
+    def test_sum_of_squares_is_concave_with_negative_coefficients(self, coefs):
+        assume(any([c < 0 and not np.isclose(c, 0) for c in coefs]))
+        A = np.eye(len(coefs)) * coefs
+        cvx = self._rule_result(A)
+        assert cvx == C.Concave
+
+    @given(
+        neg_coefs=st.lists(reals(max_value=0.0, allow_infinity=False), min_size=1),
+        pos_coefs=st.lists(reals(min_value=0.0, allow_infinity=False), min_size=1))
+    def test_sum_of_squares_is_unknown_otherwise(self, neg_coefs, pos_coefs):
+        assume(any([n < 0 and not np.isclose(n, 0) for n in neg_coefs]))
+        assume(any([p > 0 and not np.isclose(p, 0) for p in pos_coefs]))
+        coefs = neg_coefs + pos_coefs
+        A = np.eye(len(coefs)) * coefs
+        cvx = self._rule_result(A)
+        assert cvx == C.Unknown
+
+    @given(st.integers(min_value=1, max_value=100))
+    def test_positive_definite_is_convex(self, n):
+        B = np.random.randn(n, n)
+        A = np.eye(n) * n + 0.5 * (B + B.T)
+        cvx = self._rule_result(A)
+        assert cvx == C.Convex
+
+    @given(st.integers(min_value=1, max_value=100))
+    def test_negative_definite_is_concave(self, n):
+        B = np.random.randn(n, n)
+        A = -np.eye(n) * n - 0.5 * (B + B.T)
+        cvx = self._rule_result(A)
         assert cvx == C.Concave
