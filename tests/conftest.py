@@ -16,7 +16,6 @@
 import pytest
 import hypothesis.strategies as st
 from collections import namedtuple
-from suspect import set_pyomo4_expression_tree
 from suspect.interval import Interval
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.convexity.convexity import Convexity
@@ -109,7 +108,3 @@ def cvx_description_to_cvx(cvx_str):
         'linear': Convexity.Linear,
         'unknown': Convexity.Unknown,
     }[cvx_str]
-
-
-def pytest_sessionstart(session):
-    set_pyomo4_expression_tree()

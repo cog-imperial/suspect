@@ -14,22 +14,27 @@
 
 from numbers import Number
 import pyomo.environ as aml
-from suspect.pyomo.expr_visitor import (
+from pyomo.core.expr.expr_pyomo5 import (
+    nonpyomo_leaf_types,
     InequalityExpression,
     EqualityExpression,
+    NumericConstant,
 )
 from suspect.interval import Interval
 
-numeric_types = (int, Number, aml.NumericConstant)
+
+def is_numeric(expr):
+    return (
+        expr.__class__ in nonpyomo_leaf_types or
+        isinstance(expr, NumericConstant)
+    )
 
 
-def numeric_value(n):
-    if isinstance(n, (int, Number)):
-        return n
-    elif isinstance(n, aml.NumericConstant):
-        return n.value
-    else:
-        raise ValueError('must be one of numeric_types')
+def numeric_value(expr):
+    if expr.__class__ in nonpyomo_leaf_types:
+        return float(expr)
+    assert isinstance(expr, NumericConstant)
+    return float(expr.value)
 
 
 def bounds_and_expr(expr):
@@ -42,23 +47,23 @@ def bounds_and_expr(expr):
 
 
 def _inequality_bounds_and_expr(expr):
-    if len(expr._args) == 2:
-        (lhs, rhs) = expr._args
-        if isinstance(lhs, aml.NumericConstant):
-            return Interval(lhs.value, None), rhs
+    if len(expr._args_) == 2:
+        (lhs, rhs) = expr._args_
+        if is_numeric(lhs):
+            return Interval(numeric_value(lhs), None), rhs
         else:
-            return Interval(None, rhs.value), lhs
-    elif len(expr._args) == 3:
-        (lhs, ex, rhs) = expr._args
-        return Interval(lhs.value, rhs.value), ex
+            return Interval(None, numeric_value(rhs)), lhs
+    elif len(expr._args_) == 3:
+        (lhs, ex, rhs) = expr._args_
+        return Interval(numeric_value(lhs), numeric_value(rhs)), ex
     else:
         raise ValueError('Malformed InequalityExpression')
 
 
 def _equality_bounds_and_expr(expr):
-    if len(expr._args) == 2:
-        body, rhs = expr._args
-        return Interval(rhs.value, rhs.value), body
+    if len(expr._args_) == 2:
+        body, rhs = expr._args_
+        return Interval(numeric_value(rhs), numeric_value(rhs)), body
     else:
         raise ValueError('Malformed EqualityExpression')
 

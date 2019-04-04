@@ -13,10 +13,7 @@
 # limitations under the License.
 
 import logging
-from .pyomo.compat import set_pyomo4_expression_tree
 from .summary import detect_special_structure
-
-set_pyomo4_expression_tree()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)

@@ -20,9 +20,7 @@ from suspect.pyomo.util import (
     model_variables,
     model_constraints,
     model_objectives,
-    bounds_and_expr,
-    numeric_types,
-    numeric_value,
+    bounds_and_expr
 )
 
 
