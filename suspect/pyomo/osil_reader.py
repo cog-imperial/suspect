@@ -3,6 +3,7 @@ import gc
 from contextlib import contextmanager
 from functools import reduce
 import operator as op
+from pyomo.core.expr.expr_pyomo5 import NumericConstant
 import pyomo.environ as aml
 
 
@@ -272,9 +273,13 @@ class OsilParser(object):
             nl = self._nonlinear_terms(i)
             expr = linear + quad + nl
             cons_name = self._constraint_name(constraint)
-            lb = float(constraint.attrib.get('lb', '-inf'))
-            ub = float(constraint.attrib.get('ub', 'inf'))
-            cons = aml.Constraint(expr=lb <= expr <= ub)
+            lb = constraint.attrib.get('lb', None)
+            ub = constraint.attrib.get('ub', None)
+            if lb is not None:
+                lb = NumericConstant(float(lb))
+            if ub is not None:
+                ub = NumericConstant(float(ub))
+            cons = aml.Constraint(expr=aml.inequality(lb, expr, ub))
             setattr(self.model, cons_name, cons)
 
         return self.model

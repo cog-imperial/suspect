@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osil xmlns="os.optimizationservices.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="os.optimizationservices.org http://www.optimizationservices.org/schemas/2.0/OSiL.xsd">
+  <instanceHeader>
+    <name>example1</name>
+  </instanceHeader>
+  <instanceData>
+    <variables numberOfVariables="35">
+      <var name="i1" type="I" ub="14"/>
+      <var name="i2" type="I" ub="14"/>
+      <var name="i3" type="I" ub="14"/>
+      <var name="i4" type="I" ub="14"/>
+      <var name="i5" type="I" ub="14"/>
+      <var name="i6" type="I" ub="14"/>
+      <var name="i7" type="I" ub="14"/>
+      <var name="i8" type="I" ub="14"/>
+      <var name="i9" type="I" ub="14"/>
+      <var name="i10" type="I" ub="14"/>
+      <var name="i11" type="I" ub="14"/>
+      <var name="i12" type="I" ub="14"/>
+      <var name="i13" type="I" ub="14"/>
+      <var name="i14" type="I" ub="0"/>
+      <var name="i15" type="I" ub="14"/>
+      <var name="i16" type="I" ub="14"/>
+      <var name="i17" type="I" ub="14"/>
+      <var name="i18" type="I" ub="14"/>
+      <var name="i19" type="I" ub="14"/>
+      <var name="x20" lb="1" ub="1000"/>
+      <var name="x21" lb="1" ub="1000"/>
+      <var name="x22" lb="1" ub="100"/>
+      <var name="x23" lb="1" ub="32.2"/>
+      <var name="x24" lb="1" ub="100"/>
+      <var name="x25" lb="18.4" ub="100"/>
+      <var name="x26" lb="1.4" ub="14"/>
+      <var name="x27" lb="1.4" ub="14"/>
+      <var name="x28" lb="1.e-3" ub="1"/>
+      <var name="x29" lb="1.e-3" ub="1"/>
+      <var name="x30" lb="1.e-3" ub="1"/>
+      <var name="x31" lb="1.e-3" ub="1"/>
+      <var name="x32" lb="1.e-3" ub="1"/>
+      <var name="x33" lb="1.e-3" ub="10"/>
+      <var name="x34" lb="1.e-3" ub="10"/>
+      <var name="x35" lb="-10" ub="10"/>
+    </variables>
+    <objectives numberOfObjectives="1">
+      <obj maxOrMin="min" weight="1" name="defObj_objvar" numberOfObjCoef="0"/>
+    </objectives>
+    <constraints numberOfConstraints="18">
+      <con name="e1" lb="-198.2" ub="-198.2"/>
+      <con name="e2" lb="0" ub="0"/>
+      <con name="e3" lb="0" ub="0"/>
+      <con name="e4" lb="0" ub="0"/>
+      <con name="e5" lb="-15.3" ub="-15.3"/>
+      <con name="e6" lb="0" ub="0"/>
+      <con name="e7" lb="0" ub="0"/>
+      <con name="e8" lb="0" ub="0"/>
+      <con name="e9" lb="0" ub="0"/>
+      <con name="e10" lb=".4835" ub=".4835"/>
+      <con name="e11" lb="0" ub="0"/>
+      <con name="e12" lb="0" ub="0"/>
+      <con name="e13" lb="0" ub="0"/>
+      <con name="e14" lb="0" ub="0"/>
+      <con name="e15" lb="0" ub="0"/>
+      <con name="e16" lb="0" ub="0"/>
+      <con name="e17" lb="2" ub="2"/>
+      <con name="e18" lb="2"/>
+    </constraints>
+    <linearConstraintCoefficients numberOfValues="105">
+      <start>
+        <el>0</el>
+        <el mult="3" incr="1">20</el>
+        <el>42</el>
+        <el mult="5" incr="1">62</el>
+        <el mult="7" incr="1">68</el>
+        <el>86</el>
+        <el>105</el>
+      </start>
+      <colIdx>
+        <el mult="22" incr="1">0</el>
+        <el mult="19" incr="1">0</el>
+        <el>22</el>
+        <el mult="19" incr="1">0</el>
+        <el>23</el>
+        <el>31</el>
+        <el mult="2" incr="1">29</el>
+        <el>32</el>
+        <el mult="3" incr="1">32</el>
+        <el mult="2" incr="1">27</el>
+        <el mult="2" incr="1">25</el>
+        <el>24</el>
+        <el>0</el>
+        <el mult="8" incr="1">2</el>
+        <el>12</el>
+        <el mult="2" incr="1">15</el>
+        <el mult="19" incr="1">0</el>
+      </colIdx>
+      <value>
+        <el>23.58</el>
+        <el>22.88</el>
+        <el>21.74</el>
+        <el>18.25</el>
+        <el>-3.e-2</el>
+        <el>38.13</el>
+        <el>66.86</el>
+        <el>93.84</el>
+        <el>92.88</el>
+        <el>76.34</el>
+        <el>22.42</el>
+        <el>31.22</el>
+        <el>73.23</el>
+        <el>50.17</el>
+        <el>52.82</el>
+        <el>11.74</el>
+        <el>63.56</el>
+        <el>68.78</el>
+        <el>52.1</el>
+        <el>-1</el>
+        <el mult="2">1</el>
+        <el>8.8</el>
+        <el>7.26</el>
+        <el>5</el>
+        <el>1.76</el>
+        <el>4</el>
+        <el>8.6</el>
+        <el>9</el>
+        <el>8.6</el>
+        <el mult="2">10.7</el>
+        <el mult="2">8.4</el>
+        <el>14</el>
+        <el mult="2">10.5</el>
+        <el>7.5</el>
+        <el>10.7</el>
+        <el mult="2">8</el>
+        <el>-1</el>
+        <el>2.373</el>
+        <el>2.226</el>
+        <el>1.691</el>
+        <el>.636</el>
+        <el>-.67</el>
+        <el>4.532</el>
+        <el>6.582</el>
+        <el>9.52</el>
+        <el>16.826</el>
+        <el>12.499</el>
+        <el>2.41</el>
+        <el>4.682</el>
+        <el>10.788</el>
+        <el>6.436</el>
+        <el>6.93</el>
+        <el>1.896</el>
+        <el>6.884</el>
+        <el>6.817</el>
+        <el>5.984</el>
+        <el>-1</el>
+        <el mult="4">1</el>
+        <el>-.4605</el>
+        <el mult="8">1</el>
+        <el>-1</el>
+        <el>-2</el>
+        <el mult="7">1</el>
+        <el>-1</el>
+        <el mult="20">1</el>
+      </value>
+    </linearConstraintCoefficients>
+    <quadraticCoefficients numberOfQuadraticTerms="2">
+      <qTerm idx="13" idxOne="21" idxTwo="27" coef="-1"/>
+      <qTerm idx="14" idxOne="21" idxTwo="28" coef="-1"/>
+    </quadraticCoefficients>
+    <nonlinearExpressions numberOfNonlinearExpressions="11">
+      <nl idx="-1">
+        <negate>
+          <divide>
+            <variable idx="24"/>
+            <variable idx="22"/>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="1">
+        <negate>
+          <divide>
+            <variable idx="19"/>
+            <sum>
+              <number value=".584"/>
+              <product>
+                <number value="1.8335e-3"/>
+                <variable idx="18"/>
+              </product>
+              <product>
+                <number value="1.14835e-2"/>
+                <variable idx="17"/>
+              </product>
+              <product>
+                <number value="2.9915e-3"/>
+                <variable idx="16"/>
+              </product>
+              <product>
+                <number value="1.63085e-2"/>
+                <variable idx="15"/>
+              </product>
+              <product>
+                <number value="1.2545e-2"/>
+                <variable idx="14"/>
+              </product>
+              <product>
+                <number value="2.84675e-2"/>
+                <variable idx="13"/>
+              </product>
+              <product>
+                <number value="2.34495e-2"/>
+                <variable idx="12"/>
+              </product>
+              <product>
+                <number value="9.457e-3"/>
+                <variable idx="11"/>
+              </product>
+              <product>
+                <number value="1.6212e-2"/>
+                <variable idx="10"/>
+              </product>
+              <product>
+                <number value="2.316e-2"/>
+                <variable idx="9"/>
+              </product>
+              <product>
+                <number value="7.15065e-2"/>
+                <variable idx="8"/>
+              </product>
+              <product>
+                <number value="6.562e-3"/>
+                <variable idx="7"/>
+              </product>
+              <product>
+                <number value="1.28345e-2"/>
+                <variable idx="6"/>
+              </product>
+              <product>
+                <number value="1.01325e-2"/>
+                <variable idx="5"/>
+              </product>
+              <product>
+                <number value="1.07115e-2"/>
+                <variable idx="4"/>
+              </product>
+              <product>
+                <number value="6.4655e-3"/>
+                <variable idx="3"/>
+              </product>
+              <product>
+                <number value="1.5826e-2"/>
+                <variable idx="2"/>
+              </product>
+              <product>
+                <number value="1.82385e-2"/>
+                <variable idx="1"/>
+              </product>
+              <product>
+                <number value="1.36065e-2"/>
+                <variable idx="0"/>
+              </product>
+              <negate>
+                <square>
+                  <sum>
+                    <product>
+                      <number value="1.9e-3"/>
+                      <variable idx="18"/>
+                    </product>
+                    <product>
+                      <number value="1.19e-2"/>
+                      <variable idx="17"/>
+                    </product>
+                    <product>
+                      <number value="3.1e-3"/>
+                      <variable idx="16"/>
+                    </product>
+                    <product>
+                      <number value="1.69e-2"/>
+                      <variable idx="15"/>
+                    </product>
+                    <product>
+                      <number value="1.3e-2"/>
+                      <variable idx="14"/>
+                    </product>
+                    <product>
+                      <number value="2.95e-2"/>
+                      <variable idx="13"/>
+                    </product>
+                    <product>
+                      <number value="2.43e-2"/>
+                      <variable idx="12"/>
+                    </product>
+                    <product>
+                      <number value="9.8e-3"/>
+                      <variable idx="11"/>
+                    </product>
+                    <product>
+                      <number value="1.68e-2"/>
+                      <variable idx="10"/>
+                    </product>
+                    <product>
+                      <number value="2.04e-2"/>
+                      <variable idx="9"/>
+                    </product>
+                    <product>
+                      <number value="7.41e-2"/>
+                      <variable idx="8"/>
+                    </product>
+                    <product>
+                      <number value="6.8e-3"/>
+                      <variable idx="7"/>
+                    </product>
+                    <product>
+                      <number value="1.33e-2"/>
+                      <variable idx="6"/>
+                    </product>
+                    <product>
+                      <number value="1.05e-2"/>
+                      <variable idx="5"/>
+                    </product>
+                    <product>
+                      <number value="1.11e-2"/>
+                      <variable idx="4"/>
+                    </product>
+                    <product>
+                      <number value="6.7e-3"/>
+                      <variable idx="3"/>
+                    </product>
+                    <product>
+                      <number value="1.64e-2"/>
+                      <variable idx="2"/>
+                    </product>
+                    <product>
+                      <number value="1.89e-2"/>
+                      <variable idx="1"/>
+                    </product>
+                    <product>
+                      <number value="1.41e-2"/>
+                      <variable idx="0"/>
+                    </product>
+                  </sum>
+                </square>
+              </negate>
+            </sum>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="2">
+        <negate>
+          <divide>
+            <number value="1"/>
+            <power>
+              <sum>
+                <product>
+                  <number value="-1.9e-3"/>
+                  <variable idx="18"/>
+                </product>
+                <product>
+                  <number value="-1.7e-3"/>
+                  <variable idx="17"/>
+                </product>
+                <product>
+                  <number value="-2.e-3"/>
+                  <variable idx="16"/>
+                </product>
+                <product>
+                  <number value="-4.2e-3"/>
+                  <variable idx="15"/>
+                </product>
+                <product>
+                  <number value="-5.e-3"/>
+                  <variable idx="14"/>
+                </product>
+                <product>
+                  <number value="-1.3e-3"/>
+                  <variable idx="13"/>
+                </product>
+                <product>
+                  <number value="-1.3e-3"/>
+                  <variable idx="12"/>
+                </product>
+                <product>
+                  <number value="-1.6e-3"/>
+                  <variable idx="11"/>
+                </product>
+                <product>
+                  <number value="1.7e-3"/>
+                  <variable idx="10"/>
+                </product>
+                <product>
+                  <number value="-1.2e-2"/>
+                  <variable idx="9"/>
+                </product>
+                <product>
+                  <number value="-4.8e-3"/>
+                  <variable idx="8"/>
+                </product>
+                <product>
+                  <number value="6.6e-3"/>
+                  <variable idx="7"/>
+                </product>
+                <product>
+                  <number value="-2.5e-3"/>
+                  <variable idx="6"/>
+                </product>
+                <product>
+                  <number value="8.1e-3"/>
+                  <variable idx="5"/>
+                </product>
+                <product>
+                  <number value="8.9e-3"/>
+                  <variable idx="4"/>
+                </product>
+                <product>
+                  <number value="-1.1e-3"/>
+                  <variable idx="3"/>
+                </product>
+                <product>
+                  <number value="4.4e-3"/>
+                  <variable idx="2"/>
+                </product>
+                <product>
+                  <number value="9.6e-3"/>
+                  <variable idx="1"/>
+                </product>
+                <product>
+                  <number value="1.4e-2"/>
+                  <variable idx="0"/>
+                </product>
+                <number value=".113"/>
+              </sum>
+              <number value="2"/>
+            </power>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="5">
+        <negate>
+          <divide>
+            <variable idx="19"/>
+            <variable idx="20"/>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="6">
+        <negate>
+          <divide>
+            <number value="272.04"/>
+            <variable idx="20"/>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="7">
+        <negate>
+          <divide>
+            <number value="316.48"/>
+            <variable idx="20"/>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="8">
+        <negate>
+          <divide>
+            <product>
+              <variable idx="31"/>
+              <ln>
+                <variable idx="21"/>
+              </ln>
+            </product>
+            <minus>
+              <number value="1"/>
+              <variable idx="31"/>
+            </minus>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="10">
+        <negate>
+          <divide>
+            <divide>
+              <divide>
+                <sum>
+                  <variable idx="32"/>
+                  <negate>
+                    <product>
+                      <variable idx="33"/>
+                      <sum>
+                        <variable idx="31"/>
+                        <number value="1"/>
+                      </sum>
+                    </product>
+                  </negate>
+                </sum>
+                <sum>
+                  <variable idx="31"/>
+                  <number value="3"/>
+                </sum>
+              </divide>
+              <square>
+                <minus>
+                  <number value="1"/>
+                  <variable idx="31"/>
+                </minus>
+              </square>
+            </divide>
+            <variable idx="33"/>
+          </divide>
+        </negate>
+      </nl>
+      <nl idx="11">
+        <negate>
+          <exp>
+            <negate>
+              <divide>
+                <product>
+                  <variable idx="33"/>
+                  <sum>
+                    <number value="1"/>
+                    <minus>
+                      <product>
+                        <power>
+                          <minus>
+                            <number value="1"/>
+                            <variable idx="29"/>
+                          </minus>
+                          <number value="3"/>
+                        </power>
+                        <sum>
+                          <variable idx="29"/>
+                          <number value="3"/>
+                        </sum>
+                        <variable idx="34"/>
+                      </product>
+                      <square>
+                        <variable idx="29"/>
+                      </square>
+                    </minus>
+                  </sum>
+                </product>
+                <variable idx="29"/>
+              </divide>
+            </negate>
+          </exp>
+        </negate>
+      </nl>
+      <nl idx="12">
+        <negate>
+          <exp>
+            <negate>
+              <divide>
+                <product>
+                  <variable idx="33"/>
+                  <sum>
+                    <number value="1"/>
+                    <minus>
+                      <product>
+                        <power>
+                          <minus>
+                            <number value="1"/>
+                            <variable idx="30"/>
+                          </minus>
+                          <number value="3"/>
+                        </power>
+                        <sum>
+                          <variable idx="30"/>
+                          <number value="3"/>
+                        </sum>
+                        <variable idx="34"/>
+                      </product>
+                      <square>
+                        <variable idx="30"/>
+                      </square>
+                    </minus>
+                  </sum>
+                </product>
+                <variable idx="30"/>
+              </divide>
+            </negate>
+          </exp>
+        </negate>
+      </nl>
+      <nl idx="15">
+        <negate>
+          <product>
+            <variable idx="23"/>
+            <power>
+              <divide>
+                <minus>
+                  <number value="1"/>
+                  <variable idx="29"/>
+                </minus>
+                <minus>
+                  <number value="1"/>
+                  <variable idx="31"/>
+                </minus>
+              </divide>
+              <number value=".38"/>
+            </power>
+          </product>
+        </negate>
+      </nl>
+    </nonlinearExpressions>
+  </instanceData>
+</osil>
