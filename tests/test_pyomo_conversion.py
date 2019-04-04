@@ -142,6 +142,25 @@ class TestConvertExpression(object):
             assert len(root.terms) == 1
             assert root.terms[0].coefficient == 6.0
 
+    def test_quadratic2(self):
+        m = aml.ConcreteModel()
+        m.I = range(10)
+        m.x = aml.Var(m.I)
+
+        m.c = aml.Constraint(range(9), rule=lambda m, i: m.x[i] * (2.0 * m.x[i+1]) >= 0)
+
+        dag = dag_from_pyomo_model(m)
+
+        assert len(dag.constraints) == 9
+        for constraint in dag.constraints.values():
+            root = constraint.children[0]
+            assert isinstance(root, dex.QuadraticExpression)
+            assert len(root.children) == 2
+            assert isinstance(root.children[0], dex.Variable)
+            assert isinstance(root.children[1], dex.Variable)
+            assert len(root.terms) == 1
+            assert root.terms[0].coefficient == 2.0
+
     def test_product(self):
         m = aml.ConcreteModel()
         m.I = range(10)
@@ -160,6 +179,40 @@ class TestConvertExpression(object):
             linear = root.children[1]
             assert isinstance(sin, dex.SinExpression)
             assert isinstance(linear, dex.LinearExpression)
+
+    def test_reciprocal_as_division_with_numerator_not_1(self):
+        m = aml.ConcreteModel()
+        m.I = range(10)
+        m.x = aml.Var(m.I)
+
+        m.c = aml.Constraint(range(9), rule=lambda m, i: (2.0 / m.x[i]) >= 0)
+
+        dag = dag_from_pyomo_model(m)
+
+        assert len(dag.constraints) == 9
+        for constraint in dag.constraints.values():
+            root = constraint.children[0]
+            assert isinstance(root, dex.DivisionExpression)
+            assert len(root.children) == 2
+
+            num, den = root.children
+            assert isinstance(num, dex.Constant)
+            assert isinstance(den, dex.Variable)
+
+    def test_reciprocal_as_division(self):
+        m = aml.ConcreteModel()
+        m.I = range(10)
+        m.x = aml.Var(m.I)
+
+        m.c = aml.Constraint(range(9), rule=lambda m, i: (1.0 / m.x[i]) * m.x[i+1] >= 0)
+
+        dag = dag_from_pyomo_model(m)
+
+        assert len(dag.constraints) == 9
+        for constraint in dag.constraints.values():
+            root = constraint.children[0]
+            assert isinstance(root, dex.DivisionExpression)
+            assert len(root.children) == 2
 
     def test_sum(self):
         m = aml.ConcreteModel()

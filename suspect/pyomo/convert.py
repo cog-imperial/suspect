@@ -133,13 +133,11 @@ def _convert_unary_function(node, values):
 
 
 def _is_product_with_reciprocal(children):
-    if len(children) != 2:
-        return False
+    assert len(children) == 2
     a, b = children
     if isinstance(a, dex.DivisionExpression):
         if isinstance(a.children[0], dex.Constant):
             return a.children[0].value == 1.0
-        return False
     if isinstance(b, dex.DivisionExpression):
         if isinstance(b.children[0], dex.Constant):
             return b.children[0].value == 1.0
@@ -152,7 +150,7 @@ def _is_bilinear_product(children):
     a, b = children
     if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
         return True
-    if isinstance(a, dex.Variable) and isinstance(b, ex.LinearExpression):
+    if isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
         return len(b.children) == 1 and b.constant_term == 0.0
     if isinstance(a, dex.LinearExpression) and isinstance(b, dex.Variable):
         return len(a.children) == 1 and a.constant_term == 0.0
@@ -274,19 +272,12 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             return True, const
 
         if node.is_variable_type():
-            if node.is_fixed():
-                expr = NumericConstant(float(node))
-                const = dex.Constant(float(node))
-                self.set(expr, const)
-                return True, const
-            return True, self.memo[node]
+            return True, self.get(node)
         return False, None
 
     def visit(self, node, values):
-        if self.memo[node] is not None:
-            return self.memo[node]
-
-        print(node, node.__class__, values)
+        if self.get(node) is not None:
+            return self.get(node)
 
         callback = _convert_expr_map.get(type(node), None)
         if callback is None:
@@ -309,117 +300,6 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             for child in new_expr.children:
                 child.add_parent(new_expr)
         self.dag.add_vertex(new_expr)
-
-    def visit_number(self, n):
-        const = aml.NumericConstant(n)
-        self.visit_numeric_constant(const)
-
-    def visit_numeric_constant(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-        const = dex.Constant(expr.value)
-        self.set(expr, const)
-
-    def visit_variable(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-        raise AssertionError('Unknown variable encountered')
-
-    def visit_product(self, expr):
-
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        if _is_bilinear(children):
-            a, b, c = _bilinear_variables_with_coefficient(children)
-            new_expr = dex.QuadraticExpression([a], [b], [c], [a, b])
-        else:
-            new_expr = dex.ProductExpression(children)
-        self.set(expr, new_expr)
-
-    def visit_division(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        new_expr = dex.DivisionExpression(children)
-        self.set(expr, new_expr)
-
-    def visit_sum(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        new_expr = dex.SumExpression(children)
-        self.set(expr, new_expr)
-
-    def visit_linear(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        coeffs = [expr._coef[id(a)] for a in expr._args]
-        const = expr._const
-        new_expr = dex.LinearExpression(
-            coeffs, children, const
-        )
-        self.set(expr, new_expr)
-
-    def visit_negation(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        new_expr = dex.NegationExpression(children)
-        self.set(expr, new_expr)
-
-    def visit_unary_function(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        assert len(children) == 1
-        fun = expr.name
-        ExprClass = {
-            'sqrt': dex.SqrtExpression,
-            'exp': dex.ExpExpression,
-            'log': dex.LogExpression,
-            'sin': dex.SinExpression,
-            'cos': dex.CosExpression,
-            'tan': dex.TanExpression,
-            'asin': dex.AsinExpression,
-            'acos': dex.AcosExpression,
-            'atan': dex.AtanExpression,
-        }.get(fun)
-        if ExprClass is None:
-            raise AssertionError('Unknwon function', fun)
-        new_expr = ExprClass(children)
-        self.set(expr, new_expr)
-
-
-    def visit_abs(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        new_expr = dex.AbsExpression(children)
-        self.set(expr, new_expr)
-
-    def visit_pow(self, expr):
-        if self.memo[expr] is not None:
-            return self.memo[expr]
-
-        self._check_children(expr)
-        children = [self.get(a) for a in expr._args]
-        new_expr = dex.PowExpression(children)
-        self.set(expr, new_expr)
 
 
 def _convert_domain(dom):
