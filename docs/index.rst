@@ -23,15 +23,6 @@ You can get SUSPECT from Pypi_::
 Quick Start
 -----------
 
-SUSPECT requires Pyomo 4 expression trees to work, so the first thing
-to do is switch to this expression representation.
-
-.. code-block:: python
-
-   from suspect import set_pyomo4_expression_tree
-
-   set_pyomo4_expression_tree()
-
 
 After we have constructed the model, we can pass it to
 :py:func:`suspect.detect_special_structure` to obtain special
@@ -39,14 +30,8 @@ structure information
 
 .. code-block:: python
 
-    from suspect import (
-	set_pyomo4_expression_tree,
-	detect_special_structure,
-    )
+    from suspect import detect_special_structure
     import pyomo.environ as aml
-
-
-    set_pyomo4_expression_tree()
 
 
     model = aml.ConcreteModel()

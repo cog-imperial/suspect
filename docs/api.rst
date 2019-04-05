@@ -7,7 +7,6 @@ Developer Interface
 Main Module
 -----------
 
-.. autofunction:: set_pyomo4_expression_tree
 .. autofunction:: detect_special_structure
 .. autoclass:: suspect.summary.ModelInformation
    :members:

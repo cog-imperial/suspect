@@ -48,10 +48,8 @@ To test our implementation we use the following model in ``example.py``:
 .. code-block:: python
 
     import pprint
-    from suspect import set_pyomo4_expression_tree, detect_special_structure
+    from suspect import detect_special_structure
     import pyomo.environ as aml
-
-    set_pyomo4_expression_tree()
 
     model = aml.ConcreteModel()
 
