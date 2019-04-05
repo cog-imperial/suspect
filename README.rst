@@ -83,14 +83,8 @@ Library Usage
 
 .. code-block:: python
 
-    from suspect import (
-	    set_pyomo4_expression_tree,
-	    detect_special_structure,
-    )
+    from suspect import detect_special_structure
     import pyomo.environ as aml
-
-
-    set_pyomo4_expression_tree()
 
 
     model = aml.ConcreteModel()
@@ -126,4 +120,4 @@ limitations under the License.
 Acknowledgements
 ----------------
 
-This work was funded by an Engineering & Physical Sciences Research Council Research Fellowship to RM [Grant Number EP/P016871/1]. 
+This work was funded by an Engineering & Physical Sciences Research Council Research Fellowship to RM [Grant Number EP/P016871/1].
