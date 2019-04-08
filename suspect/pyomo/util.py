@@ -17,6 +17,7 @@ import pyomo.environ as aml
 from pyomo.core.expr.expr_pyomo5 import (
     nonpyomo_leaf_types,
     InequalityExpression,
+    RangedExpression,
     EqualityExpression,
     NumericConstant,
 )
@@ -38,7 +39,7 @@ def numeric_value(expr):
 
 
 def bounds_and_expr(expr):
-    if isinstance(expr, InequalityExpression):
+    if isinstance(expr, (InequalityExpression, RangedExpression)):
         return _inequality_bounds_and_expr(expr)
     elif isinstance(expr, EqualityExpression):
         return _equality_bounds_and_expr(expr)

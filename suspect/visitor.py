@@ -14,6 +14,8 @@
 
 """Base class for visitors applying the given rules."""
 import abc
+from suspect.pyomo.expressions import nonpyomo_leaf_types
+from suspect.expression import ExpressionType
 
 
 class Visitor(metaclass=abc.ABCMeta):
@@ -34,26 +36,35 @@ class Visitor(metaclass=abc.ABCMeta):
         """Handle ``result`` obtained applying rule to ``expr``."""
         pass
 
-    def visit(self, expr, ctx):
+    def visit(self, expr, ctx, *args):
         """Apply registered rule to ``expr``."""
-        callback = self._callbacks.get(expr.expression_type)
+        if type(expr) in nonpyomo_leaf_types:
+            callback = self._callbacks.get(ExpressionType.Constant)
+        elif expr.is_constant():
+            callback = self._callbacks.get(ExpressionType.Constant)
+        elif expr.is_variable_type():
+            callback = self._callbacks.get(ExpressionType.Variable)
+        else:
+            callback = self._callbacks.get(expr.expression_type)
+
         if callback is not None:
-            return self._visit_expression(expr, ctx, callback)
+            return self._visit_expression(expr, callback, ctx, *args)
+
         if self.needs_matching_rules:
             raise RuntimeError('visiting expression with no rule associated.')
         return False
 
     def _init_callbacks(self):
         callbacks = {}
-        for rule in self._rules:
-            callbacks[rule.root_expr] = rule.apply
+        for expr_type, rule in self._rules.items():
+            callbacks[expr_type] = rule.apply
         return callbacks
 
     def _handle_result(self, expr, result, ctx):
         return self.handle_result(expr, result, ctx)
 
-    def _visit_expression(self, expr, ctx, callback):
-        result = callback(expr, ctx)
+    def _visit_expression(self, expr, callback, ctx, *args):
+        result = callback(expr, ctx, *args)
         return self._handle_result(expr, result, ctx)
 
 
@@ -64,11 +75,13 @@ class ForwardVisitor(Visitor): # pylint: disable=abstract-method
 
 class BackwardVisitor(Visitor): # pylint: disable=abstract-method
     """Visitor when visiting DAG backward."""
-    def _handle_result(self, _expr, result, ctx):
+    def _handle_result(self, expr, result, ctx):
         if result is None:
             # if we allow matching rules, then continue iteration
             return not self.needs_matching_rules
         any_change = False
-        for child, value in result.items():
+        if len(result) != len(expr.args):
+            raise ValueError('Result must be a list with same length as expr.args')
+        for child, value in zip(expr.args, result):
             any_change |= self.handle_result(child, value, ctx)
         return any_change

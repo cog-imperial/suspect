@@ -32,15 +32,10 @@ def _reverse_bisect_right(arr, x):
 
 class VerticesList(object):
     """A list of vertices sorted by their depth."""
-    def __init__(self, vertices=None, reverse=False):
-        if vertices is None:
-            vertices = []
-        else:
-            vertices = sorted(vertices, key=lambda v: v.depth, reverse=reverse)
-
-        self._vertices = vertices
-        self._vertices_depth = [v.depth for v in self._vertices]
-        self._vertices_set = set([id(v) for v in self._vertices])
+    def __init__(self, reverse=False):
+        self._vertices = []
+        self._vertices_depth = []
+        self._vertices_set = set()
         self._reverse = reverse
 
         if self._reverse:
@@ -48,11 +43,10 @@ class VerticesList(object):
         else:
             self._find_insertion_idx = bisect.bisect_right
 
-    def append(self, vertex):
+    def append(self, vertex, depth):
         """Append vertex to the list, keeping the vertices sorted by depth"""
         if id(vertex) in self._vertices_set:
             return
-        depth = vertex.depth
         insertion_idx = self._find_insertion_idx(self._vertices_depth, depth)
         self._vertices.insert(insertion_idx, vertex)
         self._vertices_depth.insert(insertion_idx, depth)

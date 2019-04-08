@@ -15,6 +15,7 @@
 """FBBT bounds initialization visitor."""
 from suspect.interval import Interval
 from suspect.interfaces import CombineUnaryFunctionRules
+from suspect.expression import ExpressionType as ET
 from suspect.visitor import BackwardVisitor
 from suspect.fbbt.initialization.rules import (
     SqrtRule,
@@ -29,20 +30,20 @@ class BoundsInitializationVisitor(BackwardVisitor):
     needs_matching_rules = False
 
     def register_rules(self):
-        return [
-            CombineUnaryFunctionRules(
-                SqrtRule(),
-                LogRule(),
-                AsinRule(),
-                AcosRule(),
+        return {
+            ET.UnaryFunction: CombineUnaryFunctionRules({
+                'sqrt': SqrtRule(),
+                'log': LogRule(),
+                'asin': AsinRule(),
+                'acos': AcosRule()},
                 needs_matching_rules=False,
             )
-        ]
+        }
 
-    def handle_result(self, expr, value, ctx):
+    def handle_result(self, expr, value, bounds):
         if value is None:
             new_bounds = Interval(None, None)
         else:
             new_bounds = value
-        ctx.set_bounds(expr, new_bounds)
+        bounds[expr] = new_bounds
         return True

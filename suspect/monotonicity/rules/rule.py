@@ -1,4 +1,4 @@
-# Copyright 2018 Francesco Ceccon
+# Copyright 2019 Francesco Ceccon
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Convexity detection rules for negation."""
-from suspect.expression import ExpressionType
-from suspect.convexity.rules.rule import ConvexityRule
 
+class MonotonicityRule(object):
+    """Base class for rules that compute monotonicity properties of an expression."""
+    def apply(self, expr, monotonicity, bounds):
+        """Apply rule to `expr`.
 
-class NegationRule(ConvexityRule):
-    """Return convexity of negation."""
-    def apply(self, expr, convexity, _mono, _bounds):
-        child = expr.args[0]
-        cvx = convexity[child]
-        return cvx.negate()
+        Parameters
+        ----------
+        expr : Expression
+            the expression
+        monotonicity : dict-like
+            contains monotonicity of children
+        bounds : dict-like
+            contains bounds of children
+        """
+        raise NotImplementedError('apply')

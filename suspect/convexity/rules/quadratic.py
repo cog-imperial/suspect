@@ -15,15 +15,15 @@
 """Convexity detection rules for quadratic expressions."""
 import numpy as np
 from suspect.convexity.convexity import Convexity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.convexity.rules.rule import ConvexityRule
 
 
-class QuadraticRule(Rule):
+
+class QuadraticRule(ConvexityRule):
     """Return convexity of quadratic."""
-    root_expr = ExpressionType.Quadratic
 
-    def apply(self, expr, _ctx):
+    def apply(self, expr, _convexity, _mono, _bounds):
+        raise NotImplementedError('QuadraticRule.apply')
         # Sum of squares
         if self._is_sum_of_squares(expr):
             coefficients = np.array([term.coefficient for term in expr.terms])

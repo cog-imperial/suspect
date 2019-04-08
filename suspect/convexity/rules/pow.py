@@ -14,27 +14,24 @@
 
 """Convexity detection rules for power expressions."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.convexity.rules.rule import ConvexityRule
 from suspect.math import almosteq, almostgte # pylint: disable=no-name-in-module
 
 
-class PowerRule(Rule):
+class PowerRule(ConvexityRule):
     """Return monotonicity of power expression."""
-    root_expr = ExpressionType.Power
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, convexity, monotonicity, bounds):
         base, expo = expr.children
 
-        mono_base = ctx.monotonicity(base)
-        mono_expo = ctx.monotonicity(expo)
+        mono_base = monotonicity[base]
+        mono_expo = monotonicity[expo]
 
         if mono_expo.is_constant():
-            cvx_base = ctx.convexity(base)
-            bounds_base = ctx.bounds(base)
+            cvx_base = convexity[base]
+            bounds_base = bounds[base]
             return _constant_expo_pow_convexity(expo, cvx_base, bounds_base)
         elif mono_base.is_constant():
-            cvx_expo = ctx.convexity(expo)
+            cvx_expo = convexity[expo]
             return _constant_base_pow_convexity(base, cvx_expo)
         return Convexity.Unknown
 

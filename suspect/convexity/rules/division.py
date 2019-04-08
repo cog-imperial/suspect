@@ -14,31 +14,47 @@
 
 """Convexity detection rules for division expressions."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.convexity.rules.rule import ConvexityRule
+from suspect.monotonicity.monotonicity import Monotonicity
+from suspect.interval import Interval
 
 
-class DivisionRule(Rule):
+class DivisionRule(ConvexityRule):
     """Return convexity of division."""
-    root_expr = ExpressionType.Division
+    def apply(self, expr, convexity, monotonicity, bounds):
+        f, g = expr.args
+        cvx_f = convexity[f]
+        cvx_g = convexity[g]
 
-    def apply(self, expr, ctx):
-        f, g = expr.children
-        return _division_convexity(f, g, ctx)
+        mono_f = monotonicity[f]
+        mono_g = monotonicity[g]
+
+        bounds_f = bounds[f]
+        bounds_g = bounds[g]
+
+        return _division_convexity(cvx_f, cvx_g, mono_f, mono_g, bounds_f, bounds_g)
 
 
-def _division_convexity(f, g, ctx):
-    mono_f = ctx.monotonicity(f)
-    mono_g = ctx.monotonicity(g)
+class ReciprocalRule(ConvexityRule):
+    """Return convexity of reciprocal."""
+    def apply(self, expr, convexity, monotonicity, bounds):
+        g = expr.args[0]
+        cvx_f = Convexity.Linear
+        cvx_g = convexity[g]
 
-    bounds_f = ctx.bounds(f)
-    bounds_g = ctx.bounds(g)
+        mono_f = Monotonicity.Constant
+        mono_g = monotonicity[g]
 
+        bounds_f = Interval(1.0, 1.0)
+        bounds_g = bounds[g]
+
+        return _division_convexity(cvx_f, cvx_g, mono_f, mono_g, bounds_f, bounds_g)
+
+
+def _division_convexity(cvx_f, cvx_g, mono_f, mono_g, bounds_f, bounds_g):
     if mono_g.is_constant():
-        cvx_f = ctx.convexity(f)
         return _division_convexity_constant_g(mono_f, mono_g, bounds_f, bounds_g, cvx_f)
     elif mono_f.is_constant():
-        cvx_g = ctx.convexity(g)
         return _division_convexity_constant_f(mono_f, mono_g, bounds_f, bounds_g, cvx_g)
     return Convexity.Unknown
 

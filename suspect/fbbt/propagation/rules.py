@@ -15,6 +15,7 @@
 """FBBT bounds propagation rules."""
 import operator
 from functools import reduce
+from pyomo.core.expr.expr_pyomo5 import nonpyomo_leaf_types
 from suspect.interval import Interval
 from suspect.interfaces import Rule
 from suspect.expression import ExpressionType, UnaryFunctionType
@@ -23,53 +24,43 @@ from suspect.math import almosteq # pylint: disable=no-name-in-module
 
 class VariableRule(Rule):
     """Bound propagation rule for variables."""
-    root_expr = ExpressionType.Variable
-
-    def apply(self, expr, _ctx):
-        return Interval(expr.lower_bound, expr.upper_bound)
+    def apply(self, expr, _bounds):
+        return Interval(expr.lb, expr.ub)
 
 
 class ConstantRule(Rule):
     """Bound propagation rule for constants."""
-    root_expr = ExpressionType.Constant
-
-    def apply(self, expr, _ctx):
+    def apply(self, expr, _bounds):
+        if type(expr) in nonpyomo_leaf_types:
+            return Interval(expr, expr)
         return Interval(expr.value, expr.value)
 
 
 class ConstraintRule(Rule):
     """Bound propagation rule for constraints."""
-    root_expr = ExpressionType.Constraint
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        child_bounds = ctx.bounds(child)
+    def apply(self, expr, bounds):
+        child = expr.args[0]
+        child_bounds = bounds[child]
         constraint_bounds = Interval(expr.lower_bound, expr.upper_bound)
         return constraint_bounds.intersect(child_bounds)
 
 
 class ObjectiveRule(Rule):
     """Bound propagation rule for objectives."""
-    root_expr = ExpressionType.Objective
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        return ctx.bounds(child)
+    def apply(self, expr, bounds):
+        child = expr.args[0]
+        return bounds[child]
 
 
 class ProductRule(Rule):
     """Bound propagation rule for products."""
-    root_expr = ExpressionType.Product
-
-    def apply(self, expr, ctx):
-        children_bounds = [ctx.bounds(child) for child in expr.children]
+    def apply(self, expr, bounds):
+        children_bounds = [bounds[child] for child in expr.args]
         return reduce(operator.mul, children_bounds, 1.0)
 
 
 class QuadraticRule(Rule):
     """Bound propagation rule for quadratic."""
-    root_expr = ExpressionType.Quadratic
-
     def apply(self, expr, ctx):
         return sum([self._term_bounds(term, ctx) for term in expr.terms])
 
@@ -78,20 +69,27 @@ class QuadraticRule(Rule):
             return ctx.bounds(term.var1) * ctx.bounds(term.var2) * term.coefficient
         return term.coefficient * (ctx.bounds(term.var1) ** 2)
 
+
 class DivisionRule(Rule):
     """Bound propagation rule for divisions."""
-    root_expr = ExpressionType.Division
+    def apply(self, expr, bounds):
+        assert len(expr.args) == 2
+        num, den = expr.args
+        return bounds[num] / bounds[den]
 
-    def apply(self, expr, ctx):
-        num, den = expr.children
-        return ctx.bounds(num) / ctx.bounds(den)
+
+class ReciprocalRule(Rule):
+    """Bound propagation rule for divisions."""
+    def apply(self, expr, bounds):
+        assert len(expr.args) == 1
+        child = expr.args[0]
+        return 1.0 / bounds[child]
 
 
 class LinearRule(Rule):
     """Bound propagation rule for linear expressions."""
-    root_expr = ExpressionType.Linear
-
     def apply(self, expr, ctx):
+        raise NotImplementedError('LinearRule.apply')
         children_contribution = sum(
             expr.coefficient(child) * ctx.bounds(child)
             for child in expr.children
@@ -102,23 +100,22 @@ class LinearRule(Rule):
 
 class SumRule(Rule):
     """Bound propagation rule for sum."""
-    root_expr = ExpressionType.Sum
-
-    def apply(self, expr, ctx):
-        return sum(ctx.bounds(child) for child in expr.children)
+    def apply(self, expr, bounds):
+        return sum(bounds[child] for child in expr.args)
 
 
 class PowerRule(Rule):
     """Bound propagation rule for power."""
-    root_expr = ExpressionType.Power
+    def apply(self, expr, bounds):
+        assert len(expr.args) == 2
+        _, expo = expr.args
+        if type(expo) not in nonpyomo_leaf_types:
+            if not expo.is_constant():
+                return Interval(None, None)
+            expo = expo.value
 
-    def apply(self, expr, ctx):
-        _, expo = expr.children
-        if not expo.is_constant():
-            return Interval(None, None)
-
-        is_even = almosteq(expo.value % 2, 0)
-        is_positive = expo.value > 0
+        is_even = almosteq(expo % 2, 0)
+        is_positive = expo > 0
         if is_even and is_positive:
             return Interval(0, None)
         return Interval(None, None)
@@ -126,38 +123,89 @@ class PowerRule(Rule):
 
 class NegationRule(Rule):
     """Bound propagation rule for negation."""
-    root_expr = ExpressionType.Negation
+    def apply(self, expr, bounds):
+        return -bounds[expr.args[0]]
 
-    def apply(self, expr, ctx):
-        return -ctx.bounds(expr.children[0])
+
+class _UnaryFunctionRule(Rule):
+    """Bound propagation rule for unary functions."""
+    def apply(self, expr, bounds):
+        assert len(expr.args) == 1
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        func = getattr(child_bounds, self.func_name)
+        return func()
+
+
+class AbsRule(_UnaryFunctionRule):
+    """Return new bounds for abs."""
+    func_name = 'abs'
+
+
+class SqrtRule(_UnaryFunctionRule):
+    """Return new bounds for sqrt."""
+    func_name = 'sqrt'
+
+
+class ExpRule(_UnaryFunctionRule):
+    """Return new bounds for exp."""
+    func_name = 'exp'
+
+
+class LogRule(_UnaryFunctionRule):
+    """Return new bounds for log."""
+    func_name = 'log'
+
+
+
+class SinRule(_UnaryFunctionRule):
+    """Return new bounds for sin."""
+    func_name = 'sin'
+
+
+class CosRule(_UnaryFunctionRule):
+    """Return new bounds for cos."""
+    func_name = 'cos'
+
+
+class TanRule(_UnaryFunctionRule):
+    """Return new bounds for tan."""
+    func_name = 'tan'
+
+
+class AsinRule(_UnaryFunctionRule):
+    """Return new bounds for asin."""
+    func_name = 'asin'
+
+
+class AcosRule(_UnaryFunctionRule):
+    """Return new bounds for acos."""
+    func_name = 'acos'
+
+
+class AtanRule(_UnaryFunctionRule):
+    """Return new bounds for atan."""
+    func_name = 'atan'
+
+
+_func_name_to_rule_map = dict()
+_func_name_to_rule_map['abs'] = AbsRule()
+_func_name_to_rule_map['sqrt'] = SqrtRule()
+_func_name_to_rule_map['exp'] = ExpRule()
+_func_name_to_rule_map['log'] = LogRule()
+_func_name_to_rule_map['sin'] = SinRule()
+_func_name_to_rule_map['cos'] = CosRule()
+_func_name_to_rule_map['tan'] = TanRule()
+_func_name_to_rule_map['asin'] = AsinRule()
+_func_name_to_rule_map['acos'] = AcosRule()
+_func_name_to_rule_map['atan'] = AtanRule()
 
 
 class UnaryFunctionRule(Rule):
     """Bound propagation rule for unary functions."""
-    root_expr = ExpressionType.UnaryFunction
-
-    _FUNC_TYPE_TO_NAME = {
-        UnaryFunctionType.Abs: 'abs',
-        UnaryFunctionType.Sqrt: 'sqrt',
-        UnaryFunctionType.Exp: 'exp',
-        UnaryFunctionType.Log: 'log',
-        UnaryFunctionType.Sin: 'sin',
-        UnaryFunctionType.Cos: 'cos',
-        UnaryFunctionType.Tan: 'tan',
-        UnaryFunctionType.Asin: 'asin',
-        UnaryFunctionType.Acos: 'acos',
-        UnaryFunctionType.Atan: 'atan',
-    }
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        child_bounds = ctx.bounds(child)
-        func_name = self._func_name(expr.func_type)
-        func = getattr(child_bounds, func_name)
-        return func()
-
-    def _func_name(self, func_type):
-        func_name = self._FUNC_TYPE_TO_NAME.get(func_type)
-        if func_name is None:
-            raise RuntimeError('Invalid function type {}'.format(func_type))
-        return func_name
+    def apply(self, expr, bounds):
+        assert len(expr.args) == 1
+        func_name = expr.getname()
+        if func_name not in _func_name_to_rule_map:
+            raise ValueError('Unknown function type {}'.format(func_name))
+        return _func_name_to_rule_map[func_name].apply(expr, bounds)

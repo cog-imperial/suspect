@@ -15,13 +15,14 @@
 """FBBT bounds propagation visitor."""
 
 from suspect.visitor import ForwardVisitor
+from suspect.expression import ExpressionType as ET
 from suspect.fbbt.propagation.rules import (
     VariableRule,
     ConstantRule,
     ConstraintRule,
     ObjectiveRule,
     ProductRule,
-    DivisionRule,
+    ReciprocalRule,
     LinearRule,
     QuadraticRule,
     SumRule,
@@ -34,23 +35,22 @@ from suspect.fbbt.propagation.rules import (
 class BoundsPropagationVisitor(ForwardVisitor):
     """Tighten bounds from sources to sinks."""
     def register_rules(self):
-        return [
-            VariableRule(),
-            ConstantRule(),
-            ConstraintRule(),
-            ObjectiveRule(),
-            ProductRule(),
-            DivisionRule(),
-            LinearRule(),
-            QuadraticRule(),
-            SumRule(),
-            PowerRule(),
-            NegationRule(),
-            UnaryFunctionRule(),
-        ]
+        return {
+            ET.Variable: VariableRule(),
+            ET.Constant: ConstantRule(),
+            ET.Constraint: ConstraintRule(),
+            ET.Objective: ObjectiveRule(),
+            ET.Product: ProductRule(),
+            ET.Reciprocal: ReciprocalRule(),
+            ET.Linear: LinearRule(),
+            ET.Sum: SumRule(),
+            ET.Power: PowerRule(),
+            ET.Negation: NegationRule(),
+            ET.UnaryFunction: UnaryFunctionRule(),
+        }
 
-    def handle_result(self, expr, new_bounds, ctx):
-        old_bounds = ctx.get_bounds(expr)
+    def handle_result(self, expr, new_bounds, bounds):
+        old_bounds = bounds.get(expr, None)
         if old_bounds is not None:
             # bounds exists, tighten it
             new_bounds = old_bounds.intersect(new_bounds)
@@ -58,6 +58,5 @@ class BoundsPropagationVisitor(ForwardVisitor):
         else:
             has_changed = True
 
-        ctx.set_bounds(expr, new_bounds)
+        bounds[expr] = new_bounds
         return has_changed
-        # return True

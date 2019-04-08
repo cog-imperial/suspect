@@ -14,28 +14,24 @@
 
 """Monotonicity detection rules for linear and sum expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.monotonicity.rules.rule import MonotonicityRule
 
 
-class LinearRule(Rule):
+class LinearRule(MonotonicityRule):
     """Return monotonicity of linear expression."""
-    root_expr = ExpressionType.Linear
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, mono, bounds):
+        raise NotImplementedError('LinearRule.apply')
         monos = [
-            _adjust_monotonicity(ctx.monotonicity(child), expr.coefficient(child))
+            _adjust_monotonicity(monotonicity[child], expr.coefficient(child))
             for child in expr.children
         ]
         return _combine_monotonicities(monos)
 
 
-class SumRule(Rule):
+class SumRule(MonotonicityRule):
     """Return monotonicity of sum expression."""
-    root_expr = ExpressionType.Sum
-
-    def apply(self, expr, ctx):
-        monos = [ctx.monotonicity(child) for child in expr.children]
+    def apply(self, expr, monotonicity, bounds):
+        monos = [monotonicity[child] for child in expr.args]
         return _combine_monotonicities(monos)
 
 

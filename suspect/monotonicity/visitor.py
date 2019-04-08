@@ -15,38 +15,40 @@
 """Visitor applying rules for monotonicity propagation."""
 from suspect.interfaces import CombineUnaryFunctionRules
 from suspect.visitor import Visitor
+from suspect.expression import ExpressionType as ET
 from suspect.monotonicity.rules import * # pylint: disable=wildcard-import
 
 
 class MonotonicityPropagationVisitor(Visitor):
     """Visitor applying monotonicity rules."""
-    def handle_result(self, expr, result, ctx):
-        ctx.set_monotonicity(expr, result)
+    def handle_result(self, expr, result, monotonicity):
+        monotonicity[expr] = result
         return True
 
     def register_rules(self):
-        return [
-            VariableRule(),
-            ConstantRule(),
-            ConstraintRule(),
-            ObjectiveRule(),
-            DivisionRule(),
-            ProductRule(),
-            LinearRule(),
-            QuadraticRule(),
-            SumRule(),
-            NegationRule(),
-            PowerRule(),
-            CombineUnaryFunctionRules(
-                AbsRule(),
-                SqrtRule(),
-                ExpRule(),
-                LogRule(),
-                TanRule(),
-                AtanRule(),
-                SinRule(),
-                AsinRule(),
-                CosRule(),
-                AcosRule(),
-            )
-        ]
+        return {
+            ET.Variable: VariableRule(),
+            ET.Constant: ConstantRule(),
+            ET.Constraint: ConstraintRule(),
+            ET.Objective: ObjectiveRule(),
+            ET.Division: DivisionRule(),
+            ET.Reciprocal: ReciprocalRule(),
+            ET.Product: ProductRule(),
+            ET.Linear: LinearRule(),
+            # QuadraticRule(),
+            ET.Sum: SumRule(),
+            ET.Negation: NegationRule(),
+            ET.Power: PowerRule(),
+            ET.UnaryFunction: CombineUnaryFunctionRules({
+                'abs': AbsRule(),
+                'sqrt': SqrtRule(),
+                'exp': ExpRule(),
+                'log': LogRule(),
+                'tan': TanRule(),
+                'atan': AtanRule(),
+                'sin': SinRule(),
+                'asin': AsinRule(),
+                'cos': CosRule(),
+                'acos': AcosRule(),
+            })
+        }

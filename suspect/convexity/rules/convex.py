@@ -14,15 +14,14 @@
 
 """Convexity detection rules for convex functions."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import UnaryFunctionType
-from suspect.interfaces import UnaryFunctionRule
+from suspect.convexity.rules.rule import ConvexityRule
 
 
-class ConvexFunctionRule(UnaryFunctionRule):
+class ConvexFunctionRule(ConvexityRule):
     """Return convexity of convex function."""
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        cvx = ctx.convexity(child)
+    def apply(self, expr, convexity, _mono, _bounds):
+        child = expr.args[0]
+        cvx = convexity[child]
         if cvx.is_convex():
             return Convexity.Convex
         return Convexity.Unknown
@@ -30,4 +29,4 @@ class ConvexFunctionRule(UnaryFunctionRule):
 
 class ExpRule(ConvexFunctionRule):
     """Return convexity of exp."""
-    func_type = UnaryFunctionType.Exp
+    pass

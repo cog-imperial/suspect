@@ -13,28 +13,25 @@
 # limitations under the License.
 
 """Monotonicity detection rules for nonincreasing functions."""
-from suspect.expression import UnaryFunctionType, ExpressionType
-from suspect.interfaces import UnaryFunctionRule, Rule
+from suspect.monotonicity.rules.rule import MonotonicityRule
 
 
-class NonincreasingFunctionRule(UnaryFunctionRule):
+class NonincreasingFunctionRule(MonotonicityRule):
     """Return monotonicity of nonincreasing function."""
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        mono = ctx.monotonicity(child)
+    def apply(self, expr, monotonicity, _bounds):
+        child = expr.args[0]
+        mono = monotonicity[child]
         return mono.negate()
 
 
 class AcosRule(NonincreasingFunctionRule):
     """Return monotonicity of acos function."""
-    func_type = UnaryFunctionType.Acos
+    pass
 
 
-class NegationRule(Rule):
+class NegationRule(MonotonicityRule):
     """Return monotonicity of negation function."""
-    root_expr = ExpressionType.Negation
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        mono = ctx.monotonicity(child)
+    def apply(self, expr, monotonicity, _bounds):
+        child = expr.args[0]
+        mono = monotonicity[child]
         return mono.negate()
