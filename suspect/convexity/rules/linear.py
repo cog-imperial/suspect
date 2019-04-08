@@ -14,15 +14,13 @@
 
 """Convexity detection rules for linear and sum expressions."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.convexity.rules.rule import ConvexityRule
 
 
-class LinearRule(Rule):
+class LinearRule(ConvexityRule):
     """Return convexity of linear expression."""
-    root_expr = ExpressionType.Linear
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, convexity, mono, bounds):
+        raise NotImplementedError('LinearRule.apply')
         cvxs = [
             _adjust_convexity(ctx.convexity(child), expr.coefficient(child))
             for child in expr.children
@@ -30,12 +28,10 @@ class LinearRule(Rule):
         return _combine_convexities(cvxs)
 
 
-class SumRule(Rule):
+class SumRule(ConvexityRule):
     """Return convexity of sum expression."""
-    root_expr = ExpressionType.Sum
-
-    def apply(self, expr, ctx):
-        cvxs = [ctx.convexity(child) for child in expr.children]
+    def apply(self, expr, convexity, _mono, _bounds):
+        cvxs = [convexity[child] for child in expr.children]
         return _combine_convexities(cvxs)
 
 

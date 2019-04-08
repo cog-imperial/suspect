@@ -14,19 +14,16 @@
 
 """Monotonicity detection rules for trigonometric expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
-from suspect.expression import UnaryFunctionType
-from suspect.interfaces import UnaryFunctionRule
+from suspect.monotonicity.rules.rule import MonotonicityRule
 
 
-class SinRule(UnaryFunctionRule):
+class SinRule(MonotonicityRule):
     """Return monotonicity of sin."""
-    func_type = UnaryFunctionType.Sin
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cos_bounds = bounds.cos()
-        mono = ctx.monotonicity(child)
+    def apply(self, expr, monotonicity, bounds):
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        cos_bounds = child_bounds.cos()
+        mono = monotonicity[child]
 
         if mono.is_nondecreasing() and cos_bounds.is_nonnegative():
             return Monotonicity.Nondecreasing
@@ -39,15 +36,13 @@ class SinRule(UnaryFunctionRule):
         return Monotonicity.Unknown # pragma: no cover
 
 
-class CosRule(UnaryFunctionRule):
+class CosRule(MonotonicityRule):
     """Return monotonicity of cos."""
-    func_type = UnaryFunctionType.Cos
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        sin_bounds = bounds.sin()
-        mono = ctx.monotonicity(child)
+    def apply(self, expr, monotonicity, bounds):
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        sin_bounds = child_bounds.sin()
+        mono = monotonicity[child]
 
         if mono.is_nonincreasing() and sin_bounds.is_nonnegative():
             return Monotonicity.Nondecreasing

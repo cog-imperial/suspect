@@ -14,18 +14,15 @@
 
 """Convexity detection rules for abs function."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import UnaryFunctionType
-from suspect.interfaces import UnaryFunctionRule
+from suspect.convexity.rules.rule import ConvexityRule
 
 
-class AbsRule(UnaryFunctionRule):
+class AbsRule(ConvexityRule):
     """Return convexity of abs."""
-    func_type = UnaryFunctionType.Abs
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        cvx = ctx.convexity(child)
-        bounds = ctx.bounds(child)
+    def apply(self, expr, convexity, _mono, bounds):
+        child = expr.args[0]
+        cvx = convexity[child]
+        bounds = bounds[child]
         if cvx.is_linear():
             return Convexity.Convex
         elif cvx.is_convex():

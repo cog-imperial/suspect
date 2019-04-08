@@ -14,13 +14,10 @@
 
 """Monotonicity detection rules for quadratic expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.monotonicity.rules.rule import MonotonicityRule
 
 
-class QuadraticRule(Rule):
+class QuadraticRule(MonotonicityRule):
     """Return monotonicity of quadratic."""
-    root_expr = ExpressionType.Quadratic
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, _monotonicity, _bounds):
         return Monotonicity.Unknown

@@ -14,28 +14,26 @@
 
 """Monotonicity detection rules for abs function."""
 from suspect.monotonicity.monotonicity import Monotonicity
+from suspect.monotonicity.rules.rule import MonotonicityRule
 from suspect.expression import UnaryFunctionType
-from suspect.interfaces import UnaryFunctionRule
 
 
-class AbsRule(UnaryFunctionRule):
+class AbsRule(MonotonicityRule):
     """Return monotonicity of abs."""
-    func_type = UnaryFunctionType.Abs
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, monotonicity, bounds):
         child = expr.children[0]
-        mono = ctx.monotonicity(child)
-        bounds = ctx.bounds(child)
+        mono = monotonicity[child]
+        child_bounds = bounds[child]
 
         if mono.is_constant():
             return mono
 
         # good examples to understand the behaviour of abs are abs(-x) and
         # abs(1/x)
-        if bounds.is_nonnegative():
+        if child_bounds.is_nonnegative():
             # abs(x), x > 0 is the same as x
             return mono
-        elif bounds.is_nonpositive():
+        elif child_bounds.is_nonpositive():
             # abs(x), x < 0 is the opposite of x
             return mono.negate()
         return Monotonicity.Unknown

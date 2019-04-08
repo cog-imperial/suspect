@@ -3,6 +3,7 @@ import pytest
 from hypothesis import assume, given
 import hypothesis.strategies as st
 import itertools
+from pyomo.core.kernel.component_map import ComponentMap
 from tests.conftest import coefficients, reals
 from tests.conftest import PlaceholderExpression as PE
 from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
@@ -10,22 +11,6 @@ from suspect.monotonicity.monotonicity import Monotonicity as M
 from suspect.interval import Interval as I
 from suspect.monotonicity.rules import *
 from suspect.math import almosteq, pi
-
-
-class MonotonicityContext:
-    def __init__(self, ctx=None, bounds=None):
-        if ctx is None:
-            ctx = {}
-        if bounds is None:
-            bounds = {}
-        self.ctx = ctx
-        self._bounds = bounds
-
-    def monotonicity(self, expr):
-        return self.ctx[expr]
-
-    def bounds(self, expr):
-        return self._bounds[expr]
 
 
 @st.composite
@@ -132,15 +117,13 @@ def nonpositive_sin_bounds(draw):
 
 def test_variable_is_nondecreasing():
     rule = VariableRule()
-    ctx = MonotonicityContext()
-    result = rule.checked_apply(PE(ET.Variable), ctx)
+    result = rule.apply(PE(ET.Variable), None, None)
     assert result.is_nondecreasing() and (not result.is_constant())
 
 
 def test_constant_is_constant():
     rule = ConstantRule()
-    ctx = MonotonicityContext()
-    result = rule.checked_apply(PE(ET.Constant), ctx)
+    result = rule.apply(PE(ET.Constant), None, None)
     assert result.is_constant()
 
 
@@ -153,8 +136,13 @@ def test_constant_is_constant():
 def test_lte_constraint(expr_mono, expected_mono):
     rule = ConstraintRule()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: expr_mono})
-    result = rule.checked_apply(PE(ET.Constraint, [child], bounded_above=True), ctx)
+    mono = ComponentMap()
+    mono[child] = expr_mono
+    result = rule.apply(
+        PE(ET.Constraint, [child], bounded_above=True),
+        mono,
+        None,
+    )
     assert result == expected_mono
 
 
@@ -167,8 +155,13 @@ def test_lte_constraint(expr_mono, expected_mono):
 def test_gte_constraint(expr_mono, expected_mono):
     rule = ConstraintRule()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: expr_mono})
-    result = rule.checked_apply(PE(ET.Constraint, [child], bounded_below=True), ctx)
+    mono = ComponentMap()
+    mono[child] = expr_mono
+    result = rule.apply(
+        PE(ET.Constraint, [child], bounded_below=True),
+        mono,
+        None,
+    )
     assert result == expected_mono
 
 
@@ -181,8 +174,13 @@ def test_gte_constraint(expr_mono, expected_mono):
 def test_eq_constraint(expr_mono, expected_mono):
     rule = ConstraintRule()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: expr_mono})
-    result = rule.checked_apply(PE(ET.Constraint, [child], bounded_above=True, bounded_below=True), ctx)
+    mono = ComponentMap()
+    mono[child] = expr_mono
+    result = rule.apply(
+        PE(ET.Constraint, [child], bounded_above=True, bounded_below=True),
+        mono,
+        None,
+    )
     assert result == expected_mono
 
 
@@ -195,8 +193,13 @@ def test_eq_constraint(expr_mono, expected_mono):
 def test_min_constraint(expr_mono, expected_mono):
     rule = ObjectiveRule()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: expr_mono})
-    result = rule.checked_apply(PE(ET.Objective, [child], is_minimizing=True), ctx)
+    mono = ComponentMap()
+    mono[child] = expr_mono
+    result = rule.apply(
+        PE(ET.Objective, [child], is_minimizing=True),
+        mono,
+        None,
+    )
     assert result == expected_mono
 
 
@@ -209,8 +212,13 @@ def test_min_constraint(expr_mono, expected_mono):
 def test_max_constraint(expr_mono, expected_mono):
     rule = ObjectiveRule()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: expr_mono})
-    result = rule.checked_apply(PE(ET.Objective, [child], is_minimizing=False), ctx)
+    mono = ComponentMap()
+    mono[child] = expr_mono
+    result = rule.apply(
+        PE(ET.Objective, [child], is_minimizing=False),
+        mono,
+        None,
+    )
     assert result == expected_mono
 
 
@@ -243,8 +251,14 @@ def test_product(mono_f, mono_g, bound_f, bound_g, expected):
     rule = ProductRule()
     f = PE(ET.UnaryFunction)
     g = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({f: mono_f, g: mono_g}, {f: bound_f, g: bound_g})
-    result = rule.checked_apply(PE(ET.Product, [f, g]), ctx)
+    bounds = ComponentMap()
+    bounds[f] = bound_f
+    bounds[g] = bound_g
+    mono = ComponentMap()
+    mono[f] = mono_f
+    mono[g] = mono_g
+
+    result = rule.apply(PE(ET.Product, [f, g]), mono, bounds)
     assert result == expected
 
 
@@ -272,12 +286,34 @@ def test_division(mono_f, mono_g, bound_f, bound_g, expected):
     rule = DivisionRule()
     f = PE(ET.UnaryFunction)
     g = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({f: mono_f, g: mono_g}, {f: bound_f, g: bound_g})
-    result = rule.checked_apply(PE(ET.Division, [f, g]), ctx)
+
+    bounds = ComponentMap()
+    bounds[f] = bound_f
+    bounds[g] = bound_g
+    mono = ComponentMap()
+    mono[f] = mono_f
+    mono[g] = mono_g
+    result = rule.apply(PE(ET.Division, [f, g]), mono, bounds)
     assert result == expected
 
 
+@pytest.mark.parametrize('mono_g,bound_g,expected', [
+    (M.Constant, I(2.0, 2.0), M.Constant),
+    (M.Constant, I(0.0, 0.0), M.Unknown),
+])
+def test_reciprocal(mono_g, bound_g, expected):
+    rule = ReciprocalRule()
+    g = PE(ET.UnaryFunction)
 
+    bounds = ComponentMap()
+    bounds[g] = bound_g
+    mono = ComponentMap()
+    mono[g] = mono_g
+    result = rule.apply(PE(ET.Reciprocal, [g]), mono, bounds)
+    assert result == expected
+
+
+@pytest.mark.skip('Not updated')
 class TestLinear(object):
     def _result_with_terms(self, terms):
         rule = LinearRule()
@@ -333,12 +369,11 @@ class TestLinear(object):
 class TestSum(object):
     def _result_with_terms(self, monos):
         rule = SumRule()
-        monotonicity = {}
+        monotonicity = ComponentMap()
         children = [PE(ET.UnaryFunction) for _ in monos]
         for child, mono in zip(children, monos):
             monotonicity[child] = mono
-        ctx = MonotonicityContext(monotonicity, {})
-        result = rule.checked_apply(PE(ET.Sum, children=children), ctx)
+        result = rule.apply(PE(ET.Sum, children=children), monotonicity, None)
         return result
 
     @given(
@@ -371,7 +406,7 @@ class TestSum(object):
         assert mono.is_unknown()
 
 
-@pytest.mark.parametrize('mono,bounds,expected', [
+@pytest.mark.parametrize('mono_g,bounds_g,expected', [
     (M.Nondecreasing, I(0, None), M.Nondecreasing),
     (M.Nonincreasing, I(None, 0), M.Nondecreasing),
     (M.Nonincreasing, I(0, None), M.Nonincreasing),
@@ -380,11 +415,18 @@ class TestSum(object):
     (M.Nondecreasing, I(None, None), M.Unknown),
     (M.Nonincreasing, I(None, None), M.Unknown),
 ])
-def test_abs(mono, bounds, expected):
+def test_abs(mono_g, bounds_g, expected):
     rule = AbsRule()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: mono}, {child: bounds})
-    result = rule.checked_apply(PE(ET.UnaryFunction, [child], func_type=UFT.Abs), ctx)
+    bounds = ComponentMap()
+    bounds[child] = bounds_g
+    mono = ComponentMap()
+    mono[child] = mono_g
+    result = rule.apply(
+        PE(ET.UnaryFunction, [child], func_type=UFT.Abs),
+        mono,
+        bounds,
+    )
     assert result == expected
 
 
@@ -392,41 +434,58 @@ def test_abs(mono, bounds, expected):
     (SqrtRule, UFT.Sqrt), (ExpRule, UFT.Exp), (LogRule, UFT.Log),
     (TanRule, UFT.Tan), (AsinRule, UFT.Asin), (AtanRule, UFT.Atan)
 ])
-@pytest.mark.parametrize('mono,bounds', itertools.product(
+@pytest.mark.parametrize('mono_g,bounds_g', itertools.product(
     [M.Nondecreasing, M.Nonincreasing, M.Constant, M.Unknown],
     [I(None, None), I(0, None), I(None, 0)],
 ))
-def test_nondecreasing_function(rule_cls, func_type, mono, bounds):
+def test_nondecreasing_function(rule_cls, func_type, mono_g, bounds_g):
     rule = rule_cls()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: mono}, {child: bounds})
-    result = rule.checked_apply(PE(ET.UnaryFunction, [child], func_type=func_type), ctx)
-    assert result == mono
+    mono = ComponentMap()
+    mono[child] = mono_g
+    bounds = ComponentMap()
+    bounds[child]= bounds_g
+    result = rule.apply(
+        PE(ET.UnaryFunction, [child], func_type=func_type),
+        mono,
+        bounds,
+    )
+    assert result == mono_g
 
 
 @pytest.mark.parametrize('rule_cls,func_type', [(AcosRule, UFT.Acos)])
-@pytest.mark.parametrize('mono,bounds', itertools.product(
+@pytest.mark.parametrize('mono_g,bounds_g', itertools.product(
     [M.Nondecreasing, M.Nonincreasing, M.Constant, M.Unknown],
     [I(None, None), I(0, None), I(None, 0)],
 ))
-def test_nonincreasing_function(rule_cls, func_type, mono, bounds):
+def test_nonincreasing_function(rule_cls, func_type, mono_g, bounds_g):
     rule = rule_cls()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: mono}, {child: bounds})
-    result = rule.checked_apply(PE(ET.UnaryFunction, [child], func_type=func_type), ctx)
-    assert result == mono.negate()
+    mono = ComponentMap()
+    mono[child] = mono_g
+    bounds = ComponentMap()
+    bounds[child] = bounds_g
+    result = rule.apply(
+        PE(ET.UnaryFunction, [child], func_type=func_type),
+        mono,
+        bounds,
+    )
+    assert result == mono_g.negate()
 
 
-@pytest.mark.parametrize('mono,bounds', itertools.product(
+@pytest.mark.parametrize('mono_g,bounds_g', itertools.product(
     [M.Nondecreasing, M.Nonincreasing, M.Constant, M.Unknown],
     [I(None, None), I(0, None), I(None, 0)],
 ))
-def test_negation(mono, bounds):
+def test_negation(mono_g, bounds_g):
     rule = NegationRule()
     child = PE(ET.UnaryFunction)
-    ctx = MonotonicityContext({child: mono}, {child: bounds})
-    result = rule.checked_apply(PE(ET.Negation, [child]), ctx)
-    assert result == mono.negate()
+    mono = ComponentMap()
+    mono[child] = mono_g
+    bounds = ComponentMap()
+    bounds[child] = bounds_g
+    result = rule.apply(PE(ET.Negation, [child]), mono, bounds)
+    assert result == mono_g.negate()
 
 
 class TestPowConstantBase(object):
@@ -434,14 +493,13 @@ class TestPowConstantBase(object):
         base = PE(ET.Constant, is_constant=True, value=base)
         expo = PE()
         rule = PowerRule()
-        ctx = MonotonicityContext({
-            base: M.Constant,
-            expo: mono_expo,
-        }, {
-            base: I(base.value, base.value),
-            expo: bounds_expo,
-        })
-        return rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+        mono = ComponentMap()
+        mono[base] = M.Constant
+        mono[expo] = mono_expo
+        bounds = ComponentMap()
+        bounds[base] = I(base.value, base.value)
+        bounds[expo] = bounds_expo
+        return rule.apply(PE(ET.Power, [base, expo]), mono, bounds)
 
     @pytest.mark.parametrize(
         'mono_expo,bounds_expo',
@@ -483,14 +541,13 @@ class TestPowConstantExponent(object):
         base = PE()
         expo = PE(ET.Constant, is_constant=True, value=expo)
         rule = PowerRule()
-        ctx = MonotonicityContext({
-            base: mono_base,
-            expo: M.Constant,
-        }, {
-            base: bounds_base,
-            expo: I(expo.value, expo.value),
-        })
-        return rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+        mono = ComponentMap()
+        mono[base] = mono_base
+        mono[expo] = M.Constant
+        bounds = ComponentMap()
+        bounds[base] = bounds_base
+        bounds[expo] = I(expo.value, expo.value)
+        return rule.apply(PE(ET.Power, [base, expo]), mono, bounds)
 
     @pytest.mark.parametrize(
         'mono_base,bounds_base',
@@ -591,23 +648,29 @@ def test_pow(mono_base, bounds_base, mono_expo, bounds_expo):
     base = PE()
     expo = PE()
     rule = PowerRule()
-    ctx = MonotonicityContext({
-        base: mono_base,
-        expo: mono_expo,
-    }, {
-        base: bounds_base,
-        expo: bounds_expo,
-    })
-    mono = rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
-    assert mono == M.Unknown
+    mono = ComponentMap()
+    mono[base] = mono_base
+    mono[expo] = mono_expo
+    bounds = ComponentMap()
+    bounds[base] = bounds_base
+    bounds[expo] = bounds_expo
+    result = rule.apply(PE(ET.Power, [base, expo]), mono, bounds)
+    assert result == M.Unknown
 
 
 class TestSin(object):
-    def _result_with_mono_bounds(self, mono, bounds):
+    def _result_with_mono_bounds(self, mono_g, bounds_g):
         rule = SinRule()
         child = PE()
-        ctx = MonotonicityContext({child: mono}, {child: bounds})
-        return rule.checked_apply(PE(ET.UnaryFunction, [child], func_type=UFT.Sin), ctx)
+        mono = ComponentMap()
+        mono[child] = mono_g
+        bounds = ComponentMap()
+        bounds[child] = bounds_g
+        return rule.apply(
+            PE(ET.UnaryFunction, [child], func_type=UFT.Sin),
+            mono,
+            bounds,
+        )
 
     @given(nonnegative_cos_bounds())
     def test_nondecreasing_nonnegative_cos(self, bounds):
@@ -631,11 +694,18 @@ class TestSin(object):
 
 
 class TestCos(object):
-    def _result_with_mono_bounds(self, mono, bounds):
+    def _result_with_mono_bounds(self, mono_g, bounds_g):
         rule = CosRule()
         child = PE()
-        ctx = MonotonicityContext({child: mono}, {child: bounds})
-        return rule.checked_apply(PE(ET.UnaryFunction, [child], func_type=UFT.Cos), ctx)
+        mono = ComponentMap()
+        mono[child] = mono_g
+        bounds = ComponentMap()
+        bounds[child] = bounds_g
+        return rule.apply(
+            PE(ET.UnaryFunction, [child], func_type=UFT.Cos),
+            mono,
+            bounds,
+        )
 
     @given(nonnegative_sin_bounds())
     def test_nonincreasing_nonnegative_sin(self, bounds):

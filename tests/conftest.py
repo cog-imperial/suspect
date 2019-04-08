@@ -15,10 +15,12 @@
 # pylint: skip-file
 import pytest
 import hypothesis.strategies as st
+import numpy as np
 from collections import namedtuple
 from suspect.interval import Interval
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.convexity.convexity import Convexity
+from suspect.expression import ExpressionType as ET
 from suspect.context import SpecialStructurePropagationContext
 
 
@@ -38,6 +40,16 @@ def coefficients(draw, min_value=None, max_value=None):
         min_value=min_value, max_value=max_value,
         allow_nan=False, allow_infinity=False,
     ))
+
+
+@st.composite
+def intervals(draw, allow_infinity=True):
+    a = draw(reals(allow_infinity=allow_infinity))
+    if np.isinf(a):
+        allow_infinity=False
+    b = draw(reals(allow_infinity=allow_infinity))
+    lb, ub = min(a, b), max(a, b)
+    return Interval(lb, ub)
 
 
 BilinearTerm = namedtuple('BilinearTerm', ['var1', 'var2', 'coefficient'])
@@ -70,6 +82,24 @@ class PlaceholderExpression(object):
 
     def coefficient(self, expr):
         return self._coefficients[expr]
+
+    def is_variable_type(self):
+        return self.expression_type == ET.Variable
+
+    def is_expression_type(self):
+        return not (self.is_variable_type() or self.is_constant())
+
+    @property
+    def args(self):
+        return self.children
+
+    @property
+    def lb(self):
+        return self.lower_bound
+
+    @property
+    def ub(self):
+        return self.upper_bound
 
 @pytest.fixture
 def ctx():

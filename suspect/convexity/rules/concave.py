@@ -14,16 +14,15 @@
 
 """Convexity detection rules for concave functions."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import UnaryFunctionType
-from suspect.interfaces import UnaryFunctionRule
+from suspect.convexity.rules.rule import ConvexityRule
 
 
-class ConcaveFunctionRule(UnaryFunctionRule):
+class ConcaveFunctionRule(ConvexityRule):
     """Return convexity of concave function."""
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cvx = ctx.convexity(child)
+    def apply(self, expr, convexity, _mono, bounds):
+        child = expr.args[0]
+        bounds = bounds[child]
+        cvx = convexity[child]
         if bounds.is_nonnegative() and cvx.is_concave():
             return Convexity.Concave
         return Convexity.Unknown
@@ -31,9 +30,9 @@ class ConcaveFunctionRule(UnaryFunctionRule):
 # TODO(fracek): handle sqrt(x*x) which is same as x
 class SqrtRule(ConcaveFunctionRule):
     """Return convexity of sqrt."""
-    func_type = UnaryFunctionType.Sqrt
+    pass
 
 
 class LogRule(ConcaveFunctionRule):
     """Return convexity of log."""
-    func_type = UnaryFunctionType.Log
+    pass

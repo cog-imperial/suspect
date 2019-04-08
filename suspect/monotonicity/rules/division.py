@@ -14,25 +14,31 @@
 
 """Monotonicity detection rules for division expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.monotonicity.rules.rule import MonotonicityRule
+from suspect.interval import Interval
 
 
-class DivisionRule(Rule):
+class DivisionRule(MonotonicityRule):
     """Return monotonicity of division."""
-    root_expr = ExpressionType.Division
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, monotonicity, bounds):
         f, g = expr.children
-        return _division_monotonicity(f, g, ctx)
+        mono_f = monotonicity[f]
+        mono_g = monotonicity[g]
+        bound_f = bounds[f]
+        bound_g = bounds[g]
+        return _division_monotonicity(mono_f, bound_f, mono_g, bound_g)
 
 
-def _division_monotonicity(f, g, ctx):
-    mono_f = ctx.monotonicity(f)
-    mono_g = ctx.monotonicity(g)
-    bound_f = ctx.bounds(f)
-    bound_g = ctx.bounds(g)
+class ReciprocalRule(MonotonicityRule):
+    """Return monotonicity of reciprocal."""
+    def apply(self, expr, monotonicity, bounds):
+        g = expr.children[0]
+        mono_g = monotonicity[g]
+        bound_g = bounds[g]
+        return _division_monotonicity(Monotonicity.Constant, Interval(1.0, 1.0), mono_g, bound_g)
 
+
+def _division_monotonicity(mono_f, bound_f, mono_g, bound_g):
     # check for division by 0
     if mono_g.is_constant() and bound_g.is_zero():
         return Monotonicity.Unknown

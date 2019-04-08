@@ -14,24 +14,22 @@
 
 """Monotonicity detection rules for product expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.monotonicity.rules.rule import MonotonicityRule
 
 
-class ProductRule(Rule):
+class ProductRule(MonotonicityRule):
     """Return monotonicity of product."""
-    root_expr = ExpressionType.Product
-
-    def apply(self, expr, ctx):
-        f, g = expr.children
-        return _product_monotonicity(f, g, ctx)
+    def apply(self, expr, monotonicity, bounds):
+        f, g = expr.args
+        return _product_monotonicity(f, g, bounds, monotonicity)
 
 
-def _product_monotonicity(f, g, ctx):
-    mono_f = ctx.monotonicity(f)
-    mono_g = ctx.monotonicity(g)
-    bound_f = ctx.bounds(f)
-    bound_g = ctx.bounds(g)
+def _product_monotonicity(f, g, bounds, monotonicity):
+    mono_f = monotonicity[f]
+    mono_g = monotonicity[g]
+    bound_f = bounds[f]
+    bound_g = bounds[g]
+
     if mono_f.is_constant() and mono_g.is_constant():
         return Monotonicity.Constant
     elif mono_g.is_constant():

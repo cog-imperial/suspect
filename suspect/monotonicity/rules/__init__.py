@@ -15,7 +15,7 @@
 """Monotonicity rules."""
 from .base import VariableRule, ConstantRule, ConstraintRule, ObjectiveRule
 from .abs import AbsRule
-from .division import DivisionRule
+from .division import DivisionRule, ReciprocalRule
 from .linear import LinearRule, SumRule
 from .nondecreasing import SqrtRule, ExpRule, LogRule, TanRule, AsinRule, AtanRule
 from .nonincreasing import AcosRule, NegationRule
@@ -30,5 +30,5 @@ __all__ = [
     'ProductRule', 'DivisionRule', 'LinearRule', 'SumRule', 'AbsRule',
     'SqrtRule', 'ExpRule', 'LogRule', 'TanRule', 'AsinRule', 'AtanRule',
     'AcosRule', 'NegationRule', 'PowerRule', 'SinRule', 'CosRule',
-    'QuadraticRule',
+    'QuadraticRule', 'ReciprocalRule'
 ]

@@ -17,11 +17,13 @@ import pytest
 from unittest.mock import MagicMock
 from hypothesis import given, assume
 import hypothesis.strategies as st
+from pyomo.core.kernel.component_map import ComponentMap
 import suspect.dag.expressions as dex
 import numpy as np
 from suspect.interval import Interval as I
 from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
 from suspect.fbbt.tightening.rules import *
+from suspect.fbbt.tightening.visitor import BoundsTighteningVisitor
 from tests.conftest import (
     PlaceholderExpression as PE,
     BilinearTerm,
@@ -32,14 +34,9 @@ from tests.conftest import (
 )
 
 
-class TighteningContext:
-    def __init__(self, bounds=None):
-        if bounds is None:
-            bounds = {}
-        self._bounds = bounds
-
-    def bounds(self, expr):
-        return self._bounds[expr]
+@pytest.fixture
+def visitor():
+    return BoundsTighteningVisitor()
 
 
 @given(reals(), reals())
@@ -47,13 +44,12 @@ def test_constraint_rule(bound1, bound2):
     lower_bound = min(bound1, bound2)
     upper_bound = max(bound1, bound2)
     rule = ConstraintRule()
-    ctx = TighteningContext()
     child = PE()
-    result = rule.checked_apply(
+    result = rule.apply(
         PE(ET.Constraint, [child], lower_bound=lower_bound, upper_bound=upper_bound),
-        ctx,
+        None,
     )
-    assert result[child] == I(lower_bound, upper_bound)
+    assert result[0] == I(lower_bound, upper_bound)
 
 
 class TestSumRule:
@@ -64,25 +60,26 @@ class TestSumRule:
         children = [PE() for _ in children_bounds]
         expr = PE(ET.Sum, children)
 
-        starting_bounds = {expr: expr_bounds}
-        for child, bounds in zip(children, children_bounds):
-            starting_bounds[child] = bounds
-        ctx = TighteningContext(bounds=starting_bounds)
+        bounds = ComponentMap()
+        bounds[expr] = expr_bounds
+        for child, child_bounds in zip(children, children_bounds):
+            bounds[child] = child_bounds
+
         rule = SumRule()
         self.children = children
         self.expr = expr
-        return rule.checked_apply(expr, ctx)
+        return rule.apply(expr, bounds)
 
     def test_unbounded_expr(self):
         new_bounds = self._rule_result([I(0, 1), I(-1, 0)], I(0, None))
-        assert new_bounds[self.children[0]] == I(0, None)
-        assert new_bounds[self.children[1]] == I(-1, None)
+        assert new_bounds[0] == I(0, None)
+        assert new_bounds[1] == I(-1, None)
 
     def test_bounded_expr(self):
         expr_bounds = I(-5 , 5)
         children_bounds = [I(1, 2), I(-2, 2), I(-10, 10)]
         new_bounds = self._rule_result(children_bounds, expr_bounds)
-        assert new_bounds[self.children[2]] == I(-9, 6)
+        assert new_bounds[2] == I(-9, 6)
 
 
 class TestLinearRule:
@@ -93,41 +90,45 @@ class TestLinearRule:
         children = [PE() for _ in children_bounds]
         expr = PE(ET.Linear, children, coefficients=coefficients, constant_term=0)
 
-        starting_bounds = {expr: expr_bounds}
-        for child, bounds in zip(children, children_bounds):
-            starting_bounds[child] = bounds
-        ctx = TighteningContext(bounds=starting_bounds)
+        bounds = ComponentMap()
+        bounds[expr] = expr_bounds
+        for child, child_bounds in zip(children, children_bounds):
+            bounds[child] = child_bounds
+
         rule = LinearRule()
         self.children = children
         self.expr = expr
-        return rule.checked_apply(expr, ctx)
+        return rule.apply(expr, bounds)
 
     def test_unbounded_expr(self):
         new_bounds = self._rule_result([-1, 1], [I(0, 1), I(-1, 0)], I(0, None))
-        assert new_bounds[self.children[0]] == I(None, 0)
-        assert new_bounds[self.children[1]] == I(0, None)
+        assert new_bounds[0] == I(None, 0)
+        assert new_bounds[1] == I(0, None)
 
     def test_bounded_expr(self):
         expr_bounds = I(-5 , 5)
         children_bounds = [I(-2, -1), I(-2, 2), I(-10, 10)]
         new_bounds = self._rule_result([-1, 1, 2], children_bounds, expr_bounds)
-        assert new_bounds[self.children[2]] == I(-4.5, 3)
+        assert new_bounds[2] == I(-4.5, 3)
 
 
+@pytest.mark.skip('Tagged quadratic expressions are not implemented')
 class TestQuadraticRule:
     children = None
     expr = None
 
     def _rule_result(self, terms, children, children_bounds, expr_bounds):
         expr = PE(ET.Quadratic, children, terms=terms)
-        starting_bounds = {expr: expr_bounds}
-        for child, bounds in zip(children, children_bounds):
-            starting_bounds[child] = bounds
-        ctx = TighteningContext(bounds=starting_bounds)
+
+        bounds = ComponentMap()
+        bounds[expr] = expr_bounds
+        for child, child_bounds in zip(children, children_bounds):
+            bounds[child] = child_bounds
+
         rule = QuadraticRule()
         self.children = children
         self.expr = expr
-        return rule.checked_apply(expr, ctx)
+        return rule.apply(expr, bounds)
 
     def test_sum_of_squares(self):
         x = PE()
@@ -138,8 +139,8 @@ class TestQuadraticRule:
             [I(None, None), I(None, None)],
             I(None, 10),
         )
-        assert new_bounds[self.children[0]] == I(-np.sqrt(10.0), np.sqrt(10))
-        assert new_bounds[self.children[1]] == I(-np.sqrt(5), np.sqrt(5))
+        assert new_bounds[0] == I(-np.sqrt(10.0), np.sqrt(10))
+        assert new_bounds[1] == I(-np.sqrt(5), np.sqrt(5))
 
 
 class TestPowerRuleConstantExpo:
@@ -151,12 +152,14 @@ class TestPowerRuleConstantExpo:
         expr = PE(ET.Power, [base, expo])
         rule = PowerRule()
         self.base = base
-        ctx = TighteningContext(bounds={expr: expr_bounds})
-        return rule.checked_apply(expr, ctx)
+
+        bounds = ComponentMap()
+        bounds[expr] = expr_bounds
+        return rule.apply(expr, bounds)
 
     def test_square(self):
         new_bounds = self._rule_result(2.0, I(0, 4))
-        assert new_bounds[self.base] == I(-2, 2)
+        assert new_bounds[0] == I(-2, 2)
 
     def test_non_square(self):
         new_bounds = self._rule_result(3.0, I(0, 4))
@@ -175,6 +178,22 @@ class TestUnboundedFunctionsRule:
         rule = rule_cls()
         child = PE()
         expr = PE(ET.UnaryFunction, [child], func_type=expr_type)
-        ctx = TighteningContext({expr: I(lower, upper)})
-        new_bounds = rule.checked_apply(expr, ctx)
-        assert new_bounds[child] == I(None, None)
+        bounds = ComponentMap()
+        bounds[expr] = I(lower, upper)
+        new_bounds = rule.apply(expr, bounds)
+        assert new_bounds[0] == I(None, None)
+
+
+class TestVisitor:
+    def test_handle_result_with_new_value(self, visitor):
+        bounds = ComponentMap()
+        expr = PE()
+        assert visitor.handle_result(expr, Interval(0, 1), bounds)
+        assert bounds[expr] == Interval(0, 1)
+
+    def test_handle_result_with_no_new_value(self, visitor):
+        bounds = ComponentMap()
+        expr = PE()
+        visitor.handle_result(expr, Interval(0, 1), bounds)
+        assert not visitor.handle_result(expr, None, bounds)
+        assert bounds[expr] == Interval(0, 1)

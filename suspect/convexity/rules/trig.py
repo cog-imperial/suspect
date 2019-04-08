@@ -14,29 +14,26 @@
 
 """Convexity detection rules for trigonometric expressions."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import UnaryFunctionType
-from suspect.interfaces import UnaryFunctionRule
+from suspect.convexity.rules.rule import ConvexityRule
 from suspect.interval import Interval
 from suspect.math import pi # pylint: disable=no-name-in-module
 
 
-class SinRule(UnaryFunctionRule):
+class SinRule(ConvexityRule):
     """Return convexity of sin."""
-    func_type = UnaryFunctionType.Sin
+    def apply(self, expr, convexity, _mono, bounds): # pylint: disable=too-many-return-statements
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        cvx = convexity[child]
 
-    def apply(self, expr, ctx): # pylint: disable=too-many-return-statements
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cvx = ctx.convexity(child)
-
-        if bounds.size() > pi:
+        if child_bounds.size() > pi:
             return Convexity.Unknown
 
-        sin_bounds = bounds.sin()
+        sin_bounds = child_bounds.sin()
         if sin_bounds.lower_bound * sin_bounds.upper_bound < 0:
             return Convexity.Unknown
 
-        cos_bounds = bounds.cos()
+        cos_bounds = child_bounds.cos()
 
         if sin_bounds.is_nonnegative():
             if cvx.is_linear():
@@ -56,44 +53,40 @@ class SinRule(UnaryFunctionRule):
         return Convexity.Unknown
 
 
-class AsinRule(UnaryFunctionRule):
+class AsinRule(ConvexityRule):
     """Return convexity of asin."""
-    func_type = UnaryFunctionType.Asin
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cvx = ctx.convexity(child)
+    def apply(self, expr, convexity, _mono, bounds):
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        cvx = convexity[child]
 
         concave_domain = Interval(-1, 0)
-        if bounds in concave_domain and cvx.is_concave():
+        if child_bounds in concave_domain and cvx.is_concave():
             return Convexity.Concave
 
         convex_domain = Interval(0, 1)
-        if bounds in convex_domain and cvx.is_convex():
+        if child_bounds in convex_domain and cvx.is_convex():
             return Convexity.Convex
 
         return Convexity.Unknown
 
 
 
-class CosRule(UnaryFunctionRule):
+class CosRule(ConvexityRule):
     """Return convexity of cos."""
-    func_type = UnaryFunctionType.Cos
+    def apply(self, expr, convexity, _mono, bounds): # pylint: disable=too-many-return-statements
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        cvx = convexity[child]
 
-    def apply(self, expr, ctx): # pylint: disable=too-many-return-statements
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cvx = ctx.convexity(child)
-
-        if bounds.size() > pi:
+        if child_bounds.size() > pi:
             return Convexity.Unknown
 
-        cos_bounds = bounds.cos()
+        cos_bounds = child_bounds.cos()
         if cos_bounds.lower_bound * cos_bounds.upper_bound < 0:
             return Convexity.Unknown
 
-        sin_bounds = bounds.sin()
+        sin_bounds = child_bounds.sin()
 
         if cos_bounds.is_nonnegative():
             if cvx.is_linear():
@@ -113,39 +106,35 @@ class CosRule(UnaryFunctionRule):
         return Convexity.Unknown
 
 
-class AcosRule(UnaryFunctionRule):
+class AcosRule(ConvexityRule):
     """Return convexity of acos."""
-    func_type = UnaryFunctionType.Acos
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cvx = ctx.convexity(child)
+    def apply(self, expr, convexity, _mono, bounds):
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        cvx = convexity[child]
 
         convex_domain = Interval(-1, 0)
-        if bounds in convex_domain and cvx.is_concave():
+        if child_bounds in convex_domain and cvx.is_concave():
             return Convexity.Convex
 
         concave_domain = Interval(0, 1)
-        if bounds in concave_domain and cvx.is_convex():
+        if child_bounds in concave_domain and cvx.is_convex():
             return Convexity.Concave
 
         return Convexity.Unknown
 
 
-class TanRule(UnaryFunctionRule):
+class TanRule(ConvexityRule):
     """Return convexity of tan."""
-    func_type = UnaryFunctionType.Tan
+    def apply(self, expr, convexity, _mono, bounds):
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        cvx = convexity[child]
 
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cvx = ctx.convexity(child)
-
-        if 2.0*bounds.size() > pi:
+        if 2.0*child_bounds.size() > pi:
             return Convexity.Unknown
 
-        tan_bounds = bounds.tan()
+        tan_bounds = child_bounds.tan()
         if tan_bounds.lower_bound * tan_bounds.upper_bound < 0:
             return Convexity.Unknown
 
@@ -158,19 +147,17 @@ class TanRule(UnaryFunctionRule):
         return Convexity.Unknown
 
 
-class AtanRule(UnaryFunctionRule):
+class AtanRule(ConvexityRule):
     """Return convexity of atan."""
-    func_type = UnaryFunctionType.Atan
+    def apply(self, expr, convexity, _mono, bounds):
+        child = expr.args[0]
+        child_bounds = bounds[child]
+        cvx = convexity[child]
 
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(child)
-        cvx = ctx.convexity(child)
-
-        if bounds.is_nonpositive() and cvx.is_convex():
+        if child_bounds.is_nonpositive() and cvx.is_convex():
             return Convexity.Convex
 
-        if bounds.is_nonnegative() and cvx.is_concave():
+        if child_bounds.is_nonnegative() and cvx.is_concave():
             return Convexity.Concave
 
         return Convexity.Unknown

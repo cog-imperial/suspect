@@ -1,46 +1,39 @@
 # pylint: skip-file
 import pytest
+from pyomo.core.kernel.component_map import ComponentMap
 from tests.conftest import PlaceholderExpression
-import suspect.dag.expressions as dex
 from suspect.interval import Interval
+from suspect.dag.expressions import UnaryFunctionExpression
 from suspect.fbbt.initialization import BoundsInitializationVisitor
+from suspect.fbbt.initialization.rules import (
+    SqrtRule,
+    LogRule,
+    AsinRule,
+    AcosRule,
+)
 
 
-class InitContext:
-    def __init__(self):
-        self._bounds = {}
-
-    def set_bounds(self, expr, value):
-        self._bounds[expr] = value
-
-    def bounds(self,  expr):
-        return self._bounds[expr]
-
-
-@pytest.fixture
-def visitor():
-    return BoundsInitializationVisitor()
-
-
-def _visit(visitor, root_cls):
+def _visit(func_name):
     p = PlaceholderExpression()
-    root = root_cls([p])
-    ctx = InitContext()
-    visitor.visit(root, ctx)
-    return ctx.bounds(p)
+    visitor = BoundsInitializationVisitor()
+    root = UnaryFunctionExpression(p, name=func_name)
+    bounds = ComponentMap()
+    assert visitor.visit(root, bounds)
+    print(bounds._dict)
+    return bounds[p]
 
 
-def test_sqrt(visitor):
-    assert _visit(visitor, dex.SqrtExpression).is_nonnegative()
+def test_sqrt():
+    assert _visit('sqrt').is_nonnegative()
 
 
-def test_log(visitor):
-    assert _visit(visitor, dex.LogExpression).is_nonnegative()
+def test_log():
+    assert _visit('log').is_nonnegative()
 
 
-def test_asin(visitor):
-    assert _visit(visitor, dex.AsinExpression) == Interval(-1, 1)
+def test_asin():
+    assert _visit('asin') == Interval(-1, 1)
 
 
-def test_acos(visitor):
-    assert _visit(visitor, dex.AcosExpression) == Interval(-1, 1)
+def test_acos():
+    assert _visit('acos') == Interval(-1, 1)

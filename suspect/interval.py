@@ -69,7 +69,7 @@ def monotonic_increasing(func):
 def monotonic_decreasing(func):
     """Correctly round monotonic decreasing function."""
     # pylint: disable=invalid-name, protected-access
-    @wraps
+    @wraps(func)
     def _wrapper(it):
         inner = func(it)
         return Interval(inner(it._upper, RM.RD), inner(it._lower, RM.RU))
@@ -338,6 +338,9 @@ class Interval(object): # pylint: disable=too-many-public-methods
 
     def __str__(self):
         return 'Interval([{}, {}])'.format(self._lower, self._upper)
+
+    def abs(self):
+        return abs(self)
 
     @monotonic_increasing
     def _sqrt(self):

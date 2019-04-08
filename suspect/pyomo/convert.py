@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 from numbers import Number
 import pyomo.environ as aml
 import pyomo.core.expr.expr_pyomo5 as pex
@@ -28,6 +29,7 @@ from suspect.pyomo.util import (
 )
 from suspect.pyomo.expr_dict import ExpressionDict
 from suspect.float_hash import BTreeFloatHasher
+from suspect.dag.expressions import create_wrapper_node_with_local_data
 from suspect.dag.dag import ProblemDag
 import suspect.dag.expressions as dex
 
@@ -72,8 +74,7 @@ class ComponentFactory(object):
         comp = self._components.get(omo_var)
         if comp is not None:
             return comp
-        domain = _convert_domain(omo_var.domain)
-        new_var = dex.Variable(omo_var.name, omo_var.lb, omo_var.ub, domain)
+        new_var = deepcopy(omo_var)
         self._components[omo_var] = new_var
         return new_var
 
@@ -86,7 +87,6 @@ class ComponentFactory(object):
             bounds.upper_bound,
             [new_expr],
         )
-        new_expr.add_parent(constraint)
         return constraint
 
     def objective(self, omo_obj):
@@ -99,164 +99,10 @@ class ComponentFactory(object):
         obj = dex.Objective(
             omo_obj.name, sense=sense, children=[new_expr]
         )
-        new_expr.add_parent(obj)
         return obj
 
     def expression(self, expr):
         return self._visitor.dfs_postorder_stack(expr)
-
-
-
-_unary_func_name_to_expr_cls = {
-    'sqrt': dex.SqrtExpression,
-    'exp': dex.ExpExpression,
-    'log': dex.LogExpression,
-    'sin': dex.SinExpression,
-    'cos': dex.CosExpression,
-    'tan': dex.TanExpression,
-    'asin': dex.AsinExpression,
-    'acos': dex.AcosExpression,
-    'atan': dex.AtanExpression,
-}
-
-
-def _convert_as(expr_cls):
-    return lambda _, v: expr_cls(v)
-
-
-def _convert_unary_function(node, values):
-    assert len(values) == 1
-    expr_cls = _unary_func_name_to_expr_cls.get(node.getname(), None)
-    if expr_cls is None:
-        raise RuntimeError('Unknown UnaryFunctionExpression type {}'.format(node.getname()))
-    return expr_cls(values)
-
-
-def _is_product_with_reciprocal(children):
-    assert len(children) == 2
-    a, b = children
-    if isinstance(a, dex.DivisionExpression):
-        if isinstance(a.children[0], dex.Constant):
-            return a.children[0].value == 1.0
-    if isinstance(b, dex.DivisionExpression):
-        if isinstance(b.children[0], dex.Constant):
-            return b.children[0].value == 1.0
-    return False
-
-
-def _is_bilinear_product(children):
-    if len(children) != 2:
-        return False
-    a, b = children
-    if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
-        return True
-    if isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
-        return len(b.children) == 1 and b.constant_term == 0.0
-    if isinstance(a, dex.LinearExpression) and isinstance(b, dex.Variable):
-        return len(a.children) == 1 and a.constant_term == 0.0
-    return False
-
-
-def _bilinear_variables_with_coefficient(children):
-    assert len(children) == 2
-    a, b = children
-    if isinstance(a, dex.Variable) and isinstance(b, dex.Variable):
-        return a, b, 1.0
-    if isinstance(a, dex.Variable) and isinstance(b, dex.LinearExpression):
-        assert len(b.children) == 1
-        assert b.constant_term == 0.0
-        vb = b.children[0]
-        return a, vb, b.coefficient(vb)
-    if isinstance(a, dex.LinearExpression) and isinstance(b, dex.Variable):
-        assert len(a.children) == 1
-        assert a.constant_term == 0.0
-        va = a.children[0]
-        return va, b, a.coefficient(va)
-
-
-def _reciprocal_product_numerator_denominator(children):
-    a, b = children
-    if isinstance(a, dex.DivisionExpression):
-        assert not isinstance(b, dex.DivisionExpression)
-        _, d = a.children
-        return b, d
-
-    assert isinstance(b, dex.DivisionExpression)
-    _, d = b.children
-    return a, d
-
-
-def _convert_product(_node, values):
-    if _is_product_with_reciprocal(values):
-        n, d = _reciprocal_product_numerator_denominator(values)
-        return dex.DivisionExpression([n, d])
-
-    if _is_bilinear_product(values):
-        a, b, c = _bilinear_variables_with_coefficient(values)
-        return dex.QuadraticExpression([a], [b], [c], [a, b])
-
-    return dex.ProductExpression(values)
-
-
-def _convert_reciprocal(_node, values):
-    assert len(values) == 1
-    return dex.DivisionExpression([dex.Constant(1.0), values[0]])
-
-
-def _is_monomial_like_expression(expr):
-    if isinstance(expr, dex.Variable):
-        return True
-    if isinstance(expr, dex.Constant):
-        return True
-    if isinstance(expr, dex.LinearExpression):
-        return True
-    return False
-
-
-def _convert_sum(_node, values):
-    # convert sum of variables, monomial terms and constants
-    # to linear expression
-    if all([_is_monomial_like_expression(v) for v in values]):
-        coef_map = {}
-        constant = 0.0
-        for value in values:
-            if isinstance(value, dex.Constant):
-                constant += value.value
-
-            if isinstance(value, dex.Variable):
-                if value not in coef_map:
-                    coef_map[value] = 0.0
-                coef_map[value] += 1.0
-
-            if isinstance(value, dex.LinearExpression):
-                for var in value.children:
-                    if var not in coef_map:
-                        coef_map[var] = 0.0
-                    coef_map[var] += value.coefficient(var)
-
-        variables = list(coef_map.keys())
-        coefficients = [coef_map[v] for v in variables]
-        return dex.LinearExpression(coefficients, variables, constant)
-
-    return dex.SumExpression(values)
-
-
-def _convert_monomial(_node, values):
-    const, var = values
-    assert isinstance(const, dex.Constant)
-    assert isinstance(var, dex.Variable)
-    return dex.LinearExpression([const.value], [var], 0.0)
-
-
-_convert_expr_map = dict()
-_convert_expr_map[pex.UnaryFunctionExpression] = _convert_unary_function
-_convert_expr_map[pex.ProductExpression] = _convert_product
-_convert_expr_map[pex.ReciprocalExpression] = _convert_reciprocal
-_convert_expr_map[pex.PowExpression] = _convert_as(dex.PowExpression)
-_convert_expr_map[pex.SumExpression] = _convert_sum
-_convert_expr_map[pex.MonomialTermExpression] = _convert_monomial
-_convert_expr_map[pex.AbsExpression] = _convert_as(dex.AbsExpression)
-_convert_expr_map[pex.NegationExpression] = _convert_as(dex.NegationExpression)
 
 
 class _ConvertExpressionVisitor(ExpressionValueVisitor):
@@ -267,23 +113,24 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
     def visiting_potential_leaf(self, node):
         if node.__class__ in nonpyomo_leaf_types:
             expr = NumericConstant(float(node))
-            const = dex.Constant(float(node))
-            self.set(expr, const)
-            return True, const
+            self.set(expr, expr)
+            return True, expr
+
+        if node.is_constant():
+            self.set(expr, expr)
+            return True, expr
 
         if node.is_variable_type():
-            return True, self.get(node)
+            var = self.get(node)
+            assert var is not None
+            return True, var
         return False, None
 
     def visit(self, node, values):
         if self.get(node) is not None:
             return self.get(node)
 
-        callback = _convert_expr_map.get(type(node), None)
-        if callback is None:
-            raise RuntimeError('Unknown expression type {}'.format(type(node)))
-
-        new_expr = callback(node, values)
+        new_expr = create_wrapper_node_with_local_data(node, tuple(values))
         self.set(node, new_expr)
         return new_expr
 
@@ -295,17 +142,7 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             return self.memo[expr]
 
     def set(self, expr, new_expr):
+        if self.memo.get(expr) is not None:
+            return
         self.memo[expr] = new_expr
-        if len(new_expr.children) > 0:
-            for child in new_expr.children:
-                child.add_parent(new_expr)
         self.dag.add_vertex(new_expr)
-
-
-def _convert_domain(dom):
-    if isinstance(dom, aml.RealSet):
-        return dex.Domain.REALS
-    elif isinstance(dom, aml.IntegerSet):
-        return dex.Domain.INTEGERS
-    elif isinstance(dom, aml.BooleanSet):
-        return dex.Domain.BINARY

@@ -15,32 +15,26 @@
 """Monotonicity detection rules for base expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.monotonicity.rules.rule import MonotonicityRule
 
 
-class VariableRule(Rule):
+class VariableRule(MonotonicityRule):
     """Return monotonicity of variable."""
-    root_expr = ExpressionType.Variable
-
-    def apply(self, _expr, _ctx):
+    def apply(self, _expr, _mono, _bounds):
         return Monotonicity.Nondecreasing
 
 
-class ConstantRule(Rule):
+class ConstantRule(MonotonicityRule):
     """Return monotonicity of constant."""
-    root_expr = ExpressionType.Constant
-
-    def apply(self, _expr, _ctx):
+    def apply(self, _expr, _mono, _bounds):
         return Monotonicity.Constant
 
 
-class ConstraintRule(Rule):
+class ConstraintRule(MonotonicityRule):
     """Return monotonicity of constraint."""
-    root_expr = ExpressionType.Constraint
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, monotonicity, _bounds):
         child = expr.children[0]
-        mono = ctx.monotonicity(child)
+        mono = monotonicity[child]
         if expr.bounded_below() and expr.bounded_above():
             # l <= g(x) <= u
             if mono.is_constant():
@@ -55,13 +49,11 @@ class ConstraintRule(Rule):
         raise RuntimeError('Constraint with no bounds')  # pragma: no cover
 
 
-class ObjectiveRule(Rule):
+class ObjectiveRule(MonotonicityRule):
     """Return monotonicity of objective."""
-    root_expr = ExpressionType.Objective
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, monotonicity, bounds):
         child = expr.children[0]
-        mono = ctx.monotonicity(child)
+        mono = monotonicity[child]
         if expr.is_minimizing():
             return mono
         # max f(x) == min -f(x)

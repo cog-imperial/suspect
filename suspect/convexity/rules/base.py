@@ -14,33 +14,26 @@
 
 """Convexity detection rules for base expressions."""
 from suspect.convexity.convexity import Convexity
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
+from suspect.convexity.rules.rule import ConvexityRule
 
 
-class VariableRule(Rule):
+class VariableRule(ConvexityRule):
     """Return convexity of variable."""
-    root_expr = ExpressionType.Variable
-
-    def apply(self, _expr, _ctx):
+    def apply(self, _expr, _convexity, _mono, _bounds):
         return Convexity.Linear
 
 
-class ConstantRule(Rule):
+class ConstantRule(ConvexityRule):
     """Return convexity of constant."""
-    root_expr = ExpressionType.Constant
-
-    def apply(self, _expr, _ctx):
+    def apply(self, _expr, _convexity, _mono, _bounds):
         return Convexity.Linear
 
 
-class ConstraintRule(Rule):
+class ConstraintRule(ConvexityRule):
     """Return convexity of constraint."""
-    root_expr = ExpressionType.Constraint
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        cvx = ctx.convexity(child)
+    def apply(self, expr, convexity, _mono, _bounds):
+        child = expr.args[0]
+        cvx = convexity[child]
         if expr.bounded_below() and expr.bounded_above():
             # l <= g(x) <= u
             if cvx.is_linear():
@@ -55,13 +48,11 @@ class ConstraintRule(Rule):
         raise RuntimeError('Constraint with no bounds')  # pragma: no cover
 
 
-class ObjectiveRule(Rule):
+class ObjectiveRule(ConvexityRule):
     """Return convexity of objective."""
-    root_expr = ExpressionType.Objective
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        cvx = ctx.convexity(child)
+    def apply(self, expr, convexity, _mono, _bounds):
+        child = expr.args[0]
+        cvx = convexity[child]
         if expr.is_minimizing():
             return cvx
         # max f(x) == min -f(x)

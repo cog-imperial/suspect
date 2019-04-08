@@ -13,43 +13,42 @@
 # limitations under the License.
 
 """Monotonicity detection rules for nondecreasing functions."""
-from suspect.expression import UnaryFunctionType
-from suspect.interfaces import UnaryFunctionRule
+from suspect.monotonicity.rules.rule import MonotonicityRule
 
 
-class NondecreasingFunctionRule(UnaryFunctionRule):
+class NondecreasingFunctionRule(MonotonicityRule):
     """Return monotonicity of nondecreasing function."""
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        mono = ctx.monotonicity(child)
+    def apply(self, expr, monotonicity, _bounds):
+        child = expr.args[0]
+        mono = monotonicity[child]
         return mono
 
 
 class SqrtRule(NondecreasingFunctionRule):
     """Return monotonicity of sqrt function."""
-    func_type = UnaryFunctionType.Sqrt
+    pass
 
 
 class ExpRule(NondecreasingFunctionRule):
     """Return monotonicity of exp function."""
-    func_type = UnaryFunctionType.Exp
+    pass
 
 
 class LogRule(NondecreasingFunctionRule):
     """Return monotonicity of log function."""
-    func_type = UnaryFunctionType.Log
+    pass
 
 
 class TanRule(NondecreasingFunctionRule):
     """Return monotonicity of tan function."""
-    func_type = UnaryFunctionType.Tan
+    pass
 
 
 class AsinRule(NondecreasingFunctionRule):
     """Return monotonicity of asin function."""
-    func_type = UnaryFunctionType.Asin
+    pass
 
 
 class AtanRule(NondecreasingFunctionRule):
     """Return monotonicity of atan function."""
-    func_type = UnaryFunctionType.Atan
+    pass

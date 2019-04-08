@@ -25,53 +25,54 @@ MAX_EXPR_CHILDREN = 1000
 
 class ConstraintRule(Rule):
     """Return new bounds for constraint."""
-    root_expr = ExpressionType.Constraint
-
-    def apply(self, expr, ctx):
-        child = expr.children[0]
+    def apply(self, expr, _bounds):
+        child = expr.args[0]
         bounds = Interval(expr.lower_bound, expr.upper_bound)
-        return {
-            child: bounds
-        }
+        return [bounds]
 
 
 class SumRule(Rule):
     """Return new bounds for sum."""
-    root_expr = ExpressionType.Sum
-
-    def apply(self, expr, ctx):
-        expr_bound = ctx.bounds(expr)
-        if len(expr.children) > MAX_EXPR_CHILDREN: # pragma: no cover
+    def apply(self, expr, bounds):
+        if len(expr.args) > MAX_EXPR_CHILDREN: # pragma: no cover
             return None
-        child_bounds = {}
-        for child, siblings in _sum_child_and_siblings(expr.children):
-            siblings_bound = sum(ctx.bounds(s) for s in siblings)
-            child_bounds[child] = expr_bound - siblings_bound
-        return child_bounds
+        expr_bound = bounds[expr]
+        children_bounds = [
+            self._child_bounds(child, siblings, expr_bound, bounds)
+            for child, siblings in _sum_child_and_siblings(expr.args)
+        ]
+        return children_bounds
+
+    def _child_bounds(self, child, siblings, expr_bound, bounds):
+        siblings_bound = sum(bounds[s] for s in siblings)
+        return expr_bound - siblings_bound
 
 
 class LinearRule(Rule):
     """Return new bounds for linear expressions."""
-    root_expr = ExpressionType.Linear
-
-    def apply(self, expr, ctx):
-        expr_bound = ctx.bounds(expr)
-        if len(expr.children) > MAX_EXPR_CHILDREN: # pragma: no cover
+    def apply(self, expr, bounds):
+        if len(expr.args) > MAX_EXPR_CHILDREN: # pragma: no cover
             return None
-        child_bounds = {}
+        expr_bound = bounds[expr]
         const = expr.constant_term
-        coefficients = [expr.coefficient(ch) for ch in expr.children]
-        for (child_c, child), siblings in _linear_child_and_siblings(coefficients, expr.children):
-            siblings_bound = sum(ctx.bounds(s) * c for c, s in siblings) + const
-            child_bounds[child] = (expr_bound - siblings_bound) / child_c
-        return child_bounds
+        coefficients = [expr.coefficient(ch) for ch in expr.args]
+        children_bounds = [
+            self._child_bounds(child, child_c, siblings, const, expr_bound, bounds)
+            for (child_c, child), siblings
+            in _linear_child_and_siblings(coefficients, expr.args)
+        ]
+        return children_bounds
+
+    def _child_bounds(self, child, coef, siblings, const, expr_bound, bounds):
+        siblings_bound = sum(bounds[s] * c for c, s in siblings) + const
+        return (expr_bound - siblings_bound) / coef
+
 
 
 class QuadraticRule(Rule):
     """Return new bounds for quadratic expressions."""
-    root_expr = ExpressionType.Quadratic
-
     def apply(self, expr, ctx):
+        raise NotImplementedError('QuadraticRule.apply')
         expr_bound = ctx.bounds(expr)
         child_bounds = {}
         for term, siblings in self._quadratic_term_and_siblings(expr):
@@ -121,34 +122,30 @@ class QuadraticRule(Rule):
 
 class PowerRule(Rule):
     """Return new bounds for power expressions."""
-    root_expr = ExpressionType.Power
-
-    def apply(self, expr, ctx):
-        base, expo = expr.children
+    def apply(self, expr, bounds):
+        base, expo = expr.args
         if not expo.is_constant():
             return None
         if not almosteq(expo.value, 2):
             return None
 
-        bounds = ctx.bounds(expr)
+        expr_bound = bounds[expr]
         # the bound of a square number is never negative, but check anyway to
         # avoid unexpected crashes.
-        if not bounds.is_nonnegative():
+        if not expr_bound.is_nonnegative():
             return None
 
-        sqrt_bound = bounds.sqrt()
-        return {
-            base: Interval(-sqrt_bound.upper_bound, sqrt_bound.upper_bound)
-        }
+        sqrt_bound = expr_bound.sqrt()
+        return [
+            Interval(-sqrt_bound.upper_bound, sqrt_bound.upper_bound),
+            None,
+        ]
 
 
 class _UnaryFunctionRule(UnaryFunctionRule):
-    def apply(self, expr, ctx):
-        child = expr.children[0]
-        bounds = ctx.bounds(expr)
-        return {
-            child: self._child_bounds(bounds)
-        }
+    def apply(self, expr, bounds):
+        expr_bounds = bounds[expr]
+        return [self._child_bounds(expr_bounds)]
 
     def _child_bounds(self, bounds):
         pass

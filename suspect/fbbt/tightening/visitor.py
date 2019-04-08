@@ -17,6 +17,7 @@
 from suspect.visitor import BackwardVisitor
 from suspect.interfaces import CombineUnaryFunctionRules
 from suspect.interval import Interval
+from suspect.expression import ExpressionType as ET
 from suspect.fbbt.tightening.rules import (
     ConstraintRule,
     SumRule,
@@ -35,33 +36,32 @@ class BoundsTighteningVisitor(BackwardVisitor):
     needs_matching_rules = False
 
     def register_rules(self):
-        return [
-            ConstraintRule(),
-            SumRule(),
-            LinearRule(),
-            QuadraticRule(),
-            PowerRule(),
-            CombineUnaryFunctionRules(
-                AbsRule(),
-                SqrtRule(),
-                ExpRule(),
-                LogRule(),
+        return {
+            ET.Constraint: ConstraintRule(),
+            ET.Sum: SumRule(),
+            ET.Linear: LinearRule(),
+            # QuadraticRule(),
+            ET.Power: PowerRule(),
+            ET.UnaryFunction: CombineUnaryFunctionRules({
+                'abs': AbsRule(),
+                'sqrt': SqrtRule(),
+                'exp': ExpRule(),
+                'log': LogRule()},
                 needs_matching_rules=False,
             )
-        ]
+        }
 
-    def handle_result(self, expr, value, ctx):
+    def handle_result(self, expr, value, bounds):
         if value is None:
             new_bounds = Interval(None, None)
         else:
             new_bounds = value
 
-        old_bounds = ctx.get_bounds(expr)
+        old_bounds = bounds.get(expr, None)
         if old_bounds is not None:
             new_bounds = old_bounds.intersect(new_bounds)
             has_changed = old_bounds != new_bounds
         else:
             has_changed = True
-        ctx.set_bounds(expr, new_bounds)
+        bounds[expr] = new_bounds
         return has_changed
-        # return True

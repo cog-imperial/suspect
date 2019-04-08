@@ -24,13 +24,13 @@ def placeholder_expressions(draw):
 
 def test_variable_is_always_1():
     rule = VariableRule()
-    result = rule.checked_apply(PE(ET.Variable), None)
+    result = rule.apply(PE(ET.Variable), None)
     assert result.degree == 1
 
 
 def test_constant_is_always_0():
     rule = ConstantRule()
-    result = rule.checked_apply(PE(ET.Constant), None)
+    result = rule.apply(PE(ET.Constant), None)
     assert result.degree == 0
 
 
@@ -44,7 +44,7 @@ def test_passtrough_rules(rule_cls, root_type, child_degree):
     rule = rule_cls()
     child = PE(ET.Variable)
     ctx = {child: child_degree}
-    result = rule.checked_apply(PE(root_type, [child]), ctx)
+    result = rule.apply(PE(root_type, [child]), ctx)
     assert result == child_degree
 
 
@@ -57,7 +57,7 @@ def test_division_rule_with_constant_denominator(child_degree):
         num: child_degree,
         den: PolynomialDegree(0),
     }
-    result = rule.checked_apply(PE(ET.Division, [num, den]), ctx)
+    result = rule.apply(PE(ET.Division, [num, den]), ctx)
     assert result == child_degree
 
 
@@ -70,11 +70,13 @@ def test_division_rule_with_nonconstant_denominator(child_degree):
         num: child_degree,
         den: PolynomialDegree(1),
     }
-    result = rule.checked_apply(PE(ET.Division, [num, den]), ctx)
+    result = rule.apply(PE(ET.Division, [num, den]), ctx)
     assert not result.is_polynomial()
 
 
-@given(st.lists(st.tuples(polynomial_degrees(), placeholder_expressions()), min_size=1))
+@given(st.lists(st.tuples(polynomial_degrees(),
+                          placeholder_expressions()),
+                min_size=1))
 def test_product_rule(children_degrees):
     children = []
     ctx = {}
@@ -90,24 +92,27 @@ def test_product_rule(children_degrees):
             expected = None
     expected = PolynomialDegree(expected)
     rule = ProductRule()
-    result = rule.checked_apply(PE(ET.Product, children), ctx)
+    result = rule.apply(PE(ET.Product, children), ctx)
     assert result == expected
 
 
 def test_linear_rule_with_no_children():
     rule = LinearRule()
-    result = rule.checked_apply(PE(ET.Linear, []), None)
+    result = rule.apply(PE(ET.Linear, []), None)
     assert result.degree == 0
+
 
 @given(st.integers(min_value=1, max_value=100))
 def test_linear_rule_with_children(children_size):
     rule = LinearRule()
     children = [PE(ET.Variable)] * children_size
-    result = rule.checked_apply(PE(ET.Linear, children), None)
+    result = rule.apply(PE(ET.Linear, children), None)
     assert result.degree == 1
 
 
-@given(st.lists(st.tuples(polynomial_degrees(), placeholder_expressions()), min_size=1))
+@given(st.lists(st.tuples(polynomial_degrees(),
+                          placeholder_expressions()),
+                min_size=1))
 def test_sum_rule(children_degrees):
     children = []
     ctx = {}
@@ -124,7 +129,7 @@ def test_sum_rule(children_degrees):
 
     expected = PolynomialDegree(expected)
     rule = SumRule()
-    result = rule.checked_apply(PE(ET.Sum, children), ctx)
+    result = rule.apply(PE(ET.Sum, children), ctx)
     assert result == expected
 
 
@@ -135,7 +140,7 @@ def test_power_with_non_polynomial_exponent():
     expo = PE(ET.UnaryFunction)
     ctx[expo] = PolynomialDegree(None)
     rule = PowerRule()
-    result = rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+    result = rule.apply(PE(ET.Power, [base, expo]), ctx)
     assert not result.is_polynomial()
 
 
@@ -146,7 +151,7 @@ def test_power_with_non_polynomial_base():
     expo = PE(ET.Variable)
     ctx[expo] = PolynomialDegree(1)
     rule = PowerRule()
-    result = rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+    result = rule.apply(PE(ET.Power, [base, expo]), ctx)
     assert not result.is_polynomial()
 
 
@@ -157,7 +162,7 @@ def test_power_constant_power_constant():
     expo = PE(ET.Constant)
     ctx[expo] = PolynomialDegree(0)
     rule = PowerRule()
-    result = rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+    result = rule.apply(PE(ET.Power, [base, expo]), ctx)
     assert result.is_polynomial() and result.degree == 0
 
 
@@ -168,7 +173,7 @@ def test_power_non_constant():
     expo = PE(ET.Constant)
     ctx[expo] = PolynomialDegree(0)
     rule = PowerRule()
-    result = rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+    result = rule.apply(PE(ET.Power, [base, expo]), ctx)
     assert not result.is_polynomial()
 
 
@@ -179,7 +184,7 @@ def test_power_non_constant_polynomial():
     expo = PE(ET.Product)
     ctx[expo] = PolynomialDegree(4)
     rule = PowerRule()
-    result = rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+    result = rule.apply(PE(ET.Power, [base, expo]), ctx)
     assert not result.is_polynomial()
 
 
@@ -190,12 +195,12 @@ def test_power_constant_value():
     expo = PE(ET.Constant, is_constant=True, value=4.0)
     ctx[expo] = PolynomialDegree(0)
     rule = PowerRule()
-    result = rule.checked_apply(PE(ET.Power, [base, expo]), ctx)
+    result = rule.apply(PE(ET.Power, [base, expo]), ctx)
     assert result.is_polynomial() and result.degree == 8
 
 
 def test_unary_function():
     rule = UnaryFunctionRule()
     ctx = {}
-    result = rule.checked_apply(PE(ET.UnaryFunction), ctx)
+    result = rule.apply(PE(ET.UnaryFunction), ctx)
     assert not result.is_polynomial()

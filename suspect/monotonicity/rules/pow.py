@@ -14,23 +14,22 @@
 
 """Monotonicity detection rules for power expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
+from suspect.monotonicity.rules.rule import MonotonicityRule
 from suspect.expression import ExpressionType
 from suspect.interfaces import Rule
 from suspect.math import almosteq, almostgte # pylint: disable=no-name-in-module
 
 
-class PowerRule(Rule):
+class PowerRule(MonotonicityRule):
     """Return monotonicity of power expression."""
-    root_expr = ExpressionType.Power
+    def apply(self, expr, monotonicity, bounds):
+        base, expo = expr.args
 
-    def apply(self, expr, ctx):
-        base, expo = expr.children
+        mono_base = monotonicity[base]
+        mono_expo = monotonicity[expo]
 
-        mono_base = ctx.monotonicity(base)
-        mono_expo = ctx.monotonicity(expo)
-
-        bounds_base = ctx.bounds(base)
-        bounds_expo = ctx.bounds(expo)
+        bounds_base = bounds[base]
+        bounds_expo = bounds[expo]
 
         if mono_base.is_constant():
             return _monotonicity_constant_base(

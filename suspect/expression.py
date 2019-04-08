@@ -31,6 +31,7 @@ class ExpressionType(IntEnum):
     Negation = 10
     UnaryFunction = 11
     Quadratic = 12
+    Reciprocal = 13
 
 
 class UnaryFunctionType(IntEnum):

@@ -56,16 +56,6 @@ class BackwardIterator(Iterator): # pragma: no cover pylint: disable=abstract-me
 
 class Rule(object): # pragma: no cover
     """Represent a series of contraints on an expression yielding a value."""
-    root_expr = None
-
-    def checked_apply(self, expr, ctx):
-        """Apply rule to ``expr`` and ``ctx`` after checking matching ``expression_type``."""
-        if expr.expression_type != self.root_expr:
-            raise ValueError('expected {} expression type, but had {}'.format(
-                self.root_expr, expr.expression_type
-            ))
-        return self.apply(expr, ctx)
-
     def apply(self, expr, ctx):
         """Apply rule to ``expr`` and ``ctx``."""
         pass
@@ -73,20 +63,7 @@ class Rule(object): # pragma: no cover
 
 class UnaryFunctionRule(Rule): # pragma: no cover
     """Represent a series of contraints on an unary function expression yielding a value."""
-    root_expr = ExpressionType.UnaryFunction
-    func_type = None
-
-    def checked_apply(self, expr, ctx):
-        """Apply rule to ``expr`` and ``ctx`` after checking matching ``expression_type``."""
-        if expr.expression_type != self.root_expr:
-            raise ValueError('expected {} expression type, but had {}'.format(
-                self.root_expr, expr.expression_type
-            ))
-        if expr.func_type != self.func_type:
-            raise ValueError('expected {} function type, but had {}'.format(
-                self.func_type, expr.func_type
-            ))
-        return self.apply(expr, ctx)
+    pass
 
 
 class CombineUnaryFunctionRules(Rule): # pragma: no cover
@@ -94,31 +71,31 @@ class CombineUnaryFunctionRules(Rule): # pragma: no cover
 
     Parameters
     ----------
-    *args: UnaryFunctionRule list
-       list of unary functions rules
+    rules: UnaryFunctionRule dict
+       dict of unary functions rules
     needs_matching_rules : bool
        if True, will raise an exception if no rule matched
     """
-    root_expr = ExpressionType.UnaryFunction
-
-    def __init__(self, *args, needs_matching_rules=True):
-        self._rules = list(args)
+    def __init__(self, rules, needs_matching_rules=True):
+        self._rules = rules
         self._needs_matching_rules = needs_matching_rules
         self._apply_funcs = {}
-        for rule in self._rules:
-            if not rule.root_expr == ExpressionType.UnaryFunction:
-                raise ValueError('Non unary function rule in CombineUnaryFunctionRules')
-            self._apply_funcs[rule.func_type] = rule.apply
+        for func_name, rule in self._rules.items():
+            self._apply_funcs[func_name] = rule.apply
 
-    def apply(self, expr, ctx):
-        apply_func = self._apply_funcs.get(expr.func_type)
+    def apply(self, expr, bounds):
+        apply_func = self._apply_funcs.get(expr.getname())
         if not apply_func:
             if not self._needs_matching_rules:
                 return None
+            if hasattr(expr, getname):
+                func_name = expr.getname()
+            else:
+                func_name = 'Unknown'
             raise RuntimeError(
-                'Could not find rule for expression of expression_type={} and func_type={}'.format(
+                'Could not find rule for expression of expression_type={} and func_name={}'.format(
                     getattr(expr, 'expression_type'),
-                    getattr(expr, 'func_type'),
+                    func_name,
                 )
             )
-        return apply_func(expr, ctx)
+        return apply_func(expr, bounds)

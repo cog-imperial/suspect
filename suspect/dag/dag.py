@@ -14,7 +14,9 @@
 
 """Directed Acyclic Graph representation of an optimization problem."""
 
+from pyomo.core.expr.expr_pyomo5 import nonpyomo_leaf_types
 from suspect.interfaces import Problem
+from suspect.dag.expressions import Constraint, Objective
 from suspect.dag.vertices_list import VerticesList
 
 
@@ -48,6 +50,9 @@ class ProblemDag(Problem):
     """
     def __init__(self, name=None):
         self.name = name
+        self._depths = {}
+        # Keep a list of vertices that depend on a vertex
+        self._parents = {}
         # The DAG vertices sorted by depth
         self._vertices = VerticesList()
         # Vertices that have no children
@@ -74,11 +79,14 @@ class ProblemDag(Problem):
         vertex : Expression
            the vertex to add.
         """
-        self._vertices.append(vertex)
-        if vertex.is_source:
+        depth = self._vertex_depth(vertex)
+        self._depths[id(vertex)] = depth
+        self._vertices.append(vertex, depth)
+        self._add_parents(vertex)
+        if _is_source_type(vertex):
             self._sources.append(vertex)
 
-        if vertex.is_sink:
+        if _is_sink_type(vertex):
             self._sinks.append(vertex)
 
     def _add_named(self, expr, collection):
@@ -135,3 +143,56 @@ class ProblemDag(Problem):
             'num_constraints': len(self.constraints),
             'num_objectives': len(self.objectives),
         }
+
+    def depth(self, vertex):
+        return self._depths[id(vertex)]
+
+    def _vertex_depth(self, vertex):
+        assert id(vertex) not in self._depths
+        if vertex.is_variable_type():
+            return 1
+        if vertex.is_constant():
+            return 2
+        depth = 0
+        for arg in vertex.args:
+            if arg.is_variable_type():
+                arg_depth = 1
+            elif arg.is_constant():
+                arg_depth = 2
+            else:
+                arg_depth = self._depths[id(arg)]
+
+            if arg_depth >= depth:
+                depth = arg_depth + 1
+        return depth
+
+    def parents(self, vertex):
+        if isinstance(vertex, (Constraint, Objective)):
+            return []
+        return self._parents[id(vertex)].values()
+
+    def _add_parents(self, vertex):
+        # For each of the args of vertex, add vertex as parent
+        # Parents are stored in a dict so that we have both id and node
+        if type(vertex) in nonpyomo_leaf_types:
+            return
+
+        if not vertex.is_expression_type():
+            return
+
+        for arg in vertex.args:
+            if id(arg) not in self._parents:
+                self._parents[id(arg)] = {}
+            parents = self._parents[id(arg)]
+            parents[id(vertex)] = vertex
+
+
+def _is_source_type(node):
+    is_nonpyomo_leaf = node.__class__ in nonpyomo_leaf_types
+    is_variable = node.is_variable_type()
+    is_constant = node.is_constant()
+    return is_nonpyomo_leaf or is_variable or is_constant
+
+
+def _is_sink_type(node):
+    return isinstance(node, (Constraint, Objective))

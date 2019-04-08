@@ -14,8 +14,72 @@
 
 from enum import Enum
 import abc
+import sys
+import pyomo.core.expr.expr_pyomo5 as pex
 from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.math import inf # pylint: disable=no-name-in-module
+
+
+# Wrap Pyomo expression types to "Tag" nodes as specify types
+# (e.g. quadratic, division)
+_pyomo_expression_types = [
+    (pex.NegationExpression, ExpressionType.Negation),
+    (pex.PowExpression, ExpressionType.Power),
+    (pex.ProductExpression, ExpressionType.Product),
+    (pex.MonomialTermExpression, ExpressionType.Product),
+    (pex.ReciprocalExpression, ExpressionType.Reciprocal),
+    (pex.SumExpression, ExpressionType.Sum),
+    (pex.UnaryFunctionExpression, ExpressionType.UnaryFunction),
+    (pex.AbsExpression, ExpressionType.UnaryFunction),
+    (pex.LinearExpression, ExpressionType.Linear),
+]
+
+
+def wrapper_expression_name(node_cls):
+    """Return the name of the class wrapping `node_type`."""
+    return node_cls.__name__
+
+
+def _init(self, args):
+    super(self.__class__, self).__init__(args)
+    self.tag = None
+
+
+def _init_unary_func(self, args, name=None, fcn=None):
+    super(self.__class__, self).__init__(args, name, fcn)
+    self.tag = None
+
+
+_module = sys.modules[__name__]
+for cls, expression_type in _pyomo_expression_types:
+    new_cls_name = wrapper_expression_name(cls)
+    if cls == pex.UnaryFunctionExpression:
+        init_method = _init_unary_func
+    else:
+        init_method = _init
+
+    # Avoid capturing expression_type by ref, turn it into a function
+    # parameter to capture value
+    expression_type_p = lambda et: property(lambda _: et)
+    methods = {
+        '__init__': init_method,
+        'expression_type': expression_type_p(expression_type)
+    }
+    new_cls = type(new_cls_name, (cls,), methods)
+    setattr(_module, new_cls_name, new_cls)
+
+
+
+def create_wrapper_node_with_local_data(node, args):
+    """Create a new node using given arguments."""
+    cls = type(node)
+    wrapper_cls_name = wrapper_expression_name(cls)
+    wrapper_cls = getattr(_module, wrapper_cls_name)
+    if cls == pex.SumExpression:
+        return wrapper_cls(list(args))
+    if cls == pex.UnaryFunctionExpression:
+        return wrapper_cls(args, node._name, node._fcn)
+    return wrapper_cls(args)
 
 
 class Domain(Enum):
@@ -41,205 +105,20 @@ class Expression(metaclass=abc.ABCMeta):
             children = []
 
         self._children = children
-        self._parents = []
-
-        self._depth = 0
-        self._update_depth()
 
     @property
-    def depth(self):
-        """The depth of the expression.
-
-        The depth of the expression is defined as `0` if the
-        expression is a source (Variables and Constants), otherwise
-        it is the maximum depth of its children plus `1`.
-        """
-        return self._depth
-
-    @property
-    def children(self):
+    def args(self):
         return self._children
 
     @property
-    def parents(self):
-        return self._parents
+    def args(self):
+        return self._children
 
-    def add_parent(self, parent):
-        self._parents.append(parent)
-
-    def _update_depth(self):
-        max_depth = self.depth
-        for child in self.children:
-            if child.depth >= max_depth:
-                max_depth = child.depth + 1
-        self._depth = max_depth
+    def is_variable_type(self):
+        return False
 
     def is_constant(self):
         return False
-
-    def __hash__(self):
-        return hash(id(self))
-
-    def __eq__(self, other):
-        return self is other
-
-    def __ne__(self, other):
-        return not (self == other)
-
-
-class ProductExpression(Expression):
-    expression_type = ExpressionType.Product
-
-
-class DivisionExpression(Expression):
-    expression_type = ExpressionType.Division
-
-
-class SumExpression(Expression):
-    expression_type = ExpressionType.Sum
-
-
-class PowExpression(Expression):
-    expression_type = ExpressionType.Power
-
-
-class LinearExpression(Expression):
-    expression_type = ExpressionType.Linear
-
-    def __init__(self, coefficients=None, children=None, constant_term=None):
-        super().__init__(children)
-        if coefficients is None:
-            coefficients = []
-        if constant_term is None:
-            constant_term = 0.0
-        self.constant_term = constant_term
-        self._coefficients = dict([(child, coef) for child, coef in zip(children, coefficients)])
-        self._check_coefficients()
-
-    def coefficient(self, expr):
-        return self._coefficients[expr]
-
-    def _check_coefficients(self):
-        assert len(self._coefficients) == len(self.children)
-
-
-class BilinearTerm(object):
-    def __init__(self, var1, var2, coefficient):
-        assert id(var1) <= id(var2)
-        self.var1 = var1
-        self.var2 = var2
-        self.coefficient = coefficient
-
-
-class QuadraticExpression(Expression):
-    expression_type = ExpressionType.Quadratic
-
-    def __init__(self, vars1=None, vars2=None, coefficients=None,
-                 children=None):
-        super().__init__(children)
-        assert vars1 and vars2 and coefficients
-        assert len(vars1) == len(vars2) == len(coefficients)
-        self.terms = self._build_terms(vars1, vars2, coefficients)
-        self._coefficients = self._build_coefficients(self.terms)
-
-    def coefficient(self, expr1, expr2):
-        assert expr1.expression_type == ExpressionType.Variable
-        assert expr2.expression_type == ExpressionType.Variable
-        var1_id = id(var1)
-        var2_id = id(var2)
-
-        if var1_id < var2_id:
-            return self._coefficients[(var1_id, var2_id)]
-        else:
-            return self._coefficients[(var2_id, var1_id)]
-
-    def _build_terms(self, vars1, vars2, coefficients):
-        terms = []
-        for v1, v2, c in zip(vars1, vars2, coefficients):
-            if id(v1) < id(v2):
-                terms.append(BilinearTerm(v1, v2, c))
-            else:
-                terms.append(BilinearTerm(v2, v1, c))
-        return terms
-
-    def _build_coefficients(self, terms):
-        result = {}
-        for term in terms:
-            result[(id(term.var1), id(term.var2))] = term.coefficient
-        return result
-
-
-
-class UnaryFunctionExpression(Expression):
-    expression_type = ExpressionType.UnaryFunction
-    def __init__(self, children=None):
-        super().__init__(children)
-        assert len(self.children) == 1
-
-
-class NegationExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.Negation
-    func_name = 'negation'
-
-
-class AbsExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Abs
-    func_name = 'abs'
-
-
-class SqrtExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Sqrt
-    func_name = 'sqrt'
-
-
-class ExpExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Exp
-    func_name = 'exp'
-
-
-class LogExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Log
-    func_name = 'log'
-
-
-class SinExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Sin
-    func_name = 'sin'
-
-
-class CosExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Cos
-    func_name = 'cos'
-
-
-class TanExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Tan
-    func_name = 'tan'
-
-
-class AsinExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Asin
-    func_name = 'asin'
-
-
-class AcosExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Acos
-    func_name = 'acos'
-
-
-class AtanExpression(UnaryFunctionExpression):
-    expression_type = ExpressionType.UnaryFunction
-    func_type = UnaryFunctionType.Atan
-    func_name = 'atan'
 
 
 class Objective(Expression):
@@ -252,6 +131,13 @@ class Objective(Expression):
             sense = Sense.MINIMIZE
         self.sense = sense
         self.name = name
+
+    @property
+    def body(self):
+        return self.args[0]
+
+    def is_expression_type(self):
+        return True
 
     def is_minimizing(self):
         return self.sense == Sense.MINIMIZE
@@ -281,35 +167,12 @@ class Constraint(BoundedExpression):
         super().__init__(lower_bound, upper_bound, children)
         self.name = name
 
-    def linear_component(self):
-        linear, _ = self._split_linear_nonlinear()
-        return linear
+    @property
+    def body(self):
+        return self.args[0]
 
-    def nonlinear_component(self):
-        _, nonlinear = self._split_linear_nonlinear()
-        return nonlinear
-
-    def _split_linear_nonlinear(self):
-        child = self.children[0]
-
-        if isinstance(child, LinearExpression):
-            return child, None
-
-        if not isinstance(child, SumExpression):
-            return None, [child]
-
-        linear = None
-        nonlinear = []
-        for arg in child.children:
-            if isinstance(arg, LinearExpression):
-                if linear is not None:
-                    raise AssertionError(
-                        'Constraint root should have only one LinearExpression child'
-                    )
-                linear = arg
-            else:
-                nonlinear.append(arg)
-        return linear, nonlinear
+    def is_expression_type(self):
+        return True
 
     def is_equality(self):
         return self.lower_bound == self.upper_bound

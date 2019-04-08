@@ -14,8 +14,8 @@
 
 """Polynomiality rules."""
 from suspect.polynomial.degree import PolynomialDegree
-from suspect.expression import ExpressionType
 from suspect.interfaces import Rule
+
 
 __all__ = [
     'VariableRule', 'ConstantRule', 'ConstraintRule', 'ObjectiveRule', 'DivisionRule',
@@ -24,110 +24,109 @@ __all__ = [
 ]
 
 
-class VariableRule(Rule):
-    """Return polynomial degree of variable."""
-    root_expr = ExpressionType.Variable
+class PolynomialDegreeRule(object):
+    """Base class for rules that compute polynomial degree  properties of an expression."""
+    def apply(self, expr, polynomial_degree):
+        """Apply rule to `expr`.
 
-    def apply(self, _expr, _ctx):
+        Parameters
+        ----------
+        expr : Expression
+            the expression
+        polynomial_degre : dict-like
+            contains polynomial degree of children
+        """
+        raise NotImplementedError('apply')
+
+
+class VariableRule(PolynomialDegreeRule):
+    """Return polynomial degree of variable."""
+    def apply(self, _expr, _poly):
         return PolynomialDegree(1)
 
 
-class ConstantRule(Rule):
+class ConstantRule(PolynomialDegreeRule):
     """Return polynomial degree of constant."""
-    root_expr = ExpressionType.Constant
-
-    def apply(self, _expr, _ctx):
+    def apply(self, _expr, _poly):
         return PolynomialDegree(0)
 
 
-class ConstraintRule(Rule):
+class ConstraintRule(PolynomialDegreeRule):
     """Return polynomial degree of constraint."""
-    root_expr = ExpressionType.Constraint
-
-    def apply(self, expr, ctx):
-        return ctx[expr.children[0]]
+    def apply(self, expr, poly):
+        return poly[expr.args[0]]
 
 
-class ObjectiveRule(Rule):
+class ObjectiveRule(PolynomialDegreeRule):
     """Return polynomial degree of objective."""
-    root_expr = ExpressionType.Objective
-
-    def apply(self, expr, ctx):
-        return ctx[expr.children[0]]
+    def apply(self, expr, poly):
+        return poly[expr.args[0]]
 
 
-class DivisionRule(Rule):
+class DivisionRule(PolynomialDegreeRule):
     """Return polynomial degree of division.
 
     If the denominator is constant, it returns the polynomial degree of the numerator,
     otherwise return no polynomial degree.
     """
-    root_expr = ExpressionType.Division
-
-    def apply(self, expr, ctx):
-        den_degree = ctx[expr.children[1]]
+    def apply(self, expr, poly):
+        den_degree = poly[expr.args[1]]
         if den_degree.is_polynomial() and den_degree.degree == 0:
             # constant denominator
-            return ctx[expr.children[0]]
+            return poly[expr.args[0]]
         return PolynomialDegree.not_polynomial()
 
 
-class ProductRule(Rule):
+class ReciprocalRule(PolynomialDegreeRule):
+    """Return polynomial degree of reciprocal."""
+    def apply(self, expr, _poly):
+        return PolynomialDegree.not_polynomial()
+
+
+class ProductRule(PolynomialDegreeRule):
     """Return polynomial degree of product.
 
     The polynomial degree of a product is equal to the sum of the polynomial degre of its children.
     """
-    root_expr = ExpressionType.Product
-
-    def apply(self, expr, ctx):
-        return sum([ctx[a] for a in expr.children], PolynomialDegree(0))
+    def apply(self, expr, poly):
+        return sum([poly[a] for a in expr.args], PolynomialDegree(0))
 
 
-class LinearRule(Rule):
+class LinearRule(PolynomialDegreeRule):
     """Return polynomial degree of a linear expression."""
-    root_expr = ExpressionType.Linear
-
-    def apply(self, expr, ctx):
-        if not expr.children:
+    def apply(self, expr, poly):
+        if not expr.args:
             return PolynomialDegree(0)
         return PolynomialDegree(1)
 
 
-class QuadraticRule(Rule):
+class QuadraticRule(PolynomialDegreeRule):
     """Return polynomial degree of a quadratic expression."""
-    root_expr = ExpressionType.Quadratic
-
-    def apply(self, expr, ctx):
-        if not expr.children:
+    def apply(self, expr, _poly):
+        if not expr.args:
             return PolynomialDegree(0)
         return PolynomialDegree(2)
 
 
-class SumRule(Rule):
+class SumRule(PolynomialDegreeRule):
     """Return polynomial degree of a summation expression."""
-    root_expr = ExpressionType.Sum
-
-    def apply(self, expr, ctx):
-        return max(ctx[a] for a in expr.children)
+    def apply(self, expr, poly):
+        return max(poly[a] for a in expr.args)
 
 
-class NegationRule(Rule):
+class NegationRule(PolynomialDegreeRule):
     """Return polynomial degree of a negation expression."""
-    root_expr = ExpressionType.Negation
-
-    def apply(self, expr, ctx):
-        return ctx[expr.children[0]]
+    def apply(self, expr, poly):
+        return poly[expr.args[0]]
 
 
-class PowerRule(Rule):
+class PowerRule(PolynomialDegreeRule):
     """Return polynomial degree of a power expression."""
-    root_expr = ExpressionType.Power
-
-    def apply(self, expr, ctx):
-        assert len(expr.children) == 2
-        base, expo = expr.children
-        base_degree = ctx[base]
-        expo_degree = ctx[expo]
+    def apply(self, expr, poly):
+        assert len(expr.args) == 2
+        base, expo = expr.args
+        base_degree = poly[base]
+        expo_degree = poly[expo]
 
         if not (base_degree.is_polynomial() and expo_degree.is_polynomial()):
             return PolynomialDegree.not_polynomial()
@@ -144,9 +143,7 @@ class PowerRule(Rule):
         return PolynomialDegree.not_polynomial()
 
 
-class UnaryFunctionRule(Rule):
+class UnaryFunctionRule(PolynomialDegreeRule):
     """Return polynomial degree of an unary function."""
-    root_expr = ExpressionType.UnaryFunction
-
-    def apply(self, expr, ctx):
+    def apply(self, expr, poly):
         return PolynomialDegree.not_polynomial()
