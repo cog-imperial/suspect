@@ -22,7 +22,7 @@ from suspect.dag.vertices_list import VerticesList
 
 
 class ForwardDagIterator(object):
-    def iterate(self, problem, visitor, ctx, starting_vertices=None):
+    def iterate(self, problem, visitor, *args, starting_vertices=None):
         sources = set(id(s) for s in problem._sources)
         if starting_vertices is None:
             starting_vertices = sources
@@ -32,7 +32,7 @@ class ForwardDagIterator(object):
         results = {}
         changed = set()
         for vertex in problem.vertices:
-            has_changed = visitor.visit(vertex, ctx)
+            has_changed = visitor.visit(vertex, *args)
             if has_changed:
                 changed.add(id(vertex))
         return list(changed)
@@ -47,7 +47,7 @@ class _DagIterator(metaclass=abc.ABCMeta):
     def _reverse(self):
         pass
 
-    def _iterate(self, problem, visitor, ctx, starting_vertices):
+    def _iterate(self, problem, visitor, starting_vertices, *args):
         changed_vertices = []
         vertices = VerticesList(reverse=self._reverse)
         for vertex in starting_vertices:
@@ -57,7 +57,7 @@ class _DagIterator(metaclass=abc.ABCMeta):
             curr_vertex = vertices.pop()
             if id(curr_vertex) in seen:
                 continue
-            has_changes = visitor.visit(curr_vertex, ctx)
+            has_changes = visitor.visit(curr_vertex, *args)
             seen.add(id(curr_vertex))
 
             if has_changes:
@@ -80,7 +80,7 @@ class DagForwardIterator(_DagIterator, ForwardIterator):
     def _reverse(self):
         return False
 
-    def iterate(self, problem, visitor, ctx, *_args, **kwargs): # pylint: disable=missing-docstring
+    def iterate(self, problem, visitor, *args, **kwargs): # pylint: disable=missing-docstring
         starting_vertices = kwargs.pop('starting_vertices', None)
         # pylint: disable=protected-access
         if starting_vertices is None:
@@ -91,8 +91,8 @@ class DagForwardIterator(_DagIterator, ForwardIterator):
         return super()._iterate(
             problem,
             visitor,
-            ctx,
-            starting_vertices=starting_vertices,
+            starting_vertices,
+            *args,
         )
 
 
@@ -107,7 +107,7 @@ class DagBackwardIterator(_DagIterator, BackwardIterator):
     def _reverse(self):
         return True
 
-    def iterate(self, problem, visitor, ctx, *_args, **kwargs): # pylint: disable=missing-docstring
+    def iterate(self, problem, visitor, *args, **kwargs): # pylint: disable=missing-docstring
         starting_vertices = kwargs.pop('starting_vertices', None)
         # pylint: disable=protected-access
         if starting_vertices is None:
@@ -118,6 +118,6 @@ class DagBackwardIterator(_DagIterator, BackwardIterator):
         return super()._iterate(
             problem,
             visitor,
-            ctx,
-            starting_vertices=starting_vertices,
+            starting_vertices,
+            *args,
         )

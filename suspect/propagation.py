@@ -14,6 +14,7 @@
 
 import logging
 import pkg_resources
+from pyomo.core.kernel.component_map import ComponentMap
 from suspect.monotonicity import MonotonicityPropagationVisitor
 from suspect.convexity import ConvexityPropagationVisitor
 from suspect.dag.iterator import DagForwardIterator
@@ -52,28 +53,28 @@ class SpecialStructurePropagationVisitor(object):
             len(self._cvx_visitors), ', '.join([str(cvx) for cvx in self._cvx_visitors])
         )
 
-    def visit(self, expr, ctx):
+    def visit(self, expr, convexity, mono, bounds):
         for mono_visitor in self._mono_visitors:
-            mono_known = mono_visitor.visit(expr, ctx)
+            mono_known = mono_visitor.visit(expr, mono, bounds)
             if mono_known:
                 break
 
         for cvx_visitor in self._cvx_visitors:
-            cvx_known = cvx_visitor.visit(expr, ctx)
+            cvx_known = cvx_visitor.visit(expr, convexity, mono, bounds)
             if cvx_known:
                 break
         return [expr]
 
 
-def propagate_special_structure(problem, ctx):
+def propagate_special_structure(problem, bounds):
     """Propagate special structure.
 
     Arguments
     ---------
     problem: ProblemDag
         the problem.
-    ctx: SpecialStructurePropagationContext
-      the context containing the bounds
+    bounds: dict-like
+        a dict-like object contaninig bounds
 
     Returns
     -------
@@ -84,5 +85,7 @@ def propagate_special_structure(problem, ctx):
     """
     visitor = SpecialStructurePropagationVisitor(problem)
     iterator = DagForwardIterator()
-    iterator.iterate(problem, visitor, ctx)
-    return ctx.monotonicity, ctx.convexity
+    mono = ComponentMap()
+    convexity = ComponentMap()
+    iterator.iterate(problem, visitor, convexity, mono, bounds)
+    return mono, convexity

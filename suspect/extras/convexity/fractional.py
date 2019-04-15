@@ -33,13 +33,14 @@ class FractionalConvexityDetector(ConvexityDetector):
         super().__init__()
 
     def register_rules(self):
-        return [FractionalRule()]
+        return {
+            ExpressionType.Division: FractionalRule()
+        }
+
 
 
 class FractionalRule(Rule):
     """Convexity detector for fractional expressions."""
-    root_expr = ExpressionType.Division
-
     linear_types = (
         ExpressionType.Constant,
         ExpressionType.Variable,

@@ -33,7 +33,8 @@ class ConstantRule(MonotonicityRule):
 class ConstraintRule(MonotonicityRule):
     """Return monotonicity of constraint."""
     def apply(self, expr, monotonicity, _bounds):
-        child = expr.children[0]
+        assert len(expr.args) == 1
+        child = expr.args[0]
         mono = monotonicity[child]
         if expr.bounded_below() and expr.bounded_above():
             # l <= g(x) <= u
@@ -52,7 +53,8 @@ class ConstraintRule(MonotonicityRule):
 class ObjectiveRule(MonotonicityRule):
     """Return monotonicity of objective."""
     def apply(self, expr, monotonicity, bounds):
-        child = expr.children[0]
+        assert len(expr.args) == 1
+        child = expr.args[0]
         mono = monotonicity[child]
         if expr.is_minimizing():
             return mono

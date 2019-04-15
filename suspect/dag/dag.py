@@ -145,6 +145,12 @@ class ProblemDag(Problem):
         }
 
     def depth(self, vertex):
+        if type(vertex) in nonpyomo_leaf_types:
+            return 2
+        if vertex.is_variable_type():
+            return 1
+        if vertex.is_constant():
+            return 2
         return self._depths[id(vertex)]
 
     def _vertex_depth(self, vertex):
@@ -155,13 +161,7 @@ class ProblemDag(Problem):
             return 2
         depth = 0
         for arg in vertex.args:
-            if arg.is_variable_type():
-                arg_depth = 1
-            elif arg.is_constant():
-                arg_depth = 2
-            else:
-                arg_depth = self._depths[id(arg)]
-
+            arg_depth = self.depth(arg)
             if arg_depth >= depth:
                 depth = arg_depth + 1
         return depth

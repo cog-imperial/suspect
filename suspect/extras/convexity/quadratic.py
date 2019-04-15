@@ -26,7 +26,9 @@ class QuadraticFormConvexityDetector(ConvexityDetector):
         super().__init__()
 
     def register_rules(self):
-        return [QuadraticRule()]
+        return {
+            ExpressionType.Product: QuadraticRule(),
+        }
 
 
 class QuadraticRule(Rule):

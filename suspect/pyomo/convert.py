@@ -113,11 +113,11 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
     def visiting_potential_leaf(self, node):
         if node.__class__ in nonpyomo_leaf_types:
             expr = NumericConstant(float(node))
-            self.set(expr, expr)
+            expr = self.set(expr, expr)
             return True, expr
 
         if node.is_constant():
-            self.set(expr, expr)
+            expr = self.set(expr, expr)
             return True, expr
 
         if node.is_variable_type():
@@ -143,6 +143,7 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
 
     def set(self, expr, new_expr):
         if self.memo.get(expr) is not None:
-            return
+            return self.memo[expr]
         self.memo[expr] = new_expr
         self.dag.add_vertex(new_expr)
+        return new_expr

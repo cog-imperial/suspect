@@ -14,6 +14,7 @@
 
 """Visitor applying rules for polynomial degree computation."""
 from suspect.visitor import Visitor
+from suspect.expression import ExpressionType as ET
 from suspect.polynomial.rules import * # pylint: disable=wildcard-import
 
 
@@ -24,17 +25,18 @@ class PolynomialDegreeVisitor(Visitor):
         return True
 
     def register_rules(self):
-        return [
-            VariableRule(),
-            ConstantRule(),
-            ConstraintRule(),
-            ObjectiveRule(),
-            DivisionRule(),
-            ProductRule(),
-            LinearRule(),
-            QuadraticRule(),
-            SumRule(),
-            NegationRule(),
-            PowerRule(),
-            UnaryFunctionRule(),
-        ]
+        return {
+            ET.Variable: VariableRule(),
+            ET.Constant: ConstantRule(),
+            ET.Constraint: ConstraintRule(),
+            ET.Objective: ObjectiveRule(),
+            ET.Division: DivisionRule(),
+            ET.Reciprocal: ReciprocalRule(),
+            ET.Product: ProductRule(),
+            ET.Linear: LinearRule(),
+            # QuadraticRule(),
+            ET.Sum: SumRule(),
+            ET.Negation: NegationRule(),
+            ET.Power: PowerRule(),
+            ET.UnaryFunction: UnaryFunctionRule(),
+        }

@@ -179,7 +179,7 @@ class Constraint(BoundedExpression):
 
     def __str__(self):
         return 'Constraint(name={}, lower_bound={}, upper_bound={}, children={})'.format(
-            self.name, self.lower_bound, self.upper_bound, self.children
+            self.name, self.lower_bound, self.upper_bound, self.args
         )
 
 

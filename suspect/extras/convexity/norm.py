@@ -28,7 +28,9 @@ class L2NormConvexityDetector(ConvexityDetector):
         super().__init__()
 
     def register_rules(self):
-        return [L2NormRule()]
+        return {
+            ExpressionType.UnaryFunction: L2NormRule(),
+        }
 
 
 class L2NormRule(UnaryFunctionRule):
