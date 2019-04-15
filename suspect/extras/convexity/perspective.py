@@ -26,7 +26,9 @@ class PerspectiveFunctionConvexityDetector(ConvexityDetector):
         super().__init__()
 
     def register_rules(self):
-        return [PerspectiveRule()]
+        return {
+            ExpressionType.Product: PerspectiveRule(),
+        }
 
 
 class PerspectiveRule(Rule):

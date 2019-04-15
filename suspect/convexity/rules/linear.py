@@ -31,7 +31,7 @@ class LinearRule(ConvexityRule):
 class SumRule(ConvexityRule):
     """Return convexity of sum expression."""
     def apply(self, expr, convexity, _mono, _bounds):
-        cvxs = [convexity[child] for child in expr.children]
+        cvxs = [convexity[child] for child in expr.args]
         return _combine_convexities(cvxs)
 
 

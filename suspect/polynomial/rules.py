@@ -20,7 +20,7 @@ from suspect.interfaces import Rule
 __all__ = [
     'VariableRule', 'ConstantRule', 'ConstraintRule', 'ObjectiveRule', 'DivisionRule',
     'ProductRule', 'LinearRule', 'SumRule', 'NegationRule', 'PowerRule', 'UnaryFunctionRule',
-    'QuadraticRule',
+    'QuadraticRule', 'ReciprocalRule',
 ]
 
 

@@ -14,6 +14,7 @@
 
 import warnings
 import logging
+from pyomo.core.kernel.component_map import ComponentMap
 from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect.fbbt import BoundsTightener, FBBTStopCriterion
 from suspect.dag.iterator import DagForwardIterator, DagBackwardIterator
@@ -123,13 +124,13 @@ def detect_special_structure(problem, max_iter=10):
     if isinstance(problem, ConcreteModel):
         problem = dag_from_pyomo_model(problem)
 
-    ctx = SpecialStructurePropagationContext()
+    bounds = ComponentMap()
 
     bounds_tightener = BoundsTightener(DagForwardIterator(), DagBackwardIterator(), FBBTStopCriterion())
-    bounds_tightener.tighten(problem, ctx)
+    bounds_tightener.tighten(problem, bounds)
 
-    polynomial = polynomial_degree(problem, ctx.polynomial)
-    monotonicity, convexity = propagate_special_structure(problem, ctx)
+    polynomial = polynomial_degree(problem)
+    monotonicity, convexity = propagate_special_structure(problem, bounds)
 
     variables = {}
     for variable_name, variable in problem.variables.items():
@@ -139,7 +140,7 @@ def detect_special_structure(problem, max_iter=10):
             variable_type = 'integer'
         else:
             variable_type = 'continuous'
-        var_bounds = ctx.bound[variable]
+        var_bounds = bounds[variable]
 
         if variable.name in variables:
             warnings.warn('Duplicate variable {}'.format(variable.name))
@@ -160,8 +161,8 @@ def detect_special_structure(problem, max_iter=10):
             sense = 'min'
         else:
             sense = 'max'
-        obj_bounds = ctx.bound.get(obj, Interval(None, None))
-        cvx = ctx.convexity[obj]
+        obj_bounds = bounds.get(obj, Interval(None, None))
+        cvx = convexity[obj]
         poly = polynomial[obj]
 
         objectives[obj.name] = {
@@ -182,7 +183,7 @@ def detect_special_structure(problem, max_iter=10):
         else:
             type_ = 'inequality'
 
-        cvx = ctx.convexity[cons]
+        cvx = convexity[cons]
         poly = polynomial[cons]
 
         constraints[cons_name] = {

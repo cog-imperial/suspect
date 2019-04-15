@@ -59,19 +59,19 @@ class BoundsTightener(object):
         self._backward_iterator = backward_iterator
         self._stop_criterion = stop_criterion
 
-    def tighten(self, problem, ctx):
-        """Tighten bounds of ``problem`` storing them in ``ctx``."""
-        self._forward_iterator.iterate(problem, BoundsInitializationVisitor(), ctx)
+    def tighten(self, problem, bounds):
+        """Tighten bounds of ``problem`` storing them in ``bounds``."""
+        self._forward_iterator.iterate(problem, BoundsInitializationVisitor(), bounds)
         prop_visitor = self._stop_criterion.intercept_changes(BoundsPropagationVisitor())
         tigh_visitor = self._stop_criterion.intercept_changes(BoundsTighteningVisitor())
         changes_tigh = None
         changes_prop = None
         while not self._stop_criterion.should_stop():
             changes_prop = self._forward_iterator.iterate(
-                problem, prop_visitor, ctx, starting_vertices=changes_tigh
+                problem, prop_visitor, bounds, starting_vertices=changes_tigh
             )
             changes_tigh = self._backward_iterator.iterate(
-                problem, tigh_visitor, ctx, starting_vertices=changes_prop
+                problem, tigh_visitor, bounds, starting_vertices=changes_prop
             )
             if len(changes_prop) == 0 and len(changes_tigh) == 0:
                 return

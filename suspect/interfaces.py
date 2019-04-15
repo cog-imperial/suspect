@@ -83,7 +83,7 @@ class CombineUnaryFunctionRules(Rule): # pragma: no cover
         for func_name, rule in self._rules.items():
             self._apply_funcs[func_name] = rule.apply
 
-    def apply(self, expr, bounds):
+    def apply(self, expr, ctx, *args):
         apply_func = self._apply_funcs.get(expr.getname())
         if not apply_func:
             if not self._needs_matching_rules:
@@ -98,4 +98,4 @@ class CombineUnaryFunctionRules(Rule): # pragma: no cover
                     func_name,
                 )
             )
-        return apply_func(expr, bounds)
+        return apply_func(expr, ctx, *args)

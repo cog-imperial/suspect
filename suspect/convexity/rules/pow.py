@@ -21,7 +21,8 @@ from suspect.math import almosteq, almostgte # pylint: disable=no-name-in-module
 class PowerRule(ConvexityRule):
     """Return monotonicity of power expression."""
     def apply(self, expr, convexity, monotonicity, bounds):
-        base, expo = expr.children
+        assert len(expr.args) == 2
+        base, expo = expr.args
 
         mono_base = monotonicity[base]
         mono_expo = monotonicity[expo]

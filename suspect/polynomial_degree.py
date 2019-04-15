@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pyomo.core.kernel.component_map import ComponentMap
 from suspect.dag.iterator import DagForwardIterator
 from suspect.polynomial import PolynomialDegreeVisitor
 
 
-def polynomial_degree(dag, ctx):
+def polynomial_degree(dag):
     """Compute polynomial degree of expressions in dag."""
     iterator = DagForwardIterator()
-    iterator.iterate(dag, PolynomialDegreeVisitor(), ctx)
-    return ctx
+    polynomial = ComponentMap()
+    iterator.iterate(dag, PolynomialDegreeVisitor(), polynomial)
+    return polynomial
