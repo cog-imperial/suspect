@@ -16,7 +16,7 @@ import warnings
 import logging
 from pyomo.core.kernel.component_map import ComponentMap
 from suspect.pyomo.convert import dag_from_pyomo_model
-from suspect.fbbt import BoundsTightener, FBBTStopCriterion
+from suspect.fbbt import perform_fbbt
 from suspect.dag.iterator import DagForwardIterator, DagBackwardIterator
 from suspect.context import SpecialStructurePropagationContext
 from suspect.interval import Interval
@@ -124,10 +124,7 @@ def detect_special_structure(problem, max_iter=10):
     if isinstance(problem, ConcreteModel):
         problem = dag_from_pyomo_model(problem)
 
-    bounds = ComponentMap()
-
-    bounds_tightener = BoundsTightener(DagForwardIterator(), DagBackwardIterator(), FBBTStopCriterion())
-    bounds_tightener.tighten(problem, bounds)
+    bounds = perform_fbbt(problem)
 
     polynomial = polynomial_degree(problem)
     monotonicity, convexity = propagate_special_structure(problem, bounds)

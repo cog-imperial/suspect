@@ -31,11 +31,10 @@ class FractionalConvexityDetector(ConvexityDetector):
     """
     def __init__(self, _problem):
         super().__init__()
+        self._rule = FractionalRule()
 
-    def register_rules(self):
-        return {
-            ExpressionType.Division: FractionalRule()
-        }
+    def visit_expression(self, expr, convexity, mono, bounds):
+        raise NotImplementedError()
 
 
 

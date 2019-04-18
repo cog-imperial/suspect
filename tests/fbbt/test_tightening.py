@@ -18,7 +18,7 @@ from unittest.mock import MagicMock
 from hypothesis import given, assume
 import hypothesis.strategies as st
 from pyomo.core.kernel.component_map import ComponentMap
-import suspect.dag.expressions as dex
+import suspect.pyomo.expressions as dex
 import numpy as np
 from suspect.interval import Interval as I
 from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT

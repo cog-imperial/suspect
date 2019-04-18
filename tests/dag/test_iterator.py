@@ -5,7 +5,7 @@ from tests.conftest import PlaceholderExpression
 from suspect.pyomo import dag_from_pyomo_model
 from suspect.dag.dag import ProblemDag
 from suspect.dag.iterator import DagForwardIterator, DagBackwardIterator
-import pyomo.core.expr.expr_pyomo5 as pex
+import suspect.pyomo.expressions as pex
 from hypothesis import given, assume
 import hypothesis.strategies as st
 

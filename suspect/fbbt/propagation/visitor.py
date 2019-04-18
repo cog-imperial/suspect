@@ -14,8 +14,21 @@
 
 """FBBT bounds propagation visitor."""
 
+from suspect.pyomo.expressions import (
+    nonpyomo_leaf_types,
+    Var,
+    NumericConstant,
+    Constraint,
+    Objective,
+    ProductExpression,
+    ReciprocalExpression,
+    LinearExpression,
+    SumExpression,
+    PowExpression,
+    NegationExpression,
+    UnaryFunctionExpression,
+)
 from suspect.visitor import ForwardVisitor
-from suspect.expression import ExpressionType as ET
 from suspect.fbbt.propagation.rules import (
     VariableRule,
     ConstantRule,
@@ -32,22 +45,37 @@ from suspect.fbbt.propagation.rules import (
 )
 
 
+_expr_to_rule_map = dict()
+_expr_to_rule_map[NumericConstant] = ConstantRule()
+_expr_to_rule_map[Var] = VariableRule()
+_expr_to_rule_map[Constraint] = ConstraintRule()
+_expr_to_rule_map[Objective] = ObjectiveRule()
+_expr_to_rule_map[ProductExpression] = ProductRule()
+_expr_to_rule_map[ReciprocalExpression] = ReciprocalRule()
+_expr_to_rule_map[LinearExpression] = LinearRule()
+_expr_to_rule_map[SumExpression] = SumRule()
+_expr_to_rule_map[PowExpression] = PowerRule()
+_expr_to_rule_map[NegationExpression] = NegationRule()
+_expr_to_rule_map[UnaryFunctionExpression] = UnaryFunctionRule()
+
+
+def propagate_bounds_leaf_to_root(expr, bounds):
+    if type(expr) in nonpyomo_leaf_types:
+        rule = _expr_to_rule_map[NumericConstant]
+    elif expr.is_constant():
+        rule = _expr_to_rule_map[NumericConstant]
+    elif expr.is_variable_type():
+        rule = _expr_to_rule_map[Var]
+    else:
+        assert expr.is_expression_type()
+        rule = _expr_to_rule_map[type(expr)]
+    return rule.apply(expr, bounds)
+
+
 class BoundsPropagationVisitor(ForwardVisitor):
     """Tighten bounds from sources to sinks."""
-    def register_rules(self):
-        return {
-            ET.Variable: VariableRule(),
-            ET.Constant: ConstantRule(),
-            ET.Constraint: ConstraintRule(),
-            ET.Objective: ObjectiveRule(),
-            ET.Product: ProductRule(),
-            ET.Reciprocal: ReciprocalRule(),
-            ET.Linear: LinearRule(),
-            ET.Sum: SumRule(),
-            ET.Power: PowerRule(),
-            ET.Negation: NegationRule(),
-            ET.UnaryFunction: UnaryFunctionRule(),
-        }
+    def visit_expression(self, expr, bounds):
+        return True, propagate_bounds_leaf_to_root(expr, bounds)
 
     def handle_result(self, expr, new_bounds, bounds):
         old_bounds = bounds.get(expr, None)

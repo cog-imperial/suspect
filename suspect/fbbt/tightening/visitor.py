@@ -14,6 +14,18 @@
 
 """FBBT bounds tightening visitor."""
 
+from suspect.pyomo.expressions import (
+    nonpyomo_leaf_types,
+    Constraint,
+    Objective,
+    ProductExpression,
+    ReciprocalExpression,
+    LinearExpression,
+    SumExpression,
+    PowExpression,
+    NegationExpression,
+    UnaryFunctionExpression,
+)
 from suspect.visitor import BackwardVisitor
 from suspect.interfaces import CombineUnaryFunctionRules
 from suspect.interval import Interval
@@ -24,32 +36,38 @@ from suspect.fbbt.tightening.rules import (
     LinearRule,
     QuadraticRule,
     PowerRule,
-    AbsRule,
-    SqrtRule,
-    ExpRule,
-    LogRule,
+    UnaryFunctionRule,
 )
+
+
+_expr_to_rule_map = dict()
+_expr_to_rule_map[Constraint] = ConstraintRule()
+_expr_to_rule_map[LinearExpression] = LinearRule()
+_expr_to_rule_map[SumExpression] = SumRule()
+_expr_to_rule_map[PowExpression] = PowerRule()
+_expr_to_rule_map[UnaryFunctionExpression] = UnaryFunctionRule()
+
+
+def tighten_bounds_root_to_leaf(expr, bounds):
+    if type(expr) in nonpyomo_leaf_types:
+        return None
+    if not expr.is_expression_type():
+        return None
+    rule = _expr_to_rule_map.get(type(expr), None)
+    if rule is not None:
+        return rule.apply(expr, bounds)
+    return None
 
 
 class BoundsTighteningVisitor(BackwardVisitor):
     """Tighten bounds from sinks to sources."""
     needs_matching_rules = False
 
-    def register_rules(self):
-        return {
-            ET.Constraint: ConstraintRule(),
-            ET.Sum: SumRule(),
-            ET.Linear: LinearRule(),
-            # QuadraticRule(),
-            ET.Power: PowerRule(),
-            ET.UnaryFunction: CombineUnaryFunctionRules({
-                'abs': AbsRule(),
-                'sqrt': SqrtRule(),
-                'exp': ExpRule(),
-                'log': LogRule()},
-                needs_matching_rules=False,
-            )
-        }
+    def visit_expression(self, expr, bounds):
+        new_bounds = tighten_bounds_root_to_leaf(expr, bounds)
+        if new_bounds is not None:
+            return True, new_bounds
+        return False, None
 
     def handle_result(self, expr, value, bounds):
         if value is None:

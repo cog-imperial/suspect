@@ -22,13 +22,25 @@ class Visitor(metaclass=abc.ABCMeta):
     """Base class for visitors applying rules to DAG vertices."""
     needs_matching_rules = True
 
-    def __init__(self):
-        self._rules = self.register_rules()
-        self._callbacks = self._init_callbacks()
-
     @abc.abstractmethod
-    def register_rules(self):
-        """Register rules applied by this visitor."""
+    def visit_expression(self, expr, ctx, *args):
+        """Apply rule to ``expr``.
+
+        Parameters
+        ----------
+        expr : expression
+            the expression being visited
+        ctx : dict-like
+            the current ctx
+        *args : dict-like list
+            additional ctx
+
+        Returns
+        -------
+        bool
+            Wheter a rule was matched
+        value
+            The value that will be passed to ``handle_result``"""
         pass
 
     @abc.abstractmethod
@@ -38,33 +50,17 @@ class Visitor(metaclass=abc.ABCMeta):
 
     def visit(self, expr, ctx, *args):
         """Apply registered rule to ``expr``."""
-        if type(expr) in nonpyomo_leaf_types:
-            callback = self._callbacks.get(ExpressionType.Constant)
-        elif expr.is_constant():
-            callback = self._callbacks.get(ExpressionType.Constant)
-        elif expr.is_variable_type():
-            callback = self._callbacks.get(ExpressionType.Variable)
-        else:
-            callback = self._callbacks.get(expr.expression_type)
-
-        if callback is not None:
-            return self._visit_expression(expr, callback, ctx, *args)
-
-        if self.needs_matching_rules:
-            raise RuntimeError('visiting expression with no rule associated.')
-        return False
-
-    def _init_callbacks(self):
-        callbacks = {}
-        for expr_type, rule in self._rules.items():
-            callbacks[expr_type] = rule.apply
-        return callbacks
+        return self._visit_expression(expr, ctx, *args)
 
     def _handle_result(self, expr, result, ctx):
         return self.handle_result(expr, result, ctx)
 
-    def _visit_expression(self, expr, callback, ctx, *args):
-        result = callback(expr, ctx, *args)
+    def _visit_expression(self, expr, ctx, *args):
+        matched, result = self.visit_expression(expr, ctx, *args)
+        if not matched:
+            if self.needs_matching_rules:
+                raise RuntimeError('visiting expression with no rule associated.')
+            return False
         return self._handle_result(expr, result, ctx)
 
 

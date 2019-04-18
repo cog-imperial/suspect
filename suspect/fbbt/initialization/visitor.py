@@ -15,7 +15,7 @@
 """FBBT bounds initialization visitor."""
 from suspect.interval import Interval
 from suspect.interfaces import CombineUnaryFunctionRules
-from suspect.expression import ExpressionType as ET
+from suspect.pyomo.expressions import UnaryFunctionExpression
 from suspect.visitor import BackwardVisitor
 from suspect.fbbt.initialization.rules import (
     SqrtRule,
@@ -24,21 +24,23 @@ from suspect.fbbt.initialization.rules import (
     AcosRule,
 )
 
+_rule = CombineUnaryFunctionRules({
+    'sqrt': SqrtRule(),
+    'log': LogRule(),
+    'asin': AsinRule(),
+    'acos': AcosRule()},
+    needs_matching_rules=False,
+)
+
 
 class BoundsInitializationVisitor(BackwardVisitor):
     """Initialize problem bounds using function domains as bound."""
     needs_matching_rules = False
 
-    def register_rules(self):
-        return {
-            ET.UnaryFunction: CombineUnaryFunctionRules({
-                'sqrt': SqrtRule(),
-                'log': LogRule(),
-                'asin': AsinRule(),
-                'acos': AcosRule()},
-                needs_matching_rules=False,
-            )
-        }
+    def visit_expression(self, expr, bounds):
+        if isinstance(expr, UnaryFunctionExpression):
+            return True, _rule.apply(expr, bounds)
+        return False, None
 
     def handle_result(self, expr, value, bounds):
         if value is None:

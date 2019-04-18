@@ -16,13 +16,13 @@ from numbers import Number
 from functools import reduce
 from suspect.math import almosteq
 from suspect.float_hash import RoundFloatHasher
-from pyomo.core.expr.expr_pyomo5 import (
+from pyomo.core.expr.numeric_expr import (
     nonpyomo_leaf_types,
     NumericConstant,
-    ExpressionValueVisitor,
     LinearExpression,
     UnaryFunctionExpression,
 )
+from pyomo.core.expr.visitor import ExpressionValueVisitor
 from pyomo.core.base import _VarData
 from pyomo.core.base.constraint import _GeneralConstraintData
 
