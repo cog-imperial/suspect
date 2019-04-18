@@ -3,7 +3,7 @@ import gc
 from contextlib import contextmanager
 from functools import reduce
 import operator as op
-from pyomo.core.expr.expr_pyomo5 import NumericConstant
+from pyomo.core.expr.numeric_expr import NumericConstant
 import pyomo.environ as aml
 
 

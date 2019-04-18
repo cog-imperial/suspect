@@ -15,71 +15,7 @@
 from enum import Enum
 import abc
 import sys
-import pyomo.core.expr.expr_pyomo5 as pex
-from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.math import inf # pylint: disable=no-name-in-module
-
-
-# Wrap Pyomo expression types to "Tag" nodes as specify types
-# (e.g. quadratic, division)
-_pyomo_expression_types = [
-    (pex.NegationExpression, ExpressionType.Negation),
-    (pex.PowExpression, ExpressionType.Power),
-    (pex.ProductExpression, ExpressionType.Product),
-    (pex.MonomialTermExpression, ExpressionType.Product),
-    (pex.ReciprocalExpression, ExpressionType.Reciprocal),
-    (pex.SumExpression, ExpressionType.Sum),
-    (pex.UnaryFunctionExpression, ExpressionType.UnaryFunction),
-    (pex.AbsExpression, ExpressionType.UnaryFunction),
-    (pex.LinearExpression, ExpressionType.Linear),
-]
-
-
-def wrapper_expression_name(node_cls):
-    """Return the name of the class wrapping `node_type`."""
-    return node_cls.__name__
-
-
-def _init(self, args):
-    super(self.__class__, self).__init__(args)
-    self.tag = None
-
-
-def _init_unary_func(self, args, name=None, fcn=None):
-    super(self.__class__, self).__init__(args, name, fcn)
-    self.tag = None
-
-
-_module = sys.modules[__name__]
-for cls, expression_type in _pyomo_expression_types:
-    new_cls_name = wrapper_expression_name(cls)
-    if cls == pex.UnaryFunctionExpression:
-        init_method = _init_unary_func
-    else:
-        init_method = _init
-
-    # Avoid capturing expression_type by ref, turn it into a function
-    # parameter to capture value
-    expression_type_p = lambda et: property(lambda _: et)
-    methods = {
-        '__init__': init_method,
-        'expression_type': expression_type_p(expression_type)
-    }
-    new_cls = type(new_cls_name, (cls,), methods)
-    setattr(_module, new_cls_name, new_cls)
-
-
-
-def create_wrapper_node_with_local_data(node, args):
-    """Create a new node using given arguments."""
-    cls = type(node)
-    wrapper_cls_name = wrapper_expression_name(cls)
-    wrapper_cls = getattr(_module, wrapper_cls_name)
-    if cls == pex.SumExpression:
-        return wrapper_cls(list(args))
-    if cls == pex.UnaryFunctionExpression:
-        return wrapper_cls(args, node._name, node._fcn)
-    return wrapper_cls(args)
 
 
 class Domain(Enum):
@@ -122,7 +58,6 @@ class Expression(metaclass=abc.ABCMeta):
 
 
 class Objective(Expression):
-    expression_type = ExpressionType.Objective
     is_sink = True
 
     def __init__(self, name, sense=None, children=None):
@@ -160,7 +95,6 @@ class BoundedExpression(Expression):
 
 
 class Constraint(BoundedExpression):
-    expression_type = ExpressionType.Constraint
     is_sink = True
 
     def __init__(self, name, lower_bound, upper_bound, children=None):
@@ -184,7 +118,6 @@ class Constraint(BoundedExpression):
 
 
 class Variable(BoundedExpression):
-    expression_type = ExpressionType.Variable
     is_source = True
 
     def __init__(self, name, lower_bound, upper_bound, domain=None):
@@ -212,7 +145,6 @@ class Variable(BoundedExpression):
 
 
 class Constant(BoundedExpression):
-    expression_type = ExpressionType.Constant
     is_source = True
 
     def __init__(self, value):

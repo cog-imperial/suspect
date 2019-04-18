@@ -214,6 +214,29 @@ class AtanRule(_UnboundedFunctionRule):
     func_type = UnaryFunctionType.Atan
 
 
+_func_name_to_rule_map = dict()
+_func_name_to_rule_map['abs'] = AbsRule()
+_func_name_to_rule_map['sqrt'] = SqrtRule()
+_func_name_to_rule_map['exp'] = ExpRule()
+_func_name_to_rule_map['log'] = LogRule()
+_func_name_to_rule_map['sin'] = SinRule()
+_func_name_to_rule_map['cos'] = CosRule()
+_func_name_to_rule_map['tan'] = TanRule()
+_func_name_to_rule_map['asin'] = AsinRule()
+_func_name_to_rule_map['acos'] = AcosRule()
+_func_name_to_rule_map['atan'] = AtanRule()
+
+
+class UnaryFunctionRule(Rule):
+    """Bound tightening rule for unary functions."""
+    def apply(self, expr, bounds):
+        assert len(expr.args) == 1
+        func_name = expr.getname()
+        if func_name not in _func_name_to_rule_map:
+            raise ValueError('Unknown function type {}'.format(func_name))
+        return _func_name_to_rule_map[func_name].apply(expr, bounds)
+
+
 def _sum_child_and_siblings(children):
     for i, _ in enumerate(children):
         yield children[i], children[:i] + children[i+1:]

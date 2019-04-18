@@ -3,7 +3,7 @@ import pytest
 from pyomo.core.kernel.component_map import ComponentMap
 from tests.conftest import PlaceholderExpression
 from suspect.interval import Interval
-from suspect.dag.expressions import UnaryFunctionExpression
+from suspect.pyomo.expressions import UnaryFunctionExpression
 from suspect.fbbt.initialization import BoundsInitializationVisitor
 from suspect.fbbt.initialization.rules import (
     SqrtRule,

@@ -14,7 +14,7 @@
 
 
 """Re-import Pyomo expression types."""
-from pyomo.core.expr.expr_pyomo5 import (
+from pyomo.core.expr.numeric_expr import (
     NumericConstant,
     NegationExpression,
     PowExpression,

@@ -14,7 +14,7 @@
 
 """Iterators over vertices of ProblemDag."""
 import abc
-from pyomo.core.expr.expr_pyomo5 import nonpyomo_leaf_types
+from suspect.pyomo.expressions import nonpyomo_leaf_types
 from suspect.interfaces import ForwardIterator, BackwardIterator
 from suspect.dag.dag import ProblemDag
 from suspect.dag.expressions import Expression

@@ -15,12 +15,13 @@
 from copy import deepcopy
 from numbers import Number
 import pyomo.environ as aml
-import pyomo.core.expr.expr_pyomo5 as pex
-from pyomo.core.expr.expr_pyomo5 import (
-    ExpressionValueVisitor,
+from pyomo.core.kernel.component_map import ComponentMap
+import pyomo.core.expr.numeric_expr as pex
+from pyomo.core.expr.numeric_expr import (
     nonpyomo_leaf_types,
     NumericConstant,
 )
+from pyomo.core.expr.visitor import ExpressionValueVisitor
 from suspect.pyomo.util import (
     model_variables,
     model_objectives,
@@ -29,18 +30,19 @@ from suspect.pyomo.util import (
 )
 from suspect.pyomo.expr_dict import ExpressionDict
 from suspect.float_hash import BTreeFloatHasher
-from suspect.dag.expressions import create_wrapper_node_with_local_data
 from suspect.dag.dag import ProblemDag
 import suspect.dag.expressions as dex
 
 
-def dag_from_pyomo_model(model):
+def dag_from_pyomo_model(model, return_component_map=False):
     """Convert the Pyomo ``model`` to SUSPECT DAG.
 
     Parameters
     ----------
     model : ConcreteModel
         the Pyomo model.
+    return_component_map : bool
+        if True, also return the component map mapping model nodes to dag nodes.
 
     Returns
     -------
@@ -61,6 +63,8 @@ def dag_from_pyomo_model(model):
         new_obj = factory.objective(omo_obj)
         dag.add_objective(new_obj)
 
+    if return_component_map:
+        return dag, factory.component_map
     return dag
 
 
@@ -68,7 +72,8 @@ class ComponentFactory(object):
     def __init__(self, dag):
         self.dag = dag
         self._components = ExpressionDict(float_hasher=BTreeFloatHasher())
-        self._visitor = _ConvertExpressionVisitor(self._components, self.dag)
+        self.component_map = ComponentMap()
+        self._visitor = _ConvertExpressionVisitor(self._components, self.dag, self.component_map)
 
     def variable(self, omo_var):
         comp = self._components.get(omo_var)
@@ -76,6 +81,7 @@ class ComponentFactory(object):
             return comp
         new_var = deepcopy(omo_var)
         self._components[omo_var] = new_var
+        self.component_map[omo_var] = new_var
         return new_var
 
     def constraint(self, omo_cons):
@@ -106,9 +112,10 @@ class ComponentFactory(object):
 
 
 class _ConvertExpressionVisitor(ExpressionValueVisitor):
-    def __init__(self, memo, dag):
+    def __init__(self, memo, dag, component_map):
         self.memo = memo
         self.dag = dag
+        self.component_map = component_map
 
     def visiting_potential_leaf(self, node):
         if node.__class__ in nonpyomo_leaf_types:
@@ -130,7 +137,7 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
         if self.get(node) is not None:
             return self.get(node)
 
-        new_expr = create_wrapper_node_with_local_data(node, tuple(values))
+        new_expr = node.create_node_with_local_data(tuple(values))
         self.set(node, new_expr)
         return new_expr
 
@@ -146,4 +153,5 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             return self.memo[expr]
         self.memo[expr] = new_expr
         self.dag.add_vertex(new_expr)
+        self.component_map[expr] = new_expr
         return new_expr

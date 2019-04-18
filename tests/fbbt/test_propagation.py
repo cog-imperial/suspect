@@ -4,10 +4,8 @@ from hypothesis import given, assume, reproduce_failure
 from hypothesis.strategies import integers, lists
 import pyomo.environ as pe
 from pyomo.core.kernel.component_map import ComponentMap
-from pyomo.core.expr.expr_pyomo5 import NumericConstant, PowExpression
-from suspect.dag.expressions import Constraint, Objective
+from suspect.pyomo.expressions import *
 from suspect.fbbt.propagation.rules import *
-from suspect.dag.expressions import *
 from suspect.fbbt.propagation.visitor import BoundsPropagationVisitor
 from suspect.interval import Interval
 from tests.conftest import (

@@ -13,10 +13,61 @@
 # limitations under the License.
 
 """Visitor applying rules for convexity propagation."""
+from suspect.pyomo.expressions import (
+    nonpyomo_leaf_types,
+    NumericConstant,
+    Var,
+    Constraint,
+    Objective,
+    ProductExpression,
+    ReciprocalExpression,
+    LinearExpression,
+    SumExpression,
+    PowExpression,
+    NegationExpression,
+    UnaryFunctionExpression,
+)
 from suspect.interfaces import CombineUnaryFunctionRules
 from suspect.visitor import Visitor
-from suspect.expression import ExpressionType as ET
 from suspect.convexity.rules import * # pylint: disable=wildcard-import
+
+
+_expr_to_rule_map = dict()
+_expr_to_rule_map[NumericConstant] = ConstantRule()
+_expr_to_rule_map[Var] = VariableRule()
+_expr_to_rule_map[Constraint] = ConstraintRule()
+_expr_to_rule_map[Objective] = ObjectiveRule()
+_expr_to_rule_map[ProductExpression] = ProductRule()
+_expr_to_rule_map[ReciprocalExpression] = ReciprocalRule()
+_expr_to_rule_map[LinearExpression] = LinearRule()
+_expr_to_rule_map[SumExpression] = SumRule()
+_expr_to_rule_map[PowExpression] = PowerRule()
+_expr_to_rule_map[NegationExpression] = NegationRule()
+_expr_to_rule_map[UnaryFunctionExpression] = CombineUnaryFunctionRules({
+    'abs': AbsRule(),
+    'sqrt': SqrtRule(),
+    'exp': ExpRule(),
+    'log': LogRule(),
+    'tan': TanRule(),
+    'atan': AtanRule(),
+    'sin': SinRule(),
+    'asin': AsinRule(),
+    'cos': CosRule(),
+    'acos': AcosRule(),
+})
+
+
+def expression_convexity(expr, convexity, mono, bounds):
+    if type(expr) in nonpyomo_leaf_types:
+        rule = _expr_to_rule_map[NumericConstant]
+    elif expr.is_constant():
+        rule = _expr_to_rule_map[NumericConstant]
+    elif expr.is_variable_type():
+        rule = _expr_to_rule_map[Var]
+    else:
+        assert expr.is_expression_type()
+        rule = _expr_to_rule_map[type(expr)]
+    return rule.apply(expr, convexity, mono, bounds)
 
 
 class ConvexityPropagationVisitor(Visitor):
@@ -25,30 +76,5 @@ class ConvexityPropagationVisitor(Visitor):
         convexity[expr] = result
         return not result.is_unknown()
 
-    def register_rules(self):
-        return {
-            ET.Variable: VariableRule(),
-            ET.Constant: ConstantRule(),
-            ET.Constraint: ConstraintRule(),
-            ET.Objective: ObjectiveRule(),
-            ET.Division: DivisionRule(),
-            ET.Reciprocal: ReciprocalRule(),
-            ET.Product: ProductRule(),
-            ET.Linear: LinearRule(),
-            # QuadraticRule(),
-            ET.Sum: SumRule(),
-            ET.Negation: NegationRule(),
-            ET.Power: PowerRule(),
-            ET.UnaryFunction: CombineUnaryFunctionRules({
-                'abs': AbsRule(),
-                'sqrt': SqrtRule(),
-                'exp': ExpRule(),
-                'log': LogRule(),
-                'tan': TanRule(),
-                'atan': AtanRule(),
-                'sin': SinRule(),
-                'asin': AsinRule(),
-                'cos': CosRule(),
-                'acos': AcosRule(),
-            })
-        }
+    def visit_expression(self, expr, convexity, mono, bounds):
+        return True, expression_convexity(expr, convexity, mono, bounds)

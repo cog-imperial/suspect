@@ -15,7 +15,7 @@
 """FBBT bounds propagation rules."""
 import operator
 from functools import reduce
-from pyomo.core.expr.expr_pyomo5 import nonpyomo_leaf_types
+from suspect.pyomo.expressions import nonpyomo_leaf_types
 from suspect.interval import Interval
 from suspect.interfaces import Rule
 from suspect.expression import ExpressionType, UnaryFunctionType

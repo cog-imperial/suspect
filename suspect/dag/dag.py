@@ -14,7 +14,7 @@
 
 """Directed Acyclic Graph representation of an optimization problem."""
 
-from pyomo.core.expr.expr_pyomo5 import nonpyomo_leaf_types
+from pyomo.core.expr.numeric_expr import nonpyomo_leaf_types
 from suspect.interfaces import Problem
 from suspect.dag.expressions import Constraint, Objective
 from suspect.dag.vertices_list import VerticesList

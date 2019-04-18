@@ -16,7 +16,7 @@ import pytest
 from tests.strategies import models
 from hypothesis import given, reproduce_failure
 import pyomo.environ as aml
-from pyomo.core.expr.expr_pyomo5 import (
+from suspect.pyomo.expressions import (
     nonpyomo_leaf_types,
     NumericConstant,
 )

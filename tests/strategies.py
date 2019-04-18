@@ -1,5 +1,5 @@
 import hypothesis.strategies as st
-import pyomo.core.expr.expr_pyomo5 as py5
+import suspect.pyomo.expressions as py5
 import pyomo.environ as pe
 
 

@@ -14,12 +14,14 @@
 
 from numbers import Number
 import pyomo.environ as aml
-from pyomo.core.expr.expr_pyomo5 import (
+from pyomo.core.expr.numeric_expr import (
     nonpyomo_leaf_types,
-    InequalityExpression,
-    RangedExpression,
-    EqualityExpression,
     NumericConstant,
+)
+from pyomo.core.expr.logical_expr import (
+    InequalityExpression,
+    EqualityExpression,
+    RangedExpression,
 )
 from suspect.interval import Interval
 

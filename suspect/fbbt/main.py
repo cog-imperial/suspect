@@ -13,9 +13,35 @@
 # limitations under the License.
 
 """Class to run bound tightener or a problem."""
+from pyomo.core.kernel.component_map import ComponentMap
+from suspect.dag.iterator import DagForwardIterator, DagBackwardIterator
 from suspect.fbbt.initialization import BoundsInitializationVisitor
 from suspect.fbbt.propagation import BoundsPropagationVisitor
 from suspect.fbbt.tightening import BoundsTighteningVisitor
+
+
+def perform_fbbt(problem):
+    """Perform FBBT on problem.
+
+    Parameters
+    ----------
+    problem: suspect.dag.ProblemDag
+        the problem
+
+    Returns
+    -------
+    ComponentMap
+        tightened bounds for variables and expressions
+    """
+    bounds = ComponentMap()
+
+    bounds_tightener = BoundsTightener(
+        DagForwardIterator(),
+        DagBackwardIterator(),
+        FBBTStopCriterion(),
+    )
+    bounds_tightener.tighten(problem, bounds)
+    return bounds
 
 
 class FBBTStopCriterion(object):
