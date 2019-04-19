@@ -135,7 +135,9 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
 
     def visit(self, node, values):
         if self.get(node) is not None:
-            return self.get(node)
+            new_expr = self.get(node)
+            self.set(node, new_expr)
+            return new_expr
 
         new_expr = node.create_node_with_local_data(tuple(values))
         self.set(node, new_expr)
@@ -149,9 +151,9 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             return self.memo[expr]
 
     def set(self, expr, new_expr):
+        self.component_map[expr] = new_expr
         if self.memo.get(expr) is not None:
             return self.memo[expr]
         self.memo[expr] = new_expr
         self.dag.add_vertex(new_expr)
-        self.component_map[expr] = new_expr
         return new_expr

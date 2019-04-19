@@ -21,7 +21,7 @@ from suspect.expression import UnaryFunctionType
 class AbsRule(MonotonicityRule):
     """Return monotonicity of abs."""
     def apply(self, expr, monotonicity, bounds):
-        child = expr.children[0]
+        child = expr.args[0]
         mono = monotonicity[child]
         child_bounds = bounds[child]
 

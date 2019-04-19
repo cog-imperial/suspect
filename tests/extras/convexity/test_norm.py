@@ -2,7 +2,8 @@
 import pytest
 from hypothesis import given, assume
 import hypothesis.strategies as st
-from tests.conftest import PlaceholderExpression as PE, reals
+from tests.conftest import PlaceholderExpression as PE
+from tests.strategies import reals
 from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
 from suspect.interval import Interval as I
 from suspect.convexity import Convexity

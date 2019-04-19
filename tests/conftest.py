@@ -14,7 +14,6 @@
 
 # pylint: skip-file
 import pytest
-import hypothesis.strategies as st
 import numpy as np
 from collections import namedtuple
 from suspect.interval import Interval
@@ -23,33 +22,6 @@ from suspect.convexity.convexity import Convexity
 from suspect.expression import ExpressionType as ET
 from suspect.context import SpecialStructurePropagationContext
 
-
-@st.composite
-def reals(draw, min_value=None, max_value=None, allow_infinity=True):
-    if min_value is not None and max_value is not None:
-        allow_infinity = False
-    return draw(st.floats(
-        min_value=min_value, max_value=max_value,
-        allow_nan=False, allow_infinity=allow_infinity
-    ))
-
-
-@st.composite
-def coefficients(draw, min_value=None, max_value=None):
-    return draw(st.floats(
-        min_value=min_value, max_value=max_value,
-        allow_nan=False, allow_infinity=False,
-    ))
-
-
-@st.composite
-def intervals(draw, allow_infinity=True):
-    a = draw(reals(allow_infinity=allow_infinity))
-    if np.isinf(a):
-        allow_infinity=False
-    b = draw(reals(allow_infinity=allow_infinity))
-    lb, ub = min(a, b), max(a, b)
-    return Interval(lb, ub)
 
 
 BilinearTerm = namedtuple('BilinearTerm', ['var1', 'var2', 'coefficient'])

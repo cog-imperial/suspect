@@ -29,6 +29,10 @@ class PolynomialDegree(object):
         """Predicate to check if it's polynomial."""
         return self.degree is not None
 
+    def is_constant(self):
+        """Predicate to check if it's constant."""
+        return self.is_polynomial() and self.degree == 0
+
     def is_linear(self):
         """Predicate to check if it's linear."""
         return self.is_polynomial() and self.degree == 1

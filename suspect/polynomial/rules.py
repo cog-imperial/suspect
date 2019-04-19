@@ -13,15 +13,9 @@
 # limitations under the License.
 
 """Polynomiality rules."""
+from suspect.pyomo.expressions import nonpyomo_leaf_types
 from suspect.polynomial.degree import PolynomialDegree
 from suspect.interfaces import Rule
-
-
-__all__ = [
-    'VariableRule', 'ConstantRule', 'ConstraintRule', 'ObjectiveRule', 'DivisionRule',
-    'ProductRule', 'LinearRule', 'SumRule', 'NegationRule', 'PowerRule', 'UnaryFunctionRule',
-    'QuadraticRule', 'ReciprocalRule',
-]
 
 
 class PolynomialDegreeRule(object):
@@ -79,7 +73,10 @@ class DivisionRule(PolynomialDegreeRule):
 
 class ReciprocalRule(PolynomialDegreeRule):
     """Return polynomial degree of reciprocal."""
-    def apply(self, expr, _poly):
+    def apply(self, expr, poly):
+        den_degree = poly[expr.args[0]]
+        if den_degree.is_polynomial() and den_degree.degree == 0:
+            return PolynomialDegree(0)
         return PolynomialDegree.not_polynomial()
 
 
@@ -120,6 +117,12 @@ class NegationRule(PolynomialDegreeRule):
         return poly[expr.args[0]]
 
 
+class AbsRule(PolynomialDegreeRule):
+    """Return polynomial degree of a abs expression."""
+    def apply(self, expr, poly):
+        return poly[expr.args[0]]
+
+
 class PowerRule(PolynomialDegreeRule):
     """Return polynomial degree of a power expression."""
     def apply(self, expr, poly):
@@ -135,9 +138,10 @@ class PowerRule(PolynomialDegreeRule):
             if base_degree.degree == 0:
                 # const ** const
                 return PolynomialDegree(0)
-            if not expo.is_constant():
-                return PolynomialDegree.not_polynomial()
-            expo = expo.value
+            if type(expo) not in nonpyomo_leaf_types:
+                if not expo.is_constant():
+                    return PolynomialDegree.not_polynomial()
+                expo = expo.value
             if expo == int(expo):
                 return base_degree ** expo
         return PolynomialDegree.not_polynomial()

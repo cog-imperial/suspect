@@ -19,12 +19,14 @@ from suspect.pyomo.expressions import (
     Var,
     Constraint,
     Objective,
+    MonomialTermExpression,
     ProductExpression,
     ReciprocalExpression,
     LinearExpression,
     SumExpression,
     PowExpression,
     NegationExpression,
+    AbsExpression,
     UnaryFunctionExpression,
 )
 from suspect.visitor import Visitor
@@ -36,12 +38,14 @@ _expr_to_rule_map[NumericConstant] = ConstantRule()
 _expr_to_rule_map[Var] = VariableRule()
 _expr_to_rule_map[Constraint] = ConstraintRule()
 _expr_to_rule_map[Objective] = ObjectiveRule()
+_expr_to_rule_map[MonomialTermExpression] = ProductRule()
 _expr_to_rule_map[ProductExpression] = ProductRule()
 _expr_to_rule_map[ReciprocalExpression] = ReciprocalRule()
 _expr_to_rule_map[LinearExpression] = LinearRule()
 _expr_to_rule_map[SumExpression] = SumRule()
 _expr_to_rule_map[PowExpression] = PowerRule()
 _expr_to_rule_map[NegationExpression] = NegationRule()
+_expr_to_rule_map[AbsExpression] = AbsRule()
 _expr_to_rule_map[UnaryFunctionExpression] = UnaryFunctionRule()
 
 

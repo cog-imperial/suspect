@@ -2,7 +2,7 @@
 import pytest
 from hypothesis import given, assume
 import hypothesis.strategies as st
-from tests.conftest import reals
+from tests.strategies import reals
 from suspect.interval import Interval, EmptyInterval
 from suspect.math import *
 

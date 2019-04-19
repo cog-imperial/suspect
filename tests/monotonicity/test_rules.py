@@ -1,16 +1,33 @@
 # pylint: skip-file
 import pytest
-from hypothesis import assume, given
+from hypothesis import given, assume, reproduce_failure, settings, HealthCheck
 import hypothesis.strategies as st
 import itertools
 from pyomo.core.kernel.component_map import ComponentMap
-from tests.conftest import coefficients, reals
+import pyomo.environ as pe
+from tests.strategies import coefficients, reals, expressions
 from tests.conftest import PlaceholderExpression as PE
 from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
+from suspect.monotonicity.visitor import MonotonicityPropagationVisitor
 from suspect.monotonicity.monotonicity import Monotonicity as M
+from suspect.pyomo.expressions import (
+    ProductExpression,
+    PowExpression,
+    SumExpression,
+    NegationExpression,
+    ReciprocalExpression,
+    Constraint,
+    Objective,
+    Sense,
+)
 from suspect.interval import Interval as I
 from suspect.monotonicity.rules import *
 from suspect.math import almosteq, pi
+
+
+@pytest.fixture
+def visitor():
+    return MonotonicityPropagationVisitor()
 
 
 @st.composite
@@ -133,16 +150,13 @@ def test_constant_is_constant():
     (M.Constant, M.Constant),
     (M.Unknown, M.Unknown),
 ])
-def test_lte_constraint(expr_mono, expected_mono):
-    rule = ConstraintRule()
-    child = PE(ET.UnaryFunction)
+@given(child=expressions())
+def test_lte_constraint(visitor, child, expr_mono, expected_mono):
     mono = ComponentMap()
     mono[child] = expr_mono
-    result = rule.apply(
-        PE(ET.Constraint, [child], bounded_above=True),
-        mono,
-        None,
-    )
+    expr = Constraint('cons', None, 0.0, children=[child])
+    matched, result = visitor.visit_expression(expr, mono, None)
+    assert matched
     assert result == expected_mono
 
 
@@ -152,16 +166,13 @@ def test_lte_constraint(expr_mono, expected_mono):
     (M.Constant, M.Constant),
     (M.Unknown, M.Unknown),
 ])
-def test_gte_constraint(expr_mono, expected_mono):
-    rule = ConstraintRule()
-    child = PE(ET.UnaryFunction)
+@given(child=expressions())
+def test_gte_constraint(visitor, child, expr_mono, expected_mono):
     mono = ComponentMap()
     mono[child] = expr_mono
-    result = rule.apply(
-        PE(ET.Constraint, [child], bounded_below=True),
-        mono,
-        None,
-    )
+    expr = Constraint('cons', 0.0, None, children=[child])
+    matched, result = visitor.visit_expression(expr, mono, None)
+    assert matched
     assert result == expected_mono
 
 
@@ -171,16 +182,13 @@ def test_gte_constraint(expr_mono, expected_mono):
     (M.Constant, M.Constant),
     (M.Unknown, M.Unknown),
 ])
-def test_eq_constraint(expr_mono, expected_mono):
-    rule = ConstraintRule()
-    child = PE(ET.UnaryFunction)
+@given(child=expressions())
+def test_eq_constraint(visitor, child, expr_mono, expected_mono):
     mono = ComponentMap()
     mono[child] = expr_mono
-    result = rule.apply(
-        PE(ET.Constraint, [child], bounded_above=True, bounded_below=True),
-        mono,
-        None,
-    )
+    expr = Constraint('cons', 0.0, 0.0, children=[child])
+    matched, result = visitor.visit_expression(expr, mono, None)
+    assert matched
     assert result == expected_mono
 
 
@@ -190,16 +198,13 @@ def test_eq_constraint(expr_mono, expected_mono):
     (M.Constant, M.Constant),
     (M.Unknown, M.Unknown),
 ])
-def test_min_constraint(expr_mono, expected_mono):
-    rule = ObjectiveRule()
-    child = PE(ET.UnaryFunction)
+@given(child=expressions())
+def test_min_constraint(visitor, child, expr_mono, expected_mono):
     mono = ComponentMap()
     mono[child] = expr_mono
-    result = rule.apply(
-        PE(ET.Objective, [child], is_minimizing=True),
-        mono,
-        None,
-    )
+    expr = Objective('obj', children=[child])
+    matched, result = visitor.visit_expression(expr, mono, None)
+    assert matched
     assert result == expected_mono
 
 
@@ -209,16 +214,13 @@ def test_min_constraint(expr_mono, expected_mono):
     (M.Constant, M.Constant),
     (M.Unknown, M.Unknown),
 ])
-def test_max_constraint(expr_mono, expected_mono):
-    rule = ObjectiveRule()
-    child = PE(ET.UnaryFunction)
+@given(child=expressions())
+def test_max_constraint(visitor, child, expr_mono, expected_mono):
     mono = ComponentMap()
     mono[child] = expr_mono
-    result = rule.apply(
-        PE(ET.Objective, [child], is_minimizing=False),
-        mono,
-        None,
-    )
+    expr = Objective('obj', children=[child], sense=Sense.MAXIMIZE)
+    matched, result = visitor.visit_expression(expr, mono, None)
+    assert matched
     assert result == expected_mono
 
 
@@ -247,10 +249,8 @@ def test_max_constraint(expr_mono, expected_mono):
     (M.Nondecreasing, M.Nonincreasing, I(0, None), I(None, 0), M.Nonincreasing),
     (M.Nondecreasing, M.Nondecreasing, I(None, 0), I(None, 0), M.Nonincreasing),
 ])
-def test_product(mono_f, mono_g, bound_f, bound_g, expected):
-    rule = ProductRule()
-    f = PE(ET.UnaryFunction)
-    g = PE(ET.UnaryFunction)
+@given(f=expressions(), g=expressions())
+def test_product(visitor, f, g, mono_f, mono_g, bound_f, bound_g, expected):
     bounds = ComponentMap()
     bounds[f] = bound_f
     bounds[g] = bound_g
@@ -258,10 +258,14 @@ def test_product(mono_f, mono_g, bound_f, bound_g, expected):
     mono[f] = mono_f
     mono[g] = mono_g
 
-    result = rule.apply(PE(ET.Product, [f, g]), mono, bounds)
+    expr = f * g
+    assume(isinstance(expr, ProductExpression))
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == expected
 
 
+@pytest.mark.skip('Pyomo has no division expression')
 @pytest.mark.parametrize('mono_f,mono_g,bound_f,bound_g,expected', [
     (M.Constant, M.Constant, I(1.0, 1.0), I(2.0, 2.0), M.Constant),
     (M.Constant, M.Constant, I(1.0, 1.0), I(0.0, 0.0), M.Unknown),
@@ -282,18 +286,19 @@ def test_product(mono_f, mono_g, bound_f, bound_g, expected):
     (M.Nondecreasing, M.Nondecreasing, I(0, None), I(None, 0), M.Nonincreasing),
     (M.Nondecreasing, M.Nonincreasing, I(None, 0), I(None, 0), M.Nonincreasing),
 ])
-def test_division(mono_f, mono_g, bound_f, bound_g, expected):
-    rule = DivisionRule()
-    f = PE(ET.UnaryFunction)
-    g = PE(ET.UnaryFunction)
-
+@given(f=expressions(), g=expressions())
+def test_division(visitor, f, g, mono_f, mono_g, bound_f, bound_g, expected):
     bounds = ComponentMap()
     bounds[f] = bound_f
     bounds[g] = bound_g
     mono = ComponentMap()
     mono[f] = mono_f
     mono[g] = mono_g
-    result = rule.apply(PE(ET.Division, [f, g]), mono, bounds)
+
+    expr = f / g
+    # assume(isinstance(expr, DivisionExpression))
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == expected
 
 
@@ -301,19 +306,21 @@ def test_division(mono_f, mono_g, bound_f, bound_g, expected):
     (M.Constant, I(2.0, 2.0), M.Constant),
     (M.Constant, I(0.0, 0.0), M.Unknown),
 ])
-def test_reciprocal(mono_g, bound_g, expected):
-    rule = ReciprocalRule()
-    g = PE(ET.UnaryFunction)
-
+@given(g=expressions())
+def test_reciprocal(visitor, g, mono_g, bound_g, expected):
     bounds = ComponentMap()
     bounds[g] = bound_g
     mono = ComponentMap()
     mono[g] = mono_g
-    result = rule.apply(PE(ET.Reciprocal, [g]), mono, bounds)
+
+    expr = 1.0 / g
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == expected
 
 
-@pytest.mark.skip('Not updated')
+
+@pytest.mark.skip('Pyomo has no linear expressions')
 class TestLinear(object):
     def _result_with_terms(self, terms):
         rule = LinearRule()
@@ -367,42 +374,80 @@ class TestLinear(object):
 
 
 class TestSum(object):
-    def _result_with_terms(self, monos):
-        rule = SumRule()
+    def _result_with_terms(self, visitor, expr_with_monos):
+        children = [c for c, _ in expr_with_monos]
+        monos = [m for _, m in expr_with_monos]
         monotonicity = ComponentMap()
-        children = [PE(ET.UnaryFunction) for _ in monos]
-        for child, mono in zip(children, monos):
+        for child, mono in expr_with_monos:
             monotonicity[child] = mono
-        result = rule.apply(PE(ET.Sum, children=children), monotonicity, None)
+        expr = SumExpression(children)
+        matched, result = visitor.visit_expression(expr, monotonicity, None)
+        assert matched
         return result
 
     @given(
-        st.lists(st.just(M.Nondecreasing), min_size=1),
-        st.lists(st.one_of(st.just(M.Nondecreasing), st.just(M.Constant))),
+        st.lists(
+            st.tuples(expressions(), st.just(M.Nondecreasing)),
+            min_size=1,
+        ),
+        st.lists(
+            st.tuples(
+                expressions(),
+                st.one_of(st.just(M.Nondecreasing), st.just(M.Constant))
+            )
+        ),
     )
-    def test_nondecreasing(self, a, b):
-        mono = self._result_with_terms(a + b)
+    def test_nondecreasing(self, visitor, a, b):
+        mono = self._result_with_terms(visitor, a + b)
         assert mono.is_nondecreasing()
 
     @given(
-        st.lists(st.just(M.Nonincreasing), min_size=1),
-        st.lists(st.one_of(st.just(M.Nonincreasing), st.just(M.Constant))),
+        st.lists(
+            st.tuples(expressions(), st.just(M.Nonincreasing)),
+            min_size=1
+        ),
+        st.lists(
+            st.tuples(
+                expressions(),
+                st.one_of(st.just(M.Nonincreasing), st.just(M.Constant))
+            )
+        ),
     )
-    def test_nonincreasing(self, a, b):
-        mono = self._result_with_terms(a + b)
+    def test_nonincreasing(self, visitor, a, b):
+        mono = self._result_with_terms(visitor, a + b)
         assert mono.is_nonincreasing()
 
-    @given(st.lists(st.just(M.Constant), min_size=1))
-    def test_constant(self, a):
-        mono = self._result_with_terms(a)
+    @given(
+        st.lists(
+            st.tuples(
+                expressions(),
+                st.just(M.Constant)
+            ),
+            min_size=1
+        ),
+    )
+    def test_constant(self, visitor, a):
+        mono = self._result_with_terms(visitor, a)
         assert mono.is_constant()
 
     @given(
-        st.lists(st.just(M.Nondecreasing), min_size=1),
-        st.lists(st.just(M.Nonincreasing), min_size=1),
+        st.lists(
+            st.tuples(
+                expressions(),
+                st.just(M.Nondecreasing)
+            ),
+            min_size=1
+        ),
+        st.lists(
+            st.tuples(
+                expressions(),
+                st.just(M.Nonincreasing),
+            ),
+            min_size=1
+        ),
     )
-    def test_unknown(self, a, b):
-        mono = self._result_with_terms(a + b)
+    def test_unknown(self, visitor, a, b):
+        mono = self._result_with_terms(visitor, a + b)
         assert mono.is_unknown()
 
 
@@ -415,61 +460,53 @@ class TestSum(object):
     (M.Nondecreasing, I(None, None), M.Unknown),
     (M.Nonincreasing, I(None, None), M.Unknown),
 ])
-def test_abs(mono_g, bounds_g, expected):
-    rule = AbsRule()
-    child = PE(ET.UnaryFunction)
+@given(g=expressions())
+def test_abs(visitor, g, mono_g, bounds_g, expected):
     bounds = ComponentMap()
-    bounds[child] = bounds_g
+    bounds[g] = bounds_g
     mono = ComponentMap()
-    mono[child] = mono_g
-    result = rule.apply(
-        PE(ET.UnaryFunction, [child], func_type=UFT.Abs),
-        mono,
-        bounds,
-    )
+    mono[g] = mono_g
+    expr = abs(g)
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == expected
 
 
-@pytest.mark.parametrize('rule_cls,func_type', [
-    (SqrtRule, UFT.Sqrt), (ExpRule, UFT.Exp), (LogRule, UFT.Log),
-    (TanRule, UFT.Tan), (AsinRule, UFT.Asin), (AtanRule, UFT.Atan)
+@pytest.mark.parametrize('func_name', [
+    'sqrt', 'exp', 'log', 'tan', 'asin', 'atan',
 ])
 @pytest.mark.parametrize('mono_g,bounds_g', itertools.product(
     [M.Nondecreasing, M.Nonincreasing, M.Constant, M.Unknown],
     [I(None, None), I(0, None), I(None, 0)],
 ))
-def test_nondecreasing_function(rule_cls, func_type, mono_g, bounds_g):
-    rule = rule_cls()
-    child = PE(ET.UnaryFunction)
+@given(g=expressions())
+def test_nondecreasing_function(visitor, g, func_name, mono_g, bounds_g):
     mono = ComponentMap()
-    mono[child] = mono_g
+    mono[g] = mono_g
     bounds = ComponentMap()
-    bounds[child]= bounds_g
-    result = rule.apply(
-        PE(ET.UnaryFunction, [child], func_type=func_type),
-        mono,
-        bounds,
-    )
+    bounds[g]= bounds_g
+    func = getattr(pe, func_name)
+    expr = func(g)
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == mono_g
 
 
-@pytest.mark.parametrize('rule_cls,func_type', [(AcosRule, UFT.Acos)])
+@pytest.mark.parametrize('func_name', ['acos'])
 @pytest.mark.parametrize('mono_g,bounds_g', itertools.product(
     [M.Nondecreasing, M.Nonincreasing, M.Constant, M.Unknown],
     [I(None, None), I(0, None), I(None, 0)],
 ))
-def test_nonincreasing_function(rule_cls, func_type, mono_g, bounds_g):
-    rule = rule_cls()
-    child = PE(ET.UnaryFunction)
+@given(g=expressions())
+def test_nonincreasing_function(visitor, g, func_name, mono_g, bounds_g):
     mono = ComponentMap()
-    mono[child] = mono_g
+    mono[g] = mono_g
     bounds = ComponentMap()
-    bounds[child] = bounds_g
-    result = rule.apply(
-        PE(ET.UnaryFunction, [child], func_type=func_type),
-        mono,
-        bounds,
-    )
+    bounds[g] = bounds_g
+    func = getattr(pe, func_name)
+    expr = func(g)
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == mono_g.negate()
 
 
@@ -477,29 +514,33 @@ def test_nonincreasing_function(rule_cls, func_type, mono_g, bounds_g):
     [M.Nondecreasing, M.Nonincreasing, M.Constant, M.Unknown],
     [I(None, None), I(0, None), I(None, 0)],
 ))
-def test_negation(mono_g, bounds_g):
-    rule = NegationRule()
-    child = PE(ET.UnaryFunction)
+@given(g=expressions())
+def test_negation(visitor, g, mono_g, bounds_g):
     mono = ComponentMap()
-    mono[child] = mono_g
+    mono[g] = mono_g
     bounds = ComponentMap()
-    bounds[child] = bounds_g
-    result = rule.apply(PE(ET.Negation, [child]), mono, bounds)
+    bounds[g] = bounds_g
+    expr = -g
+    assume(isinstance(expr, NegationExpression))
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == mono_g.negate()
 
 
 class TestPowConstantBase(object):
-    def _result_with_base_expo(self, base, mono_expo, bounds_expo):
-        base = PE(ET.Constant, is_constant=True, value=base)
-        expo = PE()
+    def _result_with_base_expo(self, visitor, base, expo, mono_expo, bounds_expo):
         rule = PowerRule()
         mono = ComponentMap()
         mono[base] = M.Constant
         mono[expo] = mono_expo
         bounds = ComponentMap()
-        bounds[base] = I(base.value, base.value)
+        bounds[base] = I(base, base)
         bounds[expo] = bounds_expo
-        return rule.apply(PE(ET.Power, [base, expo]), mono, bounds)
+        expr = base ** expo
+        assume(isinstance(expr, PowExpression))
+        matched, result = visitor.visit_expression(expr, mono, bounds)
+        assert matched
+        return result
 
     @pytest.mark.parametrize(
         'mono_expo,bounds_expo',
@@ -508,9 +549,12 @@ class TestPowConstantBase(object):
             [I(None, 0), I(0, None), I(None, None)]
         )
     )
-    @given(base=reals(max_value=-0.01, allow_infinity=False))
-    def test_negative_base(self, base, mono_expo, bounds_expo):
-        mono = self._result_with_base_expo(base, mono_expo, bounds_expo)
+    @given(
+        base=reals(max_value=-0.01, allow_infinity=False),
+        expo=expressions(),
+    )
+    def test_negative_base(self, visitor, base, expo, mono_expo, bounds_expo):
+        mono = self._result_with_base_expo(visitor, base, expo, mono_expo, bounds_expo)
         assert mono == M.Unknown
 
     @pytest.mark.parametrize('mono_expo,bounds_expo,expected', [
@@ -519,9 +563,12 @@ class TestPowConstantBase(object):
         (M.Nonincreasing, I(0, None), M.Nondecreasing),
         (M.Nonincreasing, I(None, 0), M.Unknown),
     ])
-    @given(base=reals(min_value=0.01, max_value=0.999))
-    def test_base_between_0_and_1(self, base, mono_expo, bounds_expo, expected):
-        mono = self._result_with_base_expo(base, mono_expo, bounds_expo)
+    @given(
+        base=reals(min_value=0.01, max_value=0.999),
+        expo=expressions(),
+    )
+    def test_base_between_0_and_1(self, visitor, base, expo, mono_expo, bounds_expo, expected):
+        mono = self._result_with_base_expo(visitor, base, expo, mono_expo, bounds_expo)
         assert mono == expected
 
     @pytest.mark.parametrize('mono_expo,bounds_expo,expected', [
@@ -530,32 +577,36 @@ class TestPowConstantBase(object):
         (M.Nonincreasing, I(None, 0), M.Nondecreasing),
         (M.Nonincreasing, I(0, None), M.Unknown),
     ])
-    @given(base=reals(min_value=1.01, allow_infinity=False))
-    def test_base_gt_1(self, base, mono_expo, bounds_expo, expected):
-        mono = self._result_with_base_expo(base, mono_expo, bounds_expo)
+    @given(
+        base=reals(min_value=1.01, allow_infinity=False),
+        expo=expressions(),
+    )
+    def test_base_gt_1(self, visitor, base, expo, mono_expo, bounds_expo, expected):
+        mono = self._result_with_base_expo(visitor, base, expo, mono_expo, bounds_expo)
         assert mono == expected
 
 
 class TestPowConstantExponent(object):
-    def _result_with_base_expo(self, mono_base, bounds_base, expo):
-        base = PE()
-        expo = PE(ET.Constant, is_constant=True, value=expo)
-        rule = PowerRule()
+    def _result_with_base_expo(self, visitor, base, mono_base, bounds_base, expo):
         mono = ComponentMap()
         mono[base] = mono_base
         mono[expo] = M.Constant
         bounds = ComponentMap()
         bounds[base] = bounds_base
-        bounds[expo] = I(expo.value, expo.value)
-        return rule.apply(PE(ET.Power, [base, expo]), mono, bounds)
+        bounds[expo] = I(expo, expo)
+        expr = PowExpression([base, expo])
+        matched, result = visitor.visit_expression(expr, mono, bounds)
+        assert matched
+        return result
 
     @pytest.mark.parametrize(
         'mono_base,bounds_base',
         itertools.product([M.Nonincreasing, M.Nondecreasing],
                           [I(None, 0), I(0, None), I(None, None)])
     )
-    def test_exponent_equals_1(self, mono_base, bounds_base):
-        mono = self._result_with_base_expo(mono_base, bounds_base, 1.0)
+    @given(base=expressions())
+    def test_exponent_equals_1(self, visitor, base, mono_base, bounds_base):
+        mono = self._result_with_base_expo(visitor, base, mono_base, bounds_base, 1.0)
         assert mono == mono_base
 
     @pytest.mark.parametrize(
@@ -563,8 +614,9 @@ class TestPowConstantExponent(object):
         itertools.product([M.Nonincreasing, M.Nondecreasing],
                           [I(None, 0), I(0, None), I(None, None)])
     )
-    def test_exponent_equals_0(self, mono_base, bounds_base):
-        mono = self._result_with_base_expo(mono_base, bounds_base, 0.0)
+    @given(base=expressions())
+    def test_exponent_equals_0(self, visitor, base, mono_base, bounds_base):
+        mono = self._result_with_base_expo(visitor, base, mono_base, bounds_base, 0.0)
         assert mono == M.Constant
 
     @pytest.mark.parametrize('mono_base,bounds_base,expected', [
@@ -574,9 +626,12 @@ class TestPowConstantExponent(object):
         (M.Nondecreasing, I(None, 0), M.Nonincreasing),
         (M.Nonincreasing, I(0, None), M.Nonincreasing),
     ])
-    @given(expo=st.integers(min_value=1))
-    def test_positive_even_integer(self, expo, mono_base, bounds_base, expected):
-        mono = self._result_with_base_expo(mono_base, bounds_base, 2*expo)
+    @given(
+        base=expressions(),
+        expo=st.integers(min_value=1),
+    )
+    def test_positive_even_integer(self, visitor, base, expo, mono_base, bounds_base, expected):
+        mono = self._result_with_base_expo(visitor, base, mono_base, bounds_base, 2*expo)
         assert mono == expected
 
     @pytest.mark.parametrize('mono_base,bounds_base,expected', [
@@ -586,55 +641,73 @@ class TestPowConstantExponent(object):
         (M.Nondecreasing, I(None, 0), M.Nondecreasing),
         (M.Nonincreasing, I(0, None), M.Nondecreasing),
     ])
-    @given(expo=st.integers(min_value=1))
-    def test_negative_even_integer(self, expo, mono_base, bounds_base, expected):
-        mono = self._result_with_base_expo(mono_base, bounds_base, -2*expo)
+    @given(
+        base=expressions(),
+        expo=st.integers(min_value=1)
+    )
+    def test_negative_even_integer(self, visitor, base, expo, mono_base, bounds_base, expected):
+        mono = self._result_with_base_expo(visitor, base, mono_base, bounds_base, -2*expo)
         assert mono == expected
 
     @pytest.mark.parametrize('mono_base,expected', [
         (M.Nondecreasing, M.Nondecreasing),
         (M.Nonincreasing, M.Nonincreasing),
     ])
-    @given(expo=st.integers(min_value=1))
-    def test_positive_odd_integer(self, expo, mono_base, expected):
-        mono = self._result_with_base_expo(mono_base, I(None, None), 2*expo+1)
+    @given(
+        base=expressions(),
+        expo=st.integers(min_value=1)
+    )
+    def test_positive_odd_integer(self, visitor, base, expo, mono_base, expected):
+        mono = self._result_with_base_expo(visitor, base, mono_base, I(None, None), 2*expo+1)
         assert mono == expected
 
     @pytest.mark.parametrize('mono_base,expected', [
         (M.Nondecreasing, M.Nonincreasing),
         (M.Nonincreasing, M.Nondecreasing),
     ])
-    @given(expo=st.integers(min_value=1))
-    def test_negative_odd_integer(self, expo, mono_base, expected):
-        mono = self._result_with_base_expo(mono_base, I(None, None), -2*expo+1)
+    @given(
+        base=expressions(),
+        expo=st.integers(min_value=1)
+    )
+    def test_negative_odd_integer(self, visitor, base, expo, mono_base, expected):
+        mono = self._result_with_base_expo(visitor, base, mono_base, I(None, None), -2*expo+1)
         assert mono == expected
 
-    @pytest.mark.skip('Not updated to work with Quadratic')
     @pytest.mark.parametrize('mono_base', [M.Nondecreasing, M.Nondecreasing])
-    @given(expo=reals(allow_infinity=False))
-    def test_noninteger_negative_base(self, expo, mono_base):
+    @given(
+        base=expressions(),
+        expo=reals(allow_infinity=False)
+    )
+    def test_noninteger_negative_base(self, visitor, base, expo, mono_base):
         assume(not almosteq(expo,  0))
         assume(expo != int(expo))
-        mono = self._result_with_base_expo(mono_base, I(None, 0), expo)
+        mono = self._result_with_base_expo(visitor, base, mono_base, I(None, 0), expo)
         assert mono == M.Unknown
 
     @pytest.mark.parametrize('mono_base,expected', [
         (M.Nondecreasing, M.Nondecreasing),
         (M.Nonincreasing, M.Nonincreasing)
     ])
-    @given(expo=reals(allow_infinity=False, min_value=1e-5))
-    def test_positive_noninteger(self, expo, mono_base, expected):
-        mono = self._result_with_base_expo(mono_base, I(0, None), expo)
+    @given(
+        base=expressions(),
+        expo=reals(allow_infinity=False, min_value=1e-5)
+    )
+    def test_positive_noninteger(self, visitor, base, expo, mono_base, expected):
+        mono = self._result_with_base_expo(visitor, base, mono_base, I(0, None), expo)
         assert mono == expected
 
     @pytest.mark.parametrize('mono_base,expected', [
         (M.Nonincreasing, M.Nondecreasing),
         (M.Nondecreasing, M.Nonincreasing)
     ])
-    @given(expo=reals(allow_infinity=False, max_value=-1e-5))
-    def test_negative_noninteger(self, expo, mono_base, expected):
-        mono = self._result_with_base_expo(mono_base, I(0, None), expo)
+    @given(
+        base=expressions(),
+        expo=reals(allow_infinity=False, max_value=-1e-5)
+    )
+    def test_negative_noninteger(self, visitor, base, expo, mono_base, expected):
+        mono = self._result_with_base_expo(visitor, base, mono_base, I(0, None), expo)
         assert mono == expected
+
 
 @pytest.mark.parametrize('mono_base,bounds_base,mono_expo,bounds_expo',
     itertools.product(
@@ -644,85 +717,79 @@ class TestPowConstantExponent(object):
         [I(None, 0), I(0, None), I(None, None)],
     )
 )
-def test_pow(mono_base, bounds_base, mono_expo, bounds_expo):
-    base = PE()
-    expo = PE()
-    rule = PowerRule()
+@given(base=expressions(), expo=expressions())
+def test_pow(visitor, base, expo, mono_base, bounds_base, mono_expo, bounds_expo):
     mono = ComponentMap()
     mono[base] = mono_base
     mono[expo] = mono_expo
     bounds = ComponentMap()
     bounds[base] = bounds_base
     bounds[expo] = bounds_expo
-    result = rule.apply(PE(ET.Power, [base, expo]), mono, bounds)
+    expr = PowExpression([base, expo])
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
     assert result == M.Unknown
 
 
 class TestSin(object):
-    def _result_with_mono_bounds(self, mono_g, bounds_g):
-        rule = SinRule()
-        child = PE()
+    def _result_with_mono_bounds(self, visitor, g, mono_g, bounds_g):
         mono = ComponentMap()
-        mono[child] = mono_g
+        mono[g] = mono_g
         bounds = ComponentMap()
-        bounds[child] = bounds_g
-        return rule.apply(
-            PE(ET.UnaryFunction, [child], func_type=UFT.Sin),
-            mono,
-            bounds,
-        )
+        bounds[g] = bounds_g
+        expr = pe.sin(g)
+        matched, result = visitor.visit_expression(expr, mono, bounds)
+        assert matched
+        return result
 
-    @given(nonnegative_cos_bounds())
-    def test_nondecreasing_nonnegative_cos(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nondecreasing, bounds)
+    @given(expressions(), nonnegative_cos_bounds())
+    def test_nondecreasing_nonnegative_cos(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nondecreasing, bounds)
         assert mono.is_nondecreasing()
 
-    @given(nonnegative_cos_bounds())
-    def test_nonincreasing_nonnegative_cos(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nonincreasing, bounds)
+    @given(expressions(), nonnegative_cos_bounds())
+    def test_nonincreasing_nonnegative_cos(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nonincreasing, bounds)
         assert mono.is_nonincreasing()
 
-    @given(nonpositive_cos_bounds())
-    def test_decreasing_nonpositive_cos(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nondecreasing, bounds)
+    @given(expressions(), nonpositive_cos_bounds())
+    def test_decreasing_nonpositive_cos(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nondecreasing, bounds)
         assert mono.is_nonincreasing()
 
-    @given(nonpositive_cos_bounds())
-    def test_nonincreasing_nonpositive_cos(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nonincreasing, bounds)
+    @given(expressions(), nonpositive_cos_bounds())
+    def test_nonincreasing_nonpositive_cos(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nonincreasing, bounds)
         assert mono.is_nondecreasing()
 
 
 class TestCos(object):
-    def _result_with_mono_bounds(self, mono_g, bounds_g):
-        rule = CosRule()
-        child = PE()
+    def _result_with_mono_bounds(self, visitor, g, mono_g, bounds_g):
         mono = ComponentMap()
-        mono[child] = mono_g
+        mono[g] = mono_g
         bounds = ComponentMap()
-        bounds[child] = bounds_g
-        return rule.apply(
-            PE(ET.UnaryFunction, [child], func_type=UFT.Cos),
-            mono,
-            bounds,
-        )
+        bounds[g] = bounds_g
+        expr = pe.cos(g)
+        matched, result = visitor.visit_expression(expr, mono, bounds)
+        assert matched
+        return result
 
-    @given(nonnegative_sin_bounds())
-    def test_nonincreasing_nonnegative_sin(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nonincreasing, bounds)
+    @given(expressions(), nonnegative_sin_bounds())
+    def test_nonincreasing_nonnegative_sin(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nonincreasing, bounds)
         assert mono.is_nondecreasing()
 
-    @given(nonnegative_sin_bounds())
-    def test_nondecreasing_nonnegative_sin(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nondecreasing, bounds)
+    @given(expressions(), nonnegative_sin_bounds())
+    def test_nondecreasing_nonnegative_sin(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nondecreasing, bounds)
         assert mono.is_nonincreasing()
 
-    @given(nonpositive_sin_bounds())
-    def test_nondecreasing_nonpositive_sin(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nondecreasing, bounds)
+    @given(expressions(), nonpositive_sin_bounds())
+    def test_nondecreasing_nonpositive_sin(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nondecreasing, bounds)
         assert mono.is_nondecreasing()
 
-    @given(nonpositive_sin_bounds())
-    def test_nonincreasing_nonpositive_sin(self, bounds):
-        mono = self._result_with_mono_bounds(M.Nonincreasing, bounds)
+    @given(expressions(), nonpositive_sin_bounds())
+    def test_nonincreasing_nonpositive_sin(self, visitor, g, bounds):
+        mono = self._result_with_mono_bounds(visitor, g, M.Nonincreasing, bounds)
         assert mono.is_nonincreasing()

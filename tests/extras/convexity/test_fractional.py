@@ -1,7 +1,8 @@
 # pylint: skip-file
 import pytest
 from hypothesis import given, assume
-from tests.conftest import PlaceholderExpression as PE, reals
+from tests.conftest import PlaceholderExpression as PE
+from tests.strategies import reals
 from suspect.expression import ExpressionType as ET
 from suspect.interval import Interval as I
 from suspect.convexity import Convexity

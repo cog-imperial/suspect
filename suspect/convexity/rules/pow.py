@@ -15,6 +15,7 @@
 """Convexity detection rules for power expressions."""
 from suspect.convexity.convexity import Convexity
 from suspect.convexity.rules.rule import ConvexityRule
+from suspect.pyomo.expressions import nonpyomo_leaf_types
 from suspect.math import almosteq, almostgte # pylint: disable=no-name-in-module
 
 
@@ -28,17 +29,20 @@ class PowerRule(ConvexityRule):
         mono_expo = monotonicity[expo]
 
         if mono_expo.is_constant():
+            if type(expo) not in nonpyomo_leaf_types:
+                expo = expo.value
             cvx_base = convexity[base]
             bounds_base = bounds[base]
             return _constant_expo_pow_convexity(expo, cvx_base, bounds_base)
         elif mono_base.is_constant():
+            if type(base) not in nonpyomo_leaf_types:
+                base = base.value
             cvx_expo = convexity[expo]
             return _constant_base_pow_convexity(base, cvx_expo)
         return Convexity.Unknown
 
 
 def _constant_base_pow_convexity(base, cvx_expo):
-    base = base.value
     if 0 < base < 1:
         if cvx_expo.is_concave():
             return Convexity.Convex
@@ -49,7 +53,6 @@ def _constant_base_pow_convexity(base, cvx_expo):
 
 
 def _constant_expo_pow_convexity(expo, cvx_base, bounds_base):
-    expo = expo.value
     is_integer = almosteq(expo, int(expo))
     is_even = almosteq(expo % 2, 0)
 

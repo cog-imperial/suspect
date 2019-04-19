@@ -34,8 +34,7 @@ class FractionalConvexityDetector(ConvexityDetector):
         self._rule = FractionalRule()
 
     def visit_expression(self, expr, convexity, mono, bounds):
-        raise NotImplementedError()
-
+        return False, None
 
 
 class FractionalRule(Rule):

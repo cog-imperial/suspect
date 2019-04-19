@@ -26,7 +26,7 @@ class QuadraticFormConvexityDetector(ConvexityDetector):
         super().__init__()
 
     def visit_expression(self, expr, convexity, mono, bounds):
-        raise NotImplementedError()
+        return False, None
         return {
             ExpressionType.Product: QuadraticRule(),
         }
