@@ -45,9 +45,7 @@ def _instance_name(root):
 def _instance_variables(root):
     variables = root.find('osil:instanceData/osil:variables', NS)
     num_variables = int(variables.attrib['numberOfVariables'])
-    vars_ = variables.getchildren()
-    assert len(vars_) == num_variables
-    for v in vars_:
+    for v in variables:
         attr = v.attrib
         name = attr['name']
         lb = float(attr['lb']) if 'lb' in attr else 0.0
@@ -164,7 +162,7 @@ class OsilParser(object):
     def _nonlinear_terms(self, i):
         def _eval(node):
             name = _tag_name(node)
-            cs = node.getchildren()
+            cs = list(node)
 
             if name == 'negate':
                 assert len(cs) == 1
@@ -220,16 +218,15 @@ class OsilParser(object):
         nl = self.root.find('osil:instanceData/osil:nonlinearExpressions/osil:nl[@idx="{}"]'.format(i), NS)
         if nl is None:
             return 0.0
-        assert len(nl.getchildren()) == 1
         with gc_disabled():
-            expr = _eval(nl.getchildren()[0])
+            children = list(nl)
+            expr = _eval(children[0])
         return expr
 
     def _objective_linear(self, objective):
-        assert len(objective.getchildren()) == len(objective.findall('osil:coef', NS))
         return sum(
             float(c.text) * self._v(int(c.attrib['idx']))
-            for c in objective.getchildren()
+            for c in objective
         )
 
     def _objective_name(self, objective):

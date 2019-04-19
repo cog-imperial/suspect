@@ -15,6 +15,7 @@
 """Monotonicity detection rules for power expressions."""
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.monotonicity.rules.rule import MonotonicityRule
+from suspect.pyomo.expressions import nonpyomo_leaf_types
 from suspect.expression import ExpressionType
 from suspect.interfaces import Rule
 from suspect.math import almosteq, almostgte # pylint: disable=no-name-in-module
@@ -32,12 +33,16 @@ class PowerRule(MonotonicityRule):
         bounds_expo = bounds[expo]
 
         if mono_base.is_constant():
+            if type(base) not in nonpyomo_leaf_types:
+                base = base.value
             return _monotonicity_constant_base(
                 base, expo,
                 mono_base, mono_expo,
                 bounds_base, bounds_expo,
             )
         elif mono_expo.is_constant():
+            if type(expo) not in nonpyomo_leaf_types:
+                expo = expo.value
             return _monotonicity_constant_exponent(
                 base, expo,
                 mono_base, mono_expo,
@@ -48,7 +53,6 @@ class PowerRule(MonotonicityRule):
 
 def _monotonicity_constant_base(base, _expo, _mono_base, mono_expo, _bounds_base, bounds_expo):
     # pylint: disable=too-many-return-statements, too-many-arguments
-    base = base.value
     if base < 0:
         return Monotonicity.Unknown
     elif almosteq(base, 0):
@@ -70,7 +74,6 @@ def _monotonicity_constant_base(base, _expo, _mono_base, mono_expo, _bounds_base
 
 def _monotonicity_constant_exponent(base, expo, mono_base, mono_expo, bounds_base, bounds_expo):
     # pylint: disable=too-many-return-statements, too-many-arguments
-    expo = expo.value
     if almosteq(expo, 1):
         return mono_base
     elif almosteq(expo, 0):

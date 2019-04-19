@@ -30,4 +30,4 @@ from pyomo.core.expr.numeric_expr import (
 
 from pyomo.core.base.var import Var
 
-from suspect.dag.expressions import Constraint, Objective
+from suspect.dag.expressions import Constraint, Objective, Sense, Domain

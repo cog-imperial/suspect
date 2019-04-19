@@ -17,20 +17,18 @@ import pytest
 from unittest.mock import MagicMock
 from hypothesis import given, assume
 import hypothesis.strategies as st
+import pyomo.environ as pe
 from pyomo.core.kernel.component_map import ComponentMap
 import suspect.pyomo.expressions as dex
 import numpy as np
 from suspect.interval import Interval as I
-from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
 from suspect.fbbt.tightening.rules import *
 from suspect.fbbt.tightening.visitor import BoundsTighteningVisitor
+from suspect.expression import UnaryFunctionType as UFT
+from tests.strategies import coefficients, reals
 from tests.conftest import (
-    PlaceholderExpression as PE,
-    BilinearTerm,
     bound_description_to_bound,
     mono_description_to_mono,
-    coefficients,
-    reals,
 )
 
 
@@ -40,15 +38,16 @@ def visitor():
 
 
 @given(reals(), reals())
-def test_constraint_rule(bound1, bound2):
+def test_constraint_rule(visitor, bound1, bound2):
     lower_bound = min(bound1, bound2)
     upper_bound = max(bound1, bound2)
     rule = ConstraintRule()
-    child = PE()
-    result = rule.apply(
-        PE(ET.Constraint, [child], lower_bound=lower_bound, upper_bound=upper_bound),
-        None,
+    child = pe.Var()
+    constraint = dex.Constraint(
+        'test', lower_bound=lower_bound, upper_bound=upper_bound, children=[child]
     )
+    matched, result = visitor.visit_expression(constraint, None)
+    assert matched
     assert result[0] == I(lower_bound, upper_bound)
 
 
@@ -56,32 +55,34 @@ class TestSumRule:
     children = None
     expr = None
 
-    def _rule_result(self, children_bounds, expr_bounds):
-        children = [PE() for _ in children_bounds]
-        expr = PE(ET.Sum, children)
+    def _rule_result(self, visitor, children_bounds, expr_bounds):
+        children = [pe.Var() for _ in children_bounds]
+        expr = sum(children)
 
         bounds = ComponentMap()
         bounds[expr] = expr_bounds
         for child, child_bounds in zip(children, children_bounds):
             bounds[child] = child_bounds
 
-        rule = SumRule()
         self.children = children
         self.expr = expr
-        return rule.apply(expr, bounds)
+        matched, result = visitor.visit_expression(expr, bounds)
+        assert matched
+        return result
 
-    def test_unbounded_expr(self):
-        new_bounds = self._rule_result([I(0, 1), I(-1, 0)], I(0, None))
+    def test_unbounded_expr(self, visitor):
+        new_bounds = self._rule_result(visitor, [I(0, 1), I(-1, 0)], I(0, None))
         assert new_bounds[0] == I(0, None)
         assert new_bounds[1] == I(-1, None)
 
-    def test_bounded_expr(self):
+    def test_bounded_expr(self, visitor):
         expr_bounds = I(-5 , 5)
         children_bounds = [I(1, 2), I(-2, 2), I(-10, 10)]
-        new_bounds = self._rule_result(children_bounds, expr_bounds)
+        new_bounds = self._rule_result(visitor, children_bounds, expr_bounds)
         assert new_bounds[2] == I(-9, 6)
 
 
+@pytest.mark.skip('Linear Expression Tag not implemented')
 class TestLinearRule:
     children = None
     expr = None
@@ -146,54 +147,53 @@ class TestQuadraticRule:
 class TestPowerRuleConstantExpo:
     base = None
 
-    def _rule_result(self, expo, expr_bounds):
-        base = PE()
-        expo = PE(ET.Constant, value=expo, is_constant=True)
-        expr = PE(ET.Power, [base, expo])
-        rule = PowerRule()
+    def _rule_result(self, visitor, expo, expr_bounds):
+        base = pe.Var()
+        expr = base ** expo
         self.base = base
 
         bounds = ComponentMap()
         bounds[expr] = expr_bounds
-        return rule.apply(expr, bounds)
+        return visitor.visit_expression(expr, bounds)
 
-    def test_square(self):
-        new_bounds = self._rule_result(2.0, I(0, 4))
+    def test_square(self, visitor):
+        matched, new_bounds = self._rule_result(visitor, 2.0, I(0, 4))
+        assert matched
         assert new_bounds[0] == I(-2, 2)
 
-    def test_non_square(self):
-        new_bounds = self._rule_result(3.0, I(0, 4))
+    def test_non_square(self, visitor):
+        matched, new_bounds = self._rule_result(visitor, 3.0, I(0, 4))
+        assert not matched
         assert new_bounds is None
 
 
 class TestUnboundedFunctionsRule:
-    @pytest.mark.parametrize('expr_type,rule_cls', [
-        (UFT.Sin, SinRule), (UFT.Cos, CosRule), (UFT.Tan, TanRule),
-        (UFT.Asin, AsinRule), (UFT.Acos, AcosRule), (UFT.Atan, AtanRule)
+    @pytest.mark.parametrize('expr_type', [
+        pe.sin, pe.cos, pe.tan, pe.asin, pe.acos, pe.atan,
     ])
     @given(a=reals(), b=reals())
-    def test_unbounded(self, a, b, expr_type, rule_cls):
+    def test_unbounded(self, visitor, a, b, expr_type):
         lower = min(a, b)
         upper = max(a, b)
-        rule = rule_cls()
-        child = PE()
-        expr = PE(ET.UnaryFunction, [child], func_type=expr_type)
+        child = pe.Var(bounds=(lower, upper))
+        expr = expr_type(child)
         bounds = ComponentMap()
         bounds[expr] = I(lower, upper)
-        new_bounds = rule.apply(expr, bounds)
-        assert new_bounds[0] == I(None, None)
+        matched, result = visitor.visit_expression(expr, bounds)
+        assert matched
+        assert result[0] == I(None, None)
 
 
 class TestVisitor:
     def test_handle_result_with_new_value(self, visitor):
         bounds = ComponentMap()
-        expr = PE()
+        expr = pe.Var()
         assert visitor.handle_result(expr, Interval(0, 1), bounds)
         assert bounds[expr] == Interval(0, 1)
 
     def test_handle_result_with_no_new_value(self, visitor):
         bounds = ComponentMap()
-        expr = PE()
+        expr = pe.Var()
         visitor.handle_result(expr, Interval(0, 1), bounds)
         assert not visitor.handle_result(expr, None, bounds)
         assert bounds[expr] == Interval(0, 1)

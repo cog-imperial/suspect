@@ -32,7 +32,7 @@ class DivisionRule(MonotonicityRule):
 class ReciprocalRule(MonotonicityRule):
     """Return monotonicity of reciprocal."""
     def apply(self, expr, monotonicity, bounds):
-        g = expr.children[0]
+        g = expr.args[0]
         mono_g = monotonicity[g]
         bound_g = bounds[g]
         return _division_monotonicity(Monotonicity.Constant, Interval(1.0, 1.0), mono_g, bound_g)

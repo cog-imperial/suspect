@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Convexity detection rules for product expressions."""
+from suspect.pyomo.expressions import MonomialTermExpression, nonpyomo_leaf_types
 from suspect.convexity.convexity import Convexity
 from suspect.convexity.rules.rule import ConvexityRule
 from suspect.expression import ExpressionType
@@ -21,18 +22,25 @@ from suspect.expression import ExpressionType
 class ProductRule(ConvexityRule):
     """Return convexity of product."""
     def apply(self, expr, convexity, monotonicity, bounds):
+        if isinstance(expr, MonomialTermExpression):
+            _, var = expr.args
+            return convexity[var]
+
         f, g = expr.args
         if f is g:
             return _product_as_square_convexity(f, convexity, bounds)
 
         # -c*x*x is encoded as Linear([-c], [x])*Variable(x)
-        if f.expression_type == ExpressionType.Linear and g.expression_type == ExpressionType.Variable:
-            cvx = _product_linear_by_variable_convexity(f, g)
+        g_is_var = type(g) not in nonpyomo_leaf_types and g.is_variable_type()
+        f_is_var = type(f) not in nonpyomo_leaf_types and f.is_variable_type()
+
+        if isinstance(f, MonomialTermExpression) and g_is_var:
+            cvx = _product_monomial_term_by_variable_convexity(f, g)
             if cvx is not None:
                 return cvx
 
-        if g.expression_type == ExpressionType.Linear and f.expression_type == ExpressionType.Variable:
-            cvx = _product_linear_by_variable_convexity(g, f)
+        if f_is_var and isinstance(g, MonomialTermExpression):
+            cvx = _product_monomial_term_by_variable_convexity(g, f)
             if cvx is not None:
                 return cvx
 
@@ -58,9 +66,10 @@ def _product_as_square_convexity(f, convexity, bounds):
     return Convexity.Unknown
 
 
-def _product_linear_by_variable_convexity(f, g):
-    if len(f.args) == 1 and f.args[0] is g:
-        if f.coefficient(f.args[0]) > 0:
+def _product_monomial_term_by_variable_convexity(f, g):
+    coef, f_v = f.args
+    if f_v is g:
+        if coef > 0:
             return Convexity.Convex
         return Convexity.Concave
     return None

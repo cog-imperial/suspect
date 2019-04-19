@@ -14,6 +14,7 @@
 
 """FBBT bounds tightening rules."""
 import numpy as np
+from suspect.pyomo.expressions import nonpyomo_leaf_types
 from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.interval import Interval
@@ -124,9 +125,12 @@ class PowerRule(Rule):
     """Return new bounds for power expressions."""
     def apply(self, expr, bounds):
         base, expo = expr.args
-        if not expo.is_constant():
-            return None
-        if not almosteq(expo.value, 2):
+        if type(expo) not in nonpyomo_leaf_types:
+            if not expo.is_constant():
+                return None
+            expo = expo.value
+
+        if not almosteq(expo, 2):
             return None
 
         expr_bound = bounds[expr]

@@ -28,7 +28,7 @@ class L2NormConvexityDetector(ConvexityDetector):
         super().__init__()
 
     def visit_expression(self, expr, convexity, mono, bounds):
-        raise NotImplementedError()
+        return False, None
         return {
             ExpressionType.UnaryFunction: L2NormRule(),
         }
