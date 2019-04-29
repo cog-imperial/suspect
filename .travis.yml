@@ -1,18 +1,25 @@
 sudo: false
 language: python
 python:
-  - "3.5"
-  - "3.6"
-  - "3.7"
+- '3.5'
+- '3.6'
+- '3.7'
 matrix:
   allow_failures:
-  - python: "3.7"
+  - python: '3.7'
 install:
-  - pip install git+https://github.com/PyUtilib/pyutilib
-  - pip install git+https://github.com/Pyomo/pyomo
-  - pip install -r requirements.txt
-  - pip install tox-travis codecov
+- pip install git+https://github.com/PyUtilib/pyutilib
+- pip install git+https://github.com/Pyomo/pyomo
+- pip install -r requirements.txt
+- pip install tox-travis codecov
 script:
-  - python setup.py test
+- python setup.py test
 after_success:
-  - codecov
+- codecov
+deploy:
+  provider: pypi
+  user: fracek
+  password:
+    secure: QDfCsX3bxjc26XmZrXQoW54xe7s5vjV/3TnYJiY9bXAJN8Yg81JEJCYKSI7fs2br5056JOdodK0Qvrx+cHZmPNVORD4u9O231XujAWS9Tqm4gltNOWl5Md2g88B+zM2YiqrI0RQnZV09GrEIRN9S1HbpvoHu+mtTbNvv6e8fJyWMKsP5ZK0+NIhi+widYM0nMMq49GqOvdMcaMmTxAIGs3hXtkZJEbwWNgpd4+y5LmRyDZ7wGXd8/3InMvMd8pthCrzLPb5Ffxqhzch7lKhTgaxFJiXVzCvXaLSsp87dBkYVX0KflrafcIsRIhRrlJTYmcyHfgY8TLhMJxsNUfmsRwwzhtxTJK/qJmYCkEVCJhln1U11rR7qgZEm8x7lalqS+tUNt4e8NJKVq1SiL3rBzDraqpekJCoRDnscM7HGn/3z9A9ruOh4F29Ot8G2l5rp1Nn1xYgHbIGKw6GXTtXjRAh/LPi8lLG43zyLLIuHd4yNUfC+8AuAtJDiyd6SmYREHaGyEHVbzzjL+W5czgDfa0EDViboAQYIAUVW0HufkPibA1ltH7hY8uypqXnx1DmcdCOXMhlgRMR9pQZ0hvjTtst0mVZJVYRdbbnmCNQQ6eq/+glgxzLH4kbfi09+tIsBp/ZGnZH3S0t5lvOWTxrvv37vPCHPuT6680KUCHOI73g=
+  on:
+    tags: true
