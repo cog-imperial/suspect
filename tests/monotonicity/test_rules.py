@@ -676,7 +676,7 @@ class TestPowConstantExponent(object):
     @pytest.mark.parametrize('mono_base', [M.Nondecreasing, M.Nondecreasing])
     @given(
         base=expressions(),
-        expo=reals(allow_infinity=False)
+        expo=reals(allow_infinity=False, max_value=1e5),
     )
     def test_noninteger_negative_base(self, visitor, base, expo, mono_base):
         assume(not almosteq(expo,  0))
