@@ -22,8 +22,7 @@ from suspect.convexity.rules.rule import ConvexityRule
 class QuadraticRule(ConvexityRule):
     """Return convexity of quadratic."""
 
-    def apply(self, expr, _convexity, _mono, _bounds):
-        raise NotImplementedError('QuadraticRule.apply')
+    def apply(self, expr, convexity, mono, bounds):
         # Sum of squares
         if self._is_sum_of_squares(expr):
             coefficients = np.array([term.coefficient for term in expr.terms])
@@ -35,9 +34,9 @@ class QuadraticRule(ConvexityRule):
                 return Convexity.Unknown
 
         # try compute eigvalues
-        n = len(expr.children)
+        n = len(expr.args)
         A = np.zeros((n, n))
-        var_to_idx = dict([(v, i) for i, v in enumerate(expr.children)])
+        var_to_idx = dict([(v, i) for i, v in enumerate(expr.args)])
         for term in expr.terms:
             i = var_to_idx[term.var1]
             j = var_to_idx[term.var2]

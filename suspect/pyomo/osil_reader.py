@@ -227,7 +227,7 @@ class OsilParser(object):
         return sum(
             float(c.text) * self._v(int(c.attrib['idx']))
             for c in objective
-        )
+        ) + float(objective.attrib.get('constant', 0.0))
 
     def _objective_name(self, objective):
         if self.objective_prefix is None:

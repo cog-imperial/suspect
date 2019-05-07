@@ -112,7 +112,7 @@ class Constraint(BoundedExpression):
         return self.lower_bound == self.upper_bound
 
     def __str__(self):
-        return 'Constraint(name={}, lower_bound={}, upper_bound={}, children={})'.format(
+        return 'Constraint(name={}, lower_bound={}, upper_bound={}, args={})'.format(
             self.name, self.lower_bound, self.upper_bound, self.args
         )
 

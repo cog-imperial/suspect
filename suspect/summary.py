@@ -180,6 +180,7 @@ def detect_special_structure(problem, max_iter=10):
         else:
             type_ = 'inequality'
 
+        cons_bounds = bounds.get(cons, Interval(None, None))
         cvx = convexity[cons]
         poly = polynomial[cons]
 
@@ -187,6 +188,8 @@ def detect_special_structure(problem, max_iter=10):
             'type': type_,
             'convexity': cvx,
             'polynomial_degree': poly,
+            'lower_bound': cons_bounds.lower_bound,
+            'upper_bound': cons_bounds.upper_bound,
         }
 
     return ModelInformation(

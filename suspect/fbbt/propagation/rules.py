@@ -61,13 +61,13 @@ class ProductRule(Rule):
 
 class QuadraticRule(Rule):
     """Bound propagation rule for quadratic."""
-    def apply(self, expr, ctx):
-        return sum([self._term_bounds(term, ctx) for term in expr.terms])
+    def apply(self, expr, bounds):
+        return sum([self._term_bounds(term, bounds) for term in expr.terms])
 
-    def _term_bounds(self, term, ctx):
+    def _term_bounds(self, term, bounds):
         if term.var1 != term.var2:
-            return ctx.bounds(term.var1) * ctx.bounds(term.var2) * term.coefficient
-        return term.coefficient * (ctx.bounds(term.var1) ** 2)
+            return bounds[term.var1] * bounds[term.var2] * term.coefficient
+        return term.coefficient * (bounds[term.var1] ** 2)
 
 
 class DivisionRule(Rule):
@@ -88,11 +88,10 @@ class ReciprocalRule(Rule):
 
 class LinearRule(Rule):
     """Bound propagation rule for linear expressions."""
-    def apply(self, expr, ctx):
-        raise NotImplementedError('LinearRule.apply')
+    def apply(self, expr, bounds):
         children_contribution = sum(
-            expr.coefficient(child) * ctx.bounds(child)
-            for child in expr.children
+            expr.coefficient(child) * bounds[child]
+            for child in expr.args
         )
         constant_contribution = Interval(expr.constant_term, expr.constant_term)
         return children_contribution + constant_contribution

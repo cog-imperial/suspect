@@ -72,14 +72,13 @@ class LinearRule(Rule):
 
 class QuadraticRule(Rule):
     """Return new bounds for quadratic expressions."""
-    def apply(self, expr, ctx):
-        raise NotImplementedError('QuadraticRule.apply')
-        expr_bound = ctx.bounds(expr)
+    def apply(self, expr, bounds):
+        expr_bound = bounds[expr]
         child_bounds = {}
         for term, siblings in self._quadratic_term_and_siblings(expr):
             var1 = term.var1
             var2 = term.var2
-            siblings_bound = sum(self._term_bound(t, ctx) for t in siblings)
+            siblings_bound = sum(self._term_bound(t, bounds) for t in siblings)
             term_bound = (expr_bound - siblings_bound) / term.coefficient
             if var1 == var2:
                 term_bound = term_bound.intersect(Interval(0, None))
@@ -93,8 +92,8 @@ class QuadraticRule(Rule):
                     child_bounds[var1] = Interval(new_bound.lower_bound, new_bound.upper_bound)
 
             else:
-                new_bound_var1 = term_bound / ctx.bounds(var2)
-                new_bound_var2 = term_bound / ctx.bounds(var1)
+                new_bound_var1 = term_bound / bounds[var2]
+                new_bound_var2 = term_bound / bounds[var1]
 
                 if var1 in child_bounds:
                     existing = child_bounds[var1]
@@ -108,17 +107,17 @@ class QuadraticRule(Rule):
                 else:
                     child_bounds[var2] = new_bound_var2
 
-        return child_bounds
+        return [child_bounds[v] for v in expr.args]
 
     def _quadratic_term_and_siblings(self, expr):
         terms = expr.terms
         for i, term in enumerate(terms):
             yield term, terms[:i] + terms[i+1:]
 
-    def _term_bound(self, term, ctx):
+    def _term_bound(self, term, bounds):
         if term.var1 == term.var2:
-            return term.coefficient * (ctx.bounds(term.var1) ** 2)
-        return term.coefficient * ctx.bounds(term.var1) * ctx.bounds(term.var2)
+            return term.coefficient * (bounds[term.var1] ** 2)
+        return term.coefficient * bounds[term.var1] * bounds[term.var2]
 
 
 class PowerRule(Rule):

@@ -20,10 +20,9 @@ from suspect.convexity.rules.rule import ConvexityRule
 class LinearRule(ConvexityRule):
     """Return convexity of linear expression."""
     def apply(self, expr, convexity, mono, bounds):
-        raise NotImplementedError('LinearRule.apply')
         cvxs = [
-            _adjust_convexity(ctx.convexity(child), expr.coefficient(child))
-            for child in expr.children
+            _adjust_convexity(convexity[child], expr.coefficient(child))
+            for child in expr.args
         ]
         return _combine_convexities(cvxs)
 

@@ -20,10 +20,9 @@ from suspect.monotonicity.rules.rule import MonotonicityRule
 class LinearRule(MonotonicityRule):
     """Return monotonicity of linear expression."""
     def apply(self, expr, mono, bounds):
-        raise NotImplementedError('LinearRule.apply')
         monos = [
-            _adjust_monotonicity(monotonicity[child], expr.coefficient(child))
-            for child in expr.children
+            _adjust_monotonicity(mono[child], expr.coefficient(child))
+            for child in expr.args
         ]
         return _combine_monotonicities(monos)
 
