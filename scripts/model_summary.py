@@ -28,7 +28,6 @@ import boto3
 from suspect.pyomo.osil_reader import read_osil
 from suspect.pyomo.convert import dag_from_pyomo_model
 from suspect import (
-    set_pyomo4_expression_tree,
     detect_special_structure,
     logger,
 )
@@ -283,7 +282,6 @@ def check_solution_bounds(variables, objectives, solution_filename):
 
 
 if __name__ == '__main__':
-    set_pyomo4_expression_tree()
     logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser()
