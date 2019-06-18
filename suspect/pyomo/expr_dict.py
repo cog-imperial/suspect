@@ -107,12 +107,19 @@ def expr_equal(expr1, expr2):
                 return False
 
             if isinstance(e1, LinearExpression):
-                for expr_id, c in e1._coef.items():
-                    if expr_id not in e2._coef:
+                if len(e1.linear_vars) != len(e2.linear_vars):
+                    return False
+
+                for v1, v2 in zip(e1.linear_vars, e2.linear_vars):
+                    if id(v1) != id(v2):
                         return False
 
-                    if not almosteq(c, e2._coef[expr_id]):
+                for c1, c2 in zip(e2.linear_coefs, e2.linear_coefs):
+                    if not almosteq(c1, c2):
                         return False
+
+                if not almosteq(e1.constant, e2.constant):
+                    return False
 
             if isinstance(e1, UnaryFunctionExpression):
                 if e1.name != e2.name:
