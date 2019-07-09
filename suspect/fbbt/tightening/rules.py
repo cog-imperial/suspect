@@ -34,88 +34,111 @@ class ConstraintRule(Rule):
 
 class SumRule(Rule):
     """Return new bounds for sum."""
+    def __init__(self, max_expr_children=None):
+        if max_expr_children is None:
+            max_expr_children = MAX_EXPR_CHILDREN
+        self.max_expr_children = max_expr_children
+
     def apply(self, expr, bounds):
-        if len(expr.args) > MAX_EXPR_CHILDREN: # pragma: no cover
+        if len(expr.args) > self.max_expr_children: # pragma: no cover
             return None
         expr_bound = bounds[expr]
         children_bounds = [
-            self._child_bounds(child, siblings, expr_bound, bounds)
-            for child, siblings in _sum_child_and_siblings(expr.args)
+            self._child_bounds(child_idx, child, expr, expr_bound, bounds)
+            for child_idx, child in enumerate(expr.args)
         ]
         return children_bounds
 
-    def _child_bounds(self, child, siblings, expr_bound, bounds):
-        siblings_bound = sum(bounds[s] for s in siblings)
+    def _child_bounds(self, child_idx, child, expr, expr_bound, bounds):
+        siblings_bound = sum(
+            bounds[c]
+            for i, c in enumerate(expr.args)
+            if i != child_idx
+        )
         return expr_bound - siblings_bound
 
 
 class LinearRule(Rule):
     """Return new bounds for linear expressions."""
+    def __init__(self, max_expr_children=None):
+        if max_expr_children is None:
+            max_expr_children = MAX_EXPR_CHILDREN
+        self.max_expr_children = max_expr_children
+
     def apply(self, expr, bounds):
-        if len(expr.args) > MAX_EXPR_CHILDREN: # pragma: no cover
+        if expr.nargs() > self.max_expr_children: # pragma: no cover
             return None
         expr_bound = bounds[expr]
-        const = expr.constant_term
-        coefficients = [expr.coefficient(ch) for ch in expr.args]
+        const = expr.constant
         children_bounds = [
-            self._child_bounds(child, child_c, siblings, const, expr_bound, bounds)
-            for (child_c, child), siblings
-            in _linear_child_and_siblings(coefficients, expr.args)
+            self._child_bounds(child_idx, coef, child, expr, const, expr_bound, bounds)
+            for child_idx, (coef, child) in enumerate(zip(expr.linear_coefs, expr.linear_vars))
         ]
         return children_bounds
 
-    def _child_bounds(self, child, coef, siblings, const, expr_bound, bounds):
-        siblings_bound = sum(bounds[s] * c for c, s in siblings) + const
+    def _child_bounds(self, child_idx, coef, child, expr, const, expr_bound, bounds):
+        siblings_bound = sum(
+            bounds[s] * c
+            for i, (c, s) in enumerate(zip(expr.linear_coefs, expr.linear_vars))
+            if i != child_idx
+        ) + const
         return (expr_bound - siblings_bound) / coef
 
 
 
 class QuadraticRule(Rule):
     """Return new bounds for quadratic expressions."""
+    def __init__(self, max_expr_children=None):
+        if max_expr_children is None:
+            max_expr_children = MAX_EXPR_CHILDREN
+        self.max_expr_children = max_expr_children
+
     def apply(self, expr, bounds):
         expr_bound = bounds[expr]
         child_bounds = {}
-        for term, siblings in self._quadratic_term_and_siblings(expr):
+        if len(expr.terms) > self.max_expr_children:
+            return None
+
+        terms = expr.terms
+        for term_idx, term in enumerate(terms):
             var1 = term.var1
             var2 = term.var2
-            siblings_bound = sum(self._term_bound(t, bounds) for t in siblings)
+            siblings_bound = sum(
+                self._term_bound(t, bounds)
+                for i, t in enumerate(terms) if i != term_idx
+            )
             term_bound = (expr_bound - siblings_bound) / term.coefficient
-            if var1 == var2:
+            if var1 is var2:
                 term_bound = term_bound.intersect(Interval(0, None))
                 upper_bound = term_bound.sqrt().upper_bound
                 new_bound = Interval(-upper_bound, upper_bound)
 
-                if var1 in child_bounds:
-                    existing = child_bounds[var1]
-                    child_bounds[var1] = existing.intersect(new_bound)
+                if id(var1) in child_bounds:
+                    existing = child_bounds[id(var1)]
+                    child_bounds[id(var1)] = existing.intersect(new_bound)
                 else:
-                    child_bounds[var1] = Interval(new_bound.lower_bound, new_bound.upper_bound)
+                    child_bounds[id(var1)] = Interval(new_bound.lower_bound, new_bound.upper_bound)
 
             else:
                 new_bound_var1 = term_bound / bounds[var2]
                 new_bound_var2 = term_bound / bounds[var1]
 
-                if var1 in child_bounds:
-                    existing = child_bounds[var1]
-                    child_bounds[var1] = existing.intersect(new_bound_var1)
+                if id(var1) in child_bounds:
+                    existing = child_bounds[id(var1)]
+                    child_bounds[id(var1)] = existing.intersect(new_bound_var1)
                 else:
-                    child_bounds[var1] = new_bound_var1
+                    child_bounds[id(var1)] = new_bound_var1
 
-                if var2 in child_bounds:
-                    existing = child_bounds[var2]
-                    child_bounds[var2] = existing.intersect(new_bound_var2)
+                if id(var2) in child_bounds:
+                    existing = child_bounds[id(var2)]
+                    child_bounds[id(var2)] = existing.intersect(new_bound_var2)
                 else:
-                    child_bounds[var2] = new_bound_var2
+                    child_bounds[id(var2)] = new_bound_var2
 
-        return [child_bounds[v] for v in expr.args]
-
-    def _quadratic_term_and_siblings(self, expr):
-        terms = expr.terms
-        for i, term in enumerate(terms):
-            yield term, terms[:i] + terms[i+1:]
+        return [child_bounds[id(v)] for v in expr.args]
 
     def _term_bound(self, term, bounds):
-        if term.var1 == term.var2:
+        if term.var1 is term.var2:
             return term.coefficient * (bounds[term.var1] ** 2)
         return term.coefficient * bounds[term.var1] * bounds[term.var2]
 
@@ -238,16 +261,3 @@ class UnaryFunctionRule(Rule):
         if func_name not in _func_name_to_rule_map:
             raise ValueError('Unknown function type {}'.format(func_name))
         return _func_name_to_rule_map[func_name].apply(expr, bounds)
-
-
-def _sum_child_and_siblings(children):
-    for i, _ in enumerate(children):
-        yield children[i], children[:i] + children[i+1:]
-
-
-def _linear_child_and_siblings(coefficients, children):
-    for i, child in enumerate(children):
-        child_c = coefficients[i]
-        other_children = np.concatenate((children[:i], children[i+1:]))
-        other_coefficients = np.concatenate((coefficients[:i], coefficients[i+1:]))
-        yield (child_c, child), zip(other_coefficients, other_children)

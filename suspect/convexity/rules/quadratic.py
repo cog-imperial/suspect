@@ -21,6 +21,8 @@ from suspect.convexity.rules.rule import ConvexityRule
 
 class QuadraticRule(ConvexityRule):
     """Return convexity of quadratic."""
+    def __init__(self, max_matrix_size=None):
+        self.max_matrix_size = max_matrix_size
 
     def apply(self, expr, convexity, mono, bounds):
         # Sum of squares
@@ -35,6 +37,9 @@ class QuadraticRule(ConvexityRule):
 
         # try compute eigvalues
         n = len(expr.args)
+        if self.max_matrix_size and n > self.max_matrix_size:
+            return Convexity.Unknown
+
         A = np.zeros((n, n))
         var_to_idx = dict([(v, i) for i, v in enumerate(expr.args)])
         for term in expr.terms:

@@ -82,14 +82,16 @@ class TestSumRule:
         assert new_bounds[2] == I(-9, 6)
 
 
-@pytest.mark.skip('Linear Expression Tag not implemented')
 class TestLinearRule:
     children = None
     expr = None
 
     def _rule_result(self, coefficients, children_bounds, expr_bounds):
-        children = [PE() for _ in children_bounds]
-        expr = PE(ET.Linear, children, coefficients=coefficients, constant_term=0)
+        children = [pe.Var() for _ in children_bounds]
+        expr = pe.quicksum(
+            [child * coef for child, coef in zip(children, coefficients)],
+            linear=True
+        )
 
         bounds = ComponentMap()
         bounds[expr] = expr_bounds
@@ -113,13 +115,23 @@ class TestLinearRule:
         assert new_bounds[2] == I(-4.5, 3)
 
 
-@pytest.mark.skip('Tagged quadratic expressions are not implemented')
 class TestQuadraticRule:
+    class BilinearTerm:
+        def __init__(self, var1, var2, coef):
+            self.var1 = var1
+            self.var2 = var2
+            self.coefficient = coef
+
+    class QuadraticExpression:
+        def __init__(self, children, terms):
+            self.args = children
+            self.terms = terms
+
     children = None
     expr = None
 
     def _rule_result(self, terms, children, children_bounds, expr_bounds):
-        expr = PE(ET.Quadratic, children, terms=terms)
+        expr = self.QuadraticExpression(children, terms)
 
         bounds = ComponentMap()
         bounds[expr] = expr_bounds
@@ -132,10 +144,10 @@ class TestQuadraticRule:
         return rule.apply(expr, bounds)
 
     def test_sum_of_squares(self):
-        x = PE()
-        y = PE()
+        x = pe.Var()
+        y = pe.Var()
         new_bounds = self._rule_result(
-            [BilinearTerm(x, x, 1.0), BilinearTerm(y, y, 2.0)],
+            [self.BilinearTerm(x, x, 1.0), self.BilinearTerm(y, y, 2.0)],
             [x, y],
             [I(None, None), I(None, None)],
             I(None, 10),
