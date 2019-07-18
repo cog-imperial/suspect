@@ -64,12 +64,12 @@ def max_(*args):
     return max(a for a in args if not isnan(a))
 
 
-def almosteq(a, b):
+def almosteq(a, b, rel_eps=None, abs_eps=None):
     """Floating point equality check between `a` and `b`."""
     # in mpmath inf != inf, but we want inf == inf
     if abs(a) == inf and abs(b) == inf:
         return (a > 0 and b > 0) or (a < 0 and b < 0)
-    return mpmath.almosteq(a, b)
+    return mpmath.almosteq(a, b, rel_eps=rel_eps, abs_eps=abs_eps)
 
 
 def almostgte(a, b):

@@ -141,7 +141,7 @@ class Interval(object): # pylint: disable=too-many-public-methods
             up(lambda: 1.0 / self._lower),
         )
 
-    def intersect(self, other):
+    def intersect(self, other, rel_eps=None, abs_eps=None):
         """Intersect this interval with another."""
         if not isinstance(other, Interval):
             raise ValueError('intersect with non Interval value')
@@ -150,7 +150,10 @@ class Interval(object): # pylint: disable=too-many-public-methods
         new_upper = min(self._upper, other._upper) # pylint: disable=protected-access
 
         if new_upper < new_lower:
-            return EmptyInterval()
+            if almosteq(new_lower, new_upper, rel_eps=rel_eps, abs_eps=abs_eps):
+                new_lower = new_upper
+            else:
+                raise ValueError('Intersection creates an empty interval')
         return Interval(new_lower, new_upper)
 
     @property
@@ -418,3 +421,6 @@ class EmptyInterval(Interval):
     """An empty interval."""
     def __init__(self):
         super().__init__(0, 0)
+
+    def __str__(self):
+        return 'EmptyInterval([{}, {}])'.format(self._lower, self._upper)

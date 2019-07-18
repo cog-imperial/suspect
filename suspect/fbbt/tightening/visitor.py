@@ -62,6 +62,7 @@ def tighten_bounds_root_to_leaf(expr, bounds):
 class BoundsTighteningVisitor(BackwardVisitor):
     """Tighten bounds from sinks to sources."""
     needs_matching_rules = False
+    intersect_abs_eps = 1e-10
 
     def visit_expression(self, expr, bounds):
         new_bounds = tighten_bounds_root_to_leaf(expr, bounds)
@@ -77,7 +78,10 @@ class BoundsTighteningVisitor(BackwardVisitor):
 
         old_bounds = bounds.get(expr, None)
         if old_bounds is not None:
-            new_bounds = old_bounds.intersect(new_bounds)
+            new_bounds = old_bounds.intersect(
+                new_bounds,
+                abs_eps=self.intersect_abs_eps,
+            )
             has_changed = old_bounds != new_bounds
         else:
             has_changed = True

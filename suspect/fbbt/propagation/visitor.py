@@ -79,6 +79,8 @@ def propagate_bounds_leaf_to_root(expr, bounds):
 
 class BoundsPropagationVisitor(ForwardVisitor):
     """Tighten bounds from sources to sinks."""
+    intersect_abs_eps = 1e-10
+
     def visit_expression(self, expr, bounds):
         return True, propagate_bounds_leaf_to_root(expr, bounds)
 
@@ -86,7 +88,10 @@ class BoundsPropagationVisitor(ForwardVisitor):
         old_bounds = bounds.get(expr, None)
         if old_bounds is not None:
             # bounds exists, tighten it
-            new_bounds = old_bounds.intersect(new_bounds)
+            new_bounds = old_bounds.intersect(
+                new_bounds,
+                abs_eps=self.intersect_abs_eps,
+            )
             has_changed = new_bounds != old_bounds
         else:
             has_changed = True
