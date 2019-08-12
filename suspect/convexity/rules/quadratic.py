@@ -22,6 +22,8 @@ from suspect.convexity.rules.rule import ConvexityRule
 class QuadraticRule(ConvexityRule):
     """Return convexity of quadratic."""
     def __init__(self, max_matrix_size=None):
+        if max_matrix_size is None:
+            max_matrix_size = 100
         self.max_matrix_size = max_matrix_size
 
     def apply(self, expr, convexity, mono, bounds):
