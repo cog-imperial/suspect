@@ -51,8 +51,10 @@ def _instance_variables(root):
         lb = float(attr['lb']) if 'lb' in attr else 0.0
         ub = float(attr['ub']) if 'ub' in attr else None
         type_ = attr.get('type', 'C')
+        if type_ == 'D':
+            raise ValueError('Unsupported semicontinuous variable')
         if type_ == 'S':
-            raise RuntimeError('unsupported var type S')
+            raise ValueError('Unsupported var type S')
         bounds = (lb, ub)
         domain = TYPE_TO_DOMAIN[type_]
         yield {
