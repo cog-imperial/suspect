@@ -14,8 +14,6 @@
 
 """Base class for visitors applying the given rules."""
 import abc
-from suspect.pyomo.expressions import nonpyomo_leaf_types
-from suspect.expression import ExpressionType
 
 
 class Visitor(metaclass=abc.ABCMeta):
@@ -76,8 +74,15 @@ class BackwardVisitor(Visitor): # pylint: disable=abstract-method
             # if we allow matching rules, then continue iteration
             return not self.needs_matching_rules
         any_change = False
-        if len(result) != len(expr.args):
-            raise ValueError('Result must be a list with same length as expr.args')
-        for child, value in zip(expr.args, result):
-            any_change |= self.handle_result(child, value, ctx)
+        if isinstance(result, list):
+            if len(result) != len(expr.args):
+                raise ValueError(
+                    'Result must be a list with same length as expr.args'
+                )
+            for child, value in zip(expr.args, result):
+                any_change |= self.handle_result(child, value, ctx)
+            return any_change
+        # Visitor returned a dict
+        for arg, value in result.items():
+            any_change |= self.handle_result(arg, value, ctx)
         return any_change
