@@ -14,31 +14,23 @@
 
 """FBBT bounds tightening visitor."""
 
-from suspect.pyomo.expressions import (
-    nonpyomo_leaf_types,
-    Constraint,
-    Objective,
-    ProductExpression,
-    ReciprocalExpression,
-    LinearExpression,
-    SumExpression,
-    PowExpression,
-    NegationExpression,
-    UnaryFunctionExpression,
-)
-from suspect.visitor import BackwardVisitor
-from suspect.interfaces import CombineUnaryFunctionRules
-from suspect.interval import Interval
-from suspect.expression import ExpressionType as ET
 from suspect.fbbt.tightening.rules import (
     ConstraintRule,
     SumRule,
     LinearRule,
-    QuadraticRule,
     PowerRule,
     UnaryFunctionRule,
 )
-
+from suspect.interval import Interval
+from suspect.pyomo.expressions import (
+    nonpyomo_leaf_types,
+    Constraint,
+    LinearExpression,
+    SumExpression,
+    PowExpression,
+    UnaryFunctionExpression,
+)
+from suspect.visitor import BackwardVisitor
 
 _expr_to_rule_map = dict()
 _expr_to_rule_map[Constraint] = ConstraintRule()

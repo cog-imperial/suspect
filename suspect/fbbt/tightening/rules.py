@@ -13,13 +13,11 @@
 # limitations under the License.
 
 """FBBT bounds tightening rules."""
-import numpy as np
-from suspect.pyomo.expressions import nonpyomo_leaf_types
+from suspect.expression import UnaryFunctionType
 from suspect.interfaces import Rule, UnaryFunctionRule
-from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.interval import Interval
-from suspect.math import almosteq, inf # pylint: disable=no-name-in-module
-
+from suspect.math import almosteq  # pylint: disable=no-name-in-module
+from suspect.pyomo.expressions import nonpyomo_leaf_types
 
 MAX_EXPR_CHILDREN = 1000
 
@@ -27,7 +25,6 @@ MAX_EXPR_CHILDREN = 1000
 class ConstraintRule(Rule):
     """Return new bounds for constraint."""
     def apply(self, expr, _bounds):
-        child = expr.args[0]
         bounds = Interval(expr.lower_bound, expr.upper_bound)
         return [bounds]
 
@@ -49,7 +46,7 @@ class SumRule(Rule):
         ]
         return children_bounds
 
-    def _child_bounds(self, child_idx, child, expr, expr_bound, bounds):
+    def _child_bounds(self, child_idx, _child, expr, expr_bound, bounds):
         siblings_bound = sum(
             bounds[c]
             for i, c in enumerate(expr.args)
@@ -66,7 +63,7 @@ class LinearRule(Rule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, bounds):
-        if expr.nargs() > self.max_expr_children: # pragma: no cover
+        if expr.nargs() > self.max_expr_children:  # pragma: no cover
             return None
         expr_bound = bounds[expr]
         const = expr.constant
@@ -76,14 +73,13 @@ class LinearRule(Rule):
         ]
         return children_bounds
 
-    def _child_bounds(self, child_idx, coef, child, expr, const, expr_bound, bounds):
+    def _child_bounds(self, child_idx, coef, _child, expr, const, expr_bound, bounds):
         siblings_bound = sum(
             bounds[s] * c
             for i, (c, s) in enumerate(zip(expr.linear_coefs, expr.linear_vars))
             if i != child_idx
         ) + const
         return (expr_bound - siblings_bound) / coef
-
 
 
 class QuadraticRule(Rule):

@@ -63,6 +63,7 @@ The following functions take two parameters, a number and a RoundMode:
 # TODO(fracek): make math mode open like the remaining of suspect.
 # TODO(fracek): Then add plugin for correctly rounded arithmetic.
 
+
 class MathMode(object):
     """Math mode used internally by SUSPECT."""
     ARBITRARY_PRECISION = 1
@@ -101,6 +102,7 @@ _COMMON_MEMBERS = [
     'tan',
     'atan',
     'isnan',
+    'isinf',
     'almosteq',
     'almostgte',
     'almostlte',
