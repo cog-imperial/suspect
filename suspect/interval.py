@@ -42,6 +42,10 @@ from suspect.math import (
 from suspect.math import RoundMode as RM
 
 
+class EmptyIntervalError(ValueError):
+    pass
+
+
 class _FunctionOnInterval(object):
     def __init__(self, func, inv_func):
         self._func = func
@@ -146,14 +150,14 @@ class Interval(object): # pylint: disable=too-many-public-methods
         if not isinstance(other, Interval):
             raise ValueError('intersect with non Interval value')
 
-        new_lower = max(self._lower, other._lower) # pylint: disable=protected-access
-        new_upper = min(self._upper, other._upper) # pylint: disable=protected-access
+        new_lower = max(self._lower, other._lower)  # pylint: disable=protected-access
+        new_upper = min(self._upper, other._upper)  # pylint: disable=protected-access
 
         if new_upper < new_lower:
             if almosteq(new_lower, new_upper, rel_eps=rel_eps, abs_eps=abs_eps):
                 new_lower = new_upper
             else:
-                raise ValueError('Intersection creates an empty interval')
+                raise EmptyIntervalError()
         return Interval(new_lower, new_upper)
 
     @property
