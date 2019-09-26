@@ -15,6 +15,7 @@
 """Generic expression support."""
 from enum import IntEnum
 
+
 class ExpressionType(IntEnum):
     """Expression types supported by SUSPECT."""
     Variable = 1

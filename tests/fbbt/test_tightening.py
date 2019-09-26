@@ -13,23 +13,17 @@
 # limitations under the License.
 
 # pylint: skip-file
-import pytest
-from unittest.mock import MagicMock
-from hypothesis import given, assume
-import hypothesis.strategies as st
-import pyomo.environ as pe
-from pyomo.core.kernel.component_map import ComponentMap
-import suspect.pyomo.expressions as dex
+
 import numpy as np
-from suspect.interval import Interval as I
+import pyomo.environ as pe
+import pytest
+from hypothesis import given
+import suspect.pyomo.expressions as dex
+from suspect.fbbt.tightening.quadratic import *
 from suspect.fbbt.tightening.rules import *
 from suspect.fbbt.tightening.visitor import BoundsTighteningVisitor
-from suspect.expression import UnaryFunctionType as UFT
-from tests.strategies import coefficients, reals
-from tests.conftest import (
-    bound_description_to_bound,
-    mono_description_to_mono,
-)
+from suspect.interval import Interval as I
+from tests.strategies import reals
 
 
 @pytest.fixture
@@ -41,7 +35,6 @@ def visitor():
 def test_constraint_rule(visitor, bound1, bound2):
     lower_bound = min(bound1, bound2)
     upper_bound = max(bound1, bound2)
-    rule = ConstraintRule()
     child = pe.Var()
     constraint = dex.Constraint(
         'test', lower_bound=lower_bound, upper_bound=upper_bound, children=[child]
@@ -76,7 +69,7 @@ class TestSumRule:
         assert new_bounds[1] == I(-1, None)
 
     def test_bounded_expr(self, visitor):
-        expr_bounds = I(-5 , 5)
+        expr_bounds = I(-5, 5)
         children_bounds = [I(1, 2), I(-2, 2), I(-10, 10)]
         new_bounds = self._rule_result(visitor, children_bounds, expr_bounds)
         assert new_bounds[2] == I(-9, 6)
@@ -115,23 +108,27 @@ class TestLinearRule:
         assert new_bounds[2] == I(-4.5, 3)
 
 
+class _BilinearTerm:
+    def __init__(self, var1, var2, coef):
+        self.var1 = var1
+        self.var2 = var2
+        self.coefficient = coef
+
+
+class _QuadraticExpression:
+    expression_type = ExpressionType.Quadratic
+
+    def __init__(self, children, terms):
+        self.args = children
+        self.terms = terms
+
+
 class TestQuadraticRule:
-    class BilinearTerm:
-        def __init__(self, var1, var2, coef):
-            self.var1 = var1
-            self.var2 = var2
-            self.coefficient = coef
-
-    class QuadraticExpression:
-        def __init__(self, children, terms):
-            self.args = children
-            self.terms = terms
-
     children = None
     expr = None
 
     def _rule_result(self, terms, children, children_bounds, expr_bounds):
-        expr = self.QuadraticExpression(children, terms)
+        expr = _QuadraticExpression(children, terms)
 
         bounds = ComponentMap()
         bounds[expr] = expr_bounds
@@ -147,7 +144,7 @@ class TestQuadraticRule:
         x = pe.Var()
         y = pe.Var()
         new_bounds = self._rule_result(
-            [self.BilinearTerm(x, x, 1.0), self.BilinearTerm(y, y, 2.0)],
+            [_BilinearTerm(x, x, 1.0), _BilinearTerm(y, y, 2.0)],
             [x, y],
             [I(None, None), I(None, None)],
             I(None, 10),
@@ -209,3 +206,46 @@ class TestVisitor:
         visitor.handle_result(expr, Interval(0, 1), bounds)
         assert not visitor.handle_result(expr, None, bounds)
         assert bounds[expr] == Interval(0, 1)
+
+
+class _SumExpression:
+    expression_type = ExpressionType.Sum
+
+    def __init__(self, children):
+        self.children = children
+
+
+class _LinearExpression:
+    expression_type = ExpressionType.Linear
+
+    def __init__(self, coefs, vars):
+        self.linear_coefs = coefs
+        self.linear_vars = vars
+        self.children = vars
+
+
+class TestUnivariateQuadraticRule:
+    def test_result_with_squares(self):
+        x = pe.Var()
+        y = pe.Var()
+        z = pe.Var()
+        quadratic = _QuadraticExpression(
+            [x, y, z],
+            [_BilinearTerm(x, x, 1.0),
+             _BilinearTerm(y, y, 1.0),
+             _BilinearTerm(z, z, -1.0)]
+        )
+        linear = _LinearExpression(
+            [-5.09144, -19.96611],
+            [x, y],
+        )
+        expr = _SumExpression([linear, quadratic])
+        rule = UnivariateQuadraticRule()
+        bounds = ComponentMap()
+        bounds[x] = I(0, None)
+        bounds[y] = I(0, None)
+        bounds[z] = I(0, 4.57424778)
+        bounds[expr] = I(None, -106.142171)
+        result = rule.apply(expr, bounds)
+        assert 5.388076 in result[x]
+        assert 6.399097 in result[y]

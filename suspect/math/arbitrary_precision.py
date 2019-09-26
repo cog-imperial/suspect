@@ -23,6 +23,7 @@ inf = make_number('inf')
 zero = make_number(0)
 pi = mpmath.pi
 isnan = mpmath.isnan
+isinf = mpmath.isinf
 
 
 def _declare_unary_function(name, fun):
