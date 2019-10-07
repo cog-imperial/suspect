@@ -73,20 +73,17 @@ def _equality_bounds_and_expr(expr):
 
 def model_variables(model):
     """Return a list of variables in the model"""
-    for variables in model.component_map(aml.Var, active=True).itervalues():
-        for idx in variables:
-            yield variables[idx]
+    for v in model.component_data_objects(aml.Var, active=True, descend_into=True, sort=True):
+        yield v
 
 
 def model_constraints(model):
     """Return a list of constraints in the model"""
-    for cons in model.component_map(aml.Constraint, active=True).itervalues():
-        for idx in cons:
-            yield cons[idx]
+    for c in model.component_data_objects(aml.Constraint, active=True, descend_into=True, sort=True):
+        yield c
 
 
 def model_objectives(model):
     """Return a list of objectives in the model"""
-    for obj in model.component_map(aml.Objective, active=True).itervalues():
-        for idx in obj:
-            yield obj[idx]
+    for obj in model.component_data_objects(aml.Objective, active=True, descend_into=True, sort=True):
+        yield obj
