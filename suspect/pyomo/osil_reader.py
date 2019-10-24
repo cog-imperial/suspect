@@ -1,11 +1,11 @@
-import xml.etree.ElementTree as ET
 import gc
+import operator as op
+import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 from functools import reduce
-import operator as op
-from pyomo.core.expr.numeric_expr import NumericConstant
-import pyomo.environ as aml
 
+import pyomo.environ as aml
+from pyomo.core.expr.numeric_expr import NumericConstant
 
 NS = {'osil': 'os.optimizationservices.org'}
 TYPE_TO_DOMAIN = {
@@ -58,7 +58,10 @@ def _instance_variables(root):
         domain = TYPE_TO_DOMAIN[type_]
         value = attr.get('value', None)
         if value is not None:
-            value = float(value)
+            if domain == aml.Reals:
+                value = float(value)
+            else:
+                value = int(float(value))
         yield {
             'name': name,
             'bounds': bounds,
