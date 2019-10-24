@@ -44,7 +44,6 @@ def _instance_name(root):
 
 def _instance_variables(root):
     variables = root.find('osil:instanceData/osil:variables', NS)
-    num_variables = int(variables.attrib['numberOfVariables'])
     for v in variables:
         attr = v.attrib
         name = attr['name']
@@ -57,10 +56,14 @@ def _instance_variables(root):
             raise ValueError('Unsupported var type S')
         bounds = (lb, ub)
         domain = TYPE_TO_DOMAIN[type_]
+        value = attr.get('value', None)
+        if value is not None:
+            value = float(value)
         yield {
             'name': name,
             'bounds': bounds,
             'domain': domain,
+            'value': value,
         }
 
 
@@ -250,6 +253,7 @@ class OsilParser(object):
             new_var = aml.Var(
                 bounds=var_def['bounds'],
                 domain=var_def['domain'],
+                initialize=var_def['value'],
             )
             setattr(self.model, var_def['name'], new_var)
             self.indexed_vars.append(var_def['name'])
