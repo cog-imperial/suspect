@@ -80,8 +80,10 @@ def monotonic_decreasing(func):
     return _wrapper
 
 
-class Interval(object): # pylint: disable=too-many-public-methods
+class Interval: # pylint: disable=too-many-public-methods
     """Numerical interval."""
+    __slots__ = ('_lower', '_upper', '_is_zero')
+
     def __init__(self, lower, upper):
         if lower is None:
             lower = -inf
@@ -96,6 +98,7 @@ class Interval(object): # pylint: disable=too-many-public-methods
 
         self._lower = lower
         self._upper = upper
+        self._is_zero = None
 
     @staticmethod
     def zero():
@@ -120,7 +123,10 @@ class Interval(object): # pylint: disable=too-many-public-methods
 
     def is_zero(self):
         """Check if the interval is [0, 0]."""
-        return almosteq(self._lower, 0) and almosteq(self._upper, 0)
+        if self._is_zero is None:
+            self._is_zero = \
+                almosteq(self._lower, 0) and almosteq(self._upper, 0)
+        return self._is_zero
 
     def is_positive(self):
         """Check if the interval [a, b] has a > 0."""
