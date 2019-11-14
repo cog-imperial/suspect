@@ -14,7 +14,7 @@
 
 import abc
 from suspect.math import (
-    mpf,
+    make_number,
     almosteq,
     almostlte,
 )
@@ -46,7 +46,7 @@ class BTreeFloatHasher(FloatHasher):
         self.node_count = 0
 
     def hash(self, f):
-        f = mpf(f)
+        f = make_number(f)
         if self.root is None:
             self.root = self._make_node(f)
             return self.root.hash

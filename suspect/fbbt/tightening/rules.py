@@ -16,7 +16,7 @@
 from suspect.expression import UnaryFunctionType
 from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.interval import Interval
-from suspect.math import almosteq  # pylint: disable=no-name-in-module
+from suspect.math import almosteq, isinf  # pylint: disable=no-name-in-module
 from suspect.pyomo.expressions import nonpyomo_leaf_types
 
 MAX_EXPR_CHILDREN = 1000
@@ -66,18 +66,21 @@ class LinearRule(Rule):
         if expr.nargs() > self.max_expr_children:  # pragma: no cover
             return None
         expr_bound = bounds[expr]
+        children_bounds = [
+            bounds[child] * coef
+            for coef, child in zip(expr.linear_coefs, expr.linear_vars)
+        ]
+
         const = expr.constant
         children_bounds = [
-            self._child_bounds(child_idx, coef, child, expr, const, expr_bound, bounds)
+            self._child_bounds(child_idx, coef, const, expr_bound, children_bounds)
             for child_idx, (coef, child) in enumerate(zip(expr.linear_coefs, expr.linear_vars))
         ]
         return children_bounds
 
-    def _child_bounds(self, child_idx, coef, _child, expr, const, expr_bound, bounds):
+    def _child_bounds(self, child_idx, coef, const, expr_bound, children_bounds):
         siblings_bound = sum(
-            bounds[s] * c
-            for i, (c, s) in enumerate(zip(expr.linear_coefs, expr.linear_vars))
-            if i != child_idx
+            b for i, b in enumerate(children_bounds) if i != child_idx
         ) + const
         return (expr_bound - siblings_bound) / coef
 

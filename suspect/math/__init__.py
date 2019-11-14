@@ -64,12 +64,13 @@ The following functions take two parameters, a number and a RoundMode:
 # TODO(fracek): Then add plugin for correctly rounded arithmetic.
 
 
-class MathMode(object):
+class MathMode:
     """Math mode used internally by SUSPECT."""
     ARBITRARY_PRECISION = 1
+    FLOATING_POINT = 2
 
 
-class RoundMode(object):
+class RoundMode:
     """Round mode to use for computation.
 
      * RN: round to nearest
@@ -118,7 +119,7 @@ _ARBITRARY_PRECISION_MEMBERS = ['mpf']
 __all__ = _COMMON_MEMBERS
 
 
-def set_math_mode(math_mode: int) -> None:
+def set_math_mode(math_mode):
     """Set the math mode used by SUSPECT.
 
     Parameters
@@ -132,8 +133,12 @@ def set_math_mode(math_mode: int) -> None:
             globals()[member] = getattr(arb, member)
         for member in _ARBITRARY_PRECISION_MEMBERS:
             globals()[member] = getattr(arb, member)
+    elif math_mode == MathMode.FLOATING_POINT:
+        from suspect.math import floating_point as fp
+        for member in _COMMON_MEMBERS:
+            globals()[member] = getattr(fp, member)
     else:
         raise RuntimeError('Invalid MathMode')
 
 
-set_math_mode(MathMode.ARBITRARY_PRECISION)
+set_math_mode(MathMode.FLOATING_POINT)
