@@ -4,6 +4,12 @@ Changelog
 Next
 ----
 
+1.6.0 (2019-11-15)
+------------------
+
+* Add floating point math mode
+* Minor performance fixes
+
 1.1.0 (2019-01-31)
 ------------------
 
