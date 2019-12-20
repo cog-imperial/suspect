@@ -17,6 +17,7 @@ from suspect.math import make_number
 from suspect.float_hash import BTreeFloatHasher, RoundFloatHasher
 
 
+@pytest.mark.skip('Only works with non-default Arb precision math')
 def test_btree_float_hasher():
     hasher = BTreeFloatHasher()
 
