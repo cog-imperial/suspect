@@ -11,11 +11,13 @@ from suspect.expression import ExpressionType as ET, UnaryFunctionType as UFT
 from suspect.monotonicity.visitor import MonotonicityPropagationVisitor
 from suspect.monotonicity.monotonicity import Monotonicity as M
 from suspect.pyomo.expressions import (
+    NumericConstant,
     ProductExpression,
     PowExpression,
     SumExpression,
     NegationExpression,
     ReciprocalExpression,
+    DivisionExpression,
     Constraint,
     Objective,
     Sense,
@@ -313,11 +315,32 @@ def test_reciprocal(visitor, g, mono_g, bound_g, expected):
     mono = ComponentMap()
     mono[g] = mono_g
 
-    expr = 1.0 / g
+    expr = ReciprocalExpression([g])
     matched, result = visitor.visit_expression(expr, mono, bounds)
     assert matched
     assert result == expected
 
+
+@pytest.mark.parametrize('mono_g,bound_g,expected', [
+    (M.Constant, I(2.0, 2.0), M.Constant),
+    (M.Constant, I(0.0, 0.0), M.Unknown),
+])
+@given(g=expressions())
+def test_division(visitor, g, mono_g, bound_g, expected):
+    num = NumericConstant(1.0)
+    bounds = ComponentMap()
+    bounds[num] = I(1.0, 1.0)
+    bounds[g] = bound_g
+    mono = ComponentMap()
+    mono[num] = M.Constant
+    mono[g] = mono_g
+
+    print(mono)
+    print(mono[num])
+    expr = DivisionExpression([num, g])
+    matched, result = visitor.visit_expression(expr, mono, bounds)
+    assert matched
+    assert result == expected
 
 
 @pytest.mark.skip('Pyomo has no linear expressions')
@@ -670,7 +693,9 @@ class TestPowConstantExponent(object):
         expo=st.integers(min_value=1)
     )
     def test_negative_odd_integer(self, visitor, base, expo, mono_base, expected):
-        mono = self._result_with_base_expo(visitor, base, mono_base, I(None, None), -2*expo+1)
+        mono = self._result_with_base_expo(
+            visitor, base, mono_base, I(None, None), -2*expo+1
+        )
         assert mono == expected
 
     @pytest.mark.parametrize('mono_base', [M.Nondecreasing, M.Nondecreasing])
@@ -680,8 +705,10 @@ class TestPowConstantExponent(object):
     )
     def test_noninteger_negative_base(self, visitor, base, expo, mono_base):
         assume(not almosteq(expo,  0))
-        assume(expo != int(expo))
-        mono = self._result_with_base_expo(visitor, base, mono_base, I(None, 0), expo)
+        assume(not almosteq(expo, int(expo)))
+        mono = self._result_with_base_expo(
+            visitor, base, mono_base, I(None, 0), expo
+        )
         assert mono == M.Unknown
 
     @pytest.mark.parametrize('mono_base,expected', [

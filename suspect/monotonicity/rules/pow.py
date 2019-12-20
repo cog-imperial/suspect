@@ -13,12 +13,11 @@
 # limitations under the License.
 
 """Monotonicity detection rules for power expressions."""
+from suspect.math import almosteq, \
+    almostgte  # pylint: disable=no-name-in-module
 from suspect.monotonicity.monotonicity import Monotonicity
 from suspect.monotonicity.rules.rule import MonotonicityRule
 from suspect.pyomo.expressions import nonpyomo_leaf_types
-from suspect.expression import ExpressionType
-from suspect.interfaces import Rule
-from suspect.math import almosteq, almostgte # pylint: disable=no-name-in-module
 
 
 class PowerRule(MonotonicityRule):
@@ -84,7 +83,7 @@ def _monotonicity_constant_exponent(base, expo, mono_base, mono_expo, bounds_bas
         return _monotonicity_even_exponent(
             base, expo, mono_base, mono_expo, bounds_base, bounds_expo,
         )
-    elif is_integer: # is odd
+    elif is_integer:  # is odd
         return _monotonicity_odd_exponent(
             base, expo, mono_base, mono_expo, bounds_base, bounds_expo,
         )

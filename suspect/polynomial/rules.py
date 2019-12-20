@@ -18,8 +18,9 @@ from suspect.polynomial.degree import PolynomialDegree
 from suspect.interfaces import Rule
 
 
-class PolynomialDegreeRule(object):
-    """Base class for rules that compute polynomial degree  properties of an expression."""
+class PolynomialDegreeRule(Rule):
+    """Base class for rules that compute polynomial degree
+     properties of an expression."""
     def apply(self, expr, polynomial_degree):
         """Apply rule to `expr`.
 
@@ -27,7 +28,7 @@ class PolynomialDegreeRule(object):
         ----------
         expr : Expression
             the expression
-        polynomial_degre : dict-like
+        polynomial_degree : dict-like
             contains polynomial degree of children
         """
         raise NotImplementedError('apply')

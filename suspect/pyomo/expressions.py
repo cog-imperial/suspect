@@ -14,12 +14,14 @@
 
 
 """Re-import Pyomo expression types."""
+
 from pyomo.core.expr.numeric_expr import (
     NumericConstant,
     NegationExpression,
     PowExpression,
     ProductExpression,
     MonomialTermExpression,
+    DivisionExpression,
     ReciprocalExpression,
     SumExpression,
     UnaryFunctionExpression,

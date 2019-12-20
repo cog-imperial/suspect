@@ -1,20 +1,22 @@
 # pylint: skip-file
-import pytest
-from hypothesis import given, assume, reproduce_failure, settings, HealthCheck
 import hypothesis.strategies as st
-from pyomo.core.kernel.component_map import ComponentMap
 import pyomo.environ as pe
-from tests.strategies import expressions, variables, reals, unary_function_types
+import pytest
+from hypothesis import given, assume, settings, HealthCheck
+from pyomo.core.kernel.component_map import ComponentMap
+
+from suspect.polynomial.rules import *
+from suspect.polynomial.visitor import PolynomialDegreeVisitor
 from suspect.pyomo.expressions import (
     MonomialTermExpression,
+    DivisionExpression,
+    ReciprocalExpression,
     SumExpression,
     Constraint,
     Objective,
     PowExpression,
 )
-from suspect.polynomial.visitor import PolynomialDegreeVisitor
-from suspect.polynomial.degree import PolynomialDegree
-from suspect.polynomial.rules import *
+from tests.strategies import expressions, variables, reals, unary_function_types
 
 
 @pytest.fixture
@@ -78,7 +80,7 @@ def test_reciprocal_rule_with_constant_denominator(visitor):
     child = pe.Var()
     poly = ComponentMap()
     poly[child] = PolynomialDegree(0)
-    expr = 1 / child
+    expr = ReciprocalExpression([child])
     matched, result = visitor.visit_expression(expr, poly)
     assert matched
     assert result.is_constant()
@@ -88,8 +90,34 @@ def test_reciprocal_rule_with_constant_denominator(visitor):
 def test_reciprocal_rule_with_nonconstant_denominator(visitor, den_degree):
     assume(not den_degree.is_constant())
     child = pe.Var()
-    expr = 1 / child
+    expr = ReciprocalExpression([child])
     poly = ComponentMap()
+    poly[child] = den_degree
+    matched, result = visitor.visit_expression(expr, poly)
+    assert matched
+    assert not result.is_polynomial()
+
+
+def test_division_rule_with_constant_denominator(visitor):
+    child = pe.Var()
+    num = 1.0
+    poly = ComponentMap()
+    poly[num] = PolynomialDegree(0)
+    poly[child] = PolynomialDegree(0)
+    expr = DivisionExpression([num, child])
+    matched, result = visitor.visit_expression(expr, poly)
+    assert matched
+    assert result.is_constant()
+
+
+@given(polynomial_degrees())
+def test_division_rule_with_nonconstant_denominator(visitor, den_degree):
+    assume(not den_degree.is_constant())
+    child = pe.Var()
+    num = 1.0
+    expr = DivisionExpression([num, child])
+    poly = ComponentMap()
+    poly[num] = PolynomialDegree(0)
     poly[child] = den_degree
     matched, result = visitor.visit_expression(expr, poly)
     assert matched

@@ -214,6 +214,9 @@ class _SumExpression:
     def __init__(self, children):
         self.children = children
 
+    def nargs(self):
+        return len(self.children)
+
 
 class _LinearExpression:
     expression_type = ExpressionType.Linear

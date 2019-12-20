@@ -36,7 +36,7 @@ class Visitor(metaclass=abc.ABCMeta):
         Returns
         -------
         bool
-            Wheter a rule was matched
+            Whether a rule was matched
         value
             The value that will be passed to ``handle_result``"""
         pass

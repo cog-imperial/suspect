@@ -1,19 +1,15 @@
 # pylint: skip-file
-import pytest
-from hypothesis import given, assume, reproduce_failure
-from hypothesis.strategies import integers, lists
 import pyomo.environ as pe
+import pytest
+from hypothesis import given, assume
+from hypothesis.strategies import integers, lists
 from pyomo.core.kernel.component_map import ComponentMap
-from suspect.pyomo.expressions import *
+
 from suspect.fbbt.propagation.rules import *
 from suspect.fbbt.propagation.visitor import BoundsPropagationVisitor
 from suspect.interval import Interval
-from tests.strategies import expressions, coefficients, reals, intervals
-from tests.conftest import (
-    PlaceholderExpression,
-    bound_description_to_bound,
-    mono_description_to_mono,
-)
+from suspect.pyomo.expressions import *
+from tests.strategies import expressions, reals, intervals
 
 
 @pytest.fixture
@@ -95,9 +91,25 @@ def test_product_visitor(visitor, children_bounds):
     (Interval(-1, 1), Interval(None, None)),
     (Interval(2, 10), Interval(0.1, 0.5)),
 ])
+def test_division_bound(visitor, bound, expected):
+    num = pe.Var()
+    child = pe.Var()
+    expr = num / child
+    bounds = ComponentMap()
+    bounds[num] = Interval(1.0, 1.0)
+    bounds[child] = bound
+    matched, result = visitor.visit_expression(expr, bounds)
+    assert matched
+    assert result == expected
+
+
+@pytest.mark.parametrize('bound,expected', [
+    (Interval(-1, 1), Interval(None, None)),
+    (Interval(2, 10), Interval(0.1, 0.5)),
+])
 def test_reciprocal_bound(visitor, bound, expected):
     child = pe.Var()
-    expr = 1 / child
+    expr = ReciprocalExpression([child])
     bounds = ComponentMap()
     bounds[child] = bound
     matched, result = visitor.visit_expression(expr, bounds)

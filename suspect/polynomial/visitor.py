@@ -13,14 +13,15 @@
 # limitations under the License.
 
 """Visitor applying rules for polynomial degree computation."""
+from suspect.polynomial.rules import *  # pylint: disable=wildcard-import
 from suspect.pyomo.expressions import (
-    nonpyomo_leaf_types,
     NumericConstant,
     Var,
     Constraint,
     Objective,
     MonomialTermExpression,
     ProductExpression,
+    DivisionExpression,
     ReciprocalExpression,
     LinearExpression,
     SumExpression,
@@ -30,8 +31,6 @@ from suspect.pyomo.expressions import (
     UnaryFunctionExpression,
 )
 from suspect.visitor import Visitor
-from suspect.polynomial.rules import * # pylint: disable=wildcard-import
-
 
 _expr_to_rule_map = dict()
 _expr_to_rule_map[NumericConstant] = ConstantRule()
@@ -40,6 +39,7 @@ _expr_to_rule_map[Constraint] = ConstraintRule()
 _expr_to_rule_map[Objective] = ObjectiveRule()
 _expr_to_rule_map[MonomialTermExpression] = ProductRule()
 _expr_to_rule_map[ProductExpression] = ProductRule()
+_expr_to_rule_map[DivisionExpression] = DivisionRule()
 _expr_to_rule_map[ReciprocalExpression] = ReciprocalRule()
 _expr_to_rule_map[LinearExpression] = LinearRule()
 _expr_to_rule_map[SumExpression] = SumRule()

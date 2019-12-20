@@ -21,7 +21,7 @@ from suspect.interval import Interval
 class DivisionRule(MonotonicityRule):
     """Return monotonicity of division."""
     def apply(self, expr, monotonicity, bounds):
-        f, g = expr.children
+        f, g = expr.args
         mono_f = monotonicity[f]
         mono_g = monotonicity[g]
         bound_f = bounds[f]
@@ -35,7 +35,9 @@ class ReciprocalRule(MonotonicityRule):
         g = expr.args[0]
         mono_g = monotonicity[g]
         bound_g = bounds[g]
-        return _division_monotonicity(Monotonicity.Constant, Interval(1.0, 1.0), mono_g, bound_g)
+        return _division_monotonicity(
+            Monotonicity.Constant, Interval(1.0, 1.0), mono_g, bound_g
+        )
 
 
 def _division_monotonicity(mono_f, bound_f, mono_g, bound_g):
