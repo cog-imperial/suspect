@@ -14,9 +14,58 @@
 
 """Convexity detection rules for quadratic expressions."""
 import numpy as np
+
 from suspect.convexity.convexity import Convexity
 from suspect.convexity.rules.rule import ConvexityRule
 
+
+def _gershgorin_circles_test(A):
+    """Check convexity by computing Gershgorin circles.
+
+    If the circles lie in the nonnegative (nonpositive) space, then the matrix
+    is positive (negative) definite.
+
+    Parameters
+    ----------
+    A : matrix
+        the (symmetric) coefficients matrix
+
+    Returns
+    -------
+    Convexity if the expression is Convex or Concave, None otherwise.
+    """
+    # Check both row and column circles for each eigenvalue
+    diag = np.diag(A)
+    abs_A = np.abs(A)
+    abs_diag = np.abs(diag)
+    row_circles = np.sum(abs_A, 1) - abs_diag
+    col_circles = np.sum(abs_A, 0) - abs_diag
+    circles = np.minimum(row_circles, col_circles)
+    if np.all((diag - circles) >= 0):
+        return Convexity.Convex
+    if np.all((diag + circles) <= 0):
+        return Convexity.Concave
+    return None
+
+
+def _eigval_test(A):
+    """Check convexity by computing eigenvalues.
+
+    Parameters
+    ----------
+    A : matrix
+        the (symmetric) coefficients matrix
+
+    Returns
+    -------
+    Convexity if the expression is Convex or Concave, None otherwise.
+    """
+    eigv = np.linalg.eigvalsh(A)
+    if np.all(eigv >= 0):
+        return Convexity.Convex
+    elif np.all(eigv <= 0):
+        return Convexity.Concave
+    return None
 
 
 class QuadraticRule(ConvexityRule):
@@ -27,17 +76,7 @@ class QuadraticRule(ConvexityRule):
         self.max_matrix_size = max_matrix_size
 
     def apply(self, expr, convexity, mono, bounds):
-        # Sum of squares
-        if self._is_sum_of_squares(expr):
-            coefficients = np.array([term.coefficient for term in expr.terms])
-            if np.all(coefficients >= 0):
-                return Convexity.Convex
-            elif np.all(coefficients <= 0):
-                return Convexity.Concave
-            else:
-                return Convexity.Unknown
-
-        # try compute eigvalues
+        # Build coefficient matrix
         n = len(expr.args)
         if self.max_matrix_size and n > self.max_matrix_size:
             return Convexity.Unknown
@@ -52,17 +91,14 @@ class QuadraticRule(ConvexityRule):
             else:
                 A[i, j] = term.coefficient / 2.0
                 A[j, i] = A[i, j]
-        eigv = np.linalg.eigvalsh(A)
-        if np.all(eigv >= 0):
-            return Convexity.Convex
-        elif np.all(eigv <= 0):
-            return Convexity.Concave
-        return Convexity.Unknown
 
-    def _is_sum_of_squares(self, expr):
-        if len(expr.terms) == 0:
-            return False
-        for term in expr.terms:
-            if term.var1 != term.var2:
-                return False
-        return True
+        convexity = _gershgorin_circles_test(A)
+
+        if convexity is not None:
+            return convexity
+
+        convexity = _eigval_test(A)
+        if convexity is not None:
+            return convexity
+
+        return Convexity.Unknown

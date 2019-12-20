@@ -37,7 +37,7 @@ class SumRule(Rule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, bounds):
-        if len(expr.args) > self.max_expr_children: # pragma: no cover
+        if len(expr.args) > self.max_expr_children:  # pragma: no cover
             return None
         expr_bound = bounds[expr]
         children_bounds = [

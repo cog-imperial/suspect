@@ -41,7 +41,7 @@ class UnivariateQuadraticRule(Rule):
 
     def apply(self, expr, bounds):
         # Look for Quadratic + Linear expressions
-        if len(expr.children) != 2:
+        if expr.nargs() != 2:
             return
 
         quadratic, linear = _quadratic_and_linear(expr.children)
@@ -102,11 +102,12 @@ def _variable_bound_from_univariate_lower_bound(a, b, c):
     t = c/a + (b**2) / (4*a**2)
 
     if a > 0:
-        if c + (b**2) / (4*a) <= 0:
-            return Interval(None, None)
-        new_upper_bound = Interval(None, -sqrt(t, RM.RN) - b/(2*a))
-        new_lower_bound = Interval(sqrt(t, RM.RN) - b/(2*a), None)
-        return new_upper_bound.intersect(new_lower_bound)
+        return Interval(None, None)
+        # if c + (b**2) / (4*a) <= 0:
+        #     return Interval(None, None)
+        # new_upper_bound = Interval(None, -sqrt(t, RM.RN) - b/(2*a))
+        # new_lower_bound = Interval(sqrt(t, RM.RN) - b/(2*a), None)
+        # return new_upper_bound.intersect(new_lower_bound)
 
     # a < 0
     if c + (b**2) / (4*a) > 0:
