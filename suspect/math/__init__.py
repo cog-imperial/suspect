@@ -141,4 +141,4 @@ def set_math_mode(math_mode):
         raise RuntimeError('Invalid MathMode')
 
 
-set_math_mode(MathMode.ARBITRARY_PRECISION)
+set_math_mode(MathMode.FLOATING_POINT)
