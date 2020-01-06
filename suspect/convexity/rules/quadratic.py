@@ -40,7 +40,6 @@ def _gershgorin_circles_test(expr, var_to_idx):
     """
     n = expr.nargs()
     row_circles = np.zeros(n)
-    col_circles = np.zeros(n)
     diagonal = np.zeros(n)
 
     for term in expr.terms:
@@ -49,15 +48,13 @@ def _gershgorin_circles_test(expr, var_to_idx):
         if i == j:
             diagonal[i] = term.coefficient
         else:
-            coef = term.coefficient / 2.0
+            coef = np.abs(term.coefficient / 2.0)
             row_circles[j] += coef
-            col_circles[i] += coef
+            row_circles[i] += coef
 
-    # Check both row and column circles for each eigenvalue
-    circles = np.minimum(row_circles, col_circles)
-    if np.all((diagonal - circles) >= 0):
+    if np.all((diagonal - row_circles) >= 0):
         return Convexity.Convex
-    if np.all((diagonal + circles) <= 0):
+    if np.all((diagonal + row_circles) <= 0):
         return Convexity.Concave
     return None
 
