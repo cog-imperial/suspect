@@ -15,8 +15,9 @@
 """FBBT bounds initialization visitor."""
 from suspect.interval import Interval
 from suspect.interfaces import CombineUnaryFunctionRules
-from suspect.pyomo.expressions import UnaryFunctionExpression
+from suspect.pyomo.expressions import UnaryFunctionExpression, Constraint
 from suspect.visitor import BackwardVisitor
+import pyomo.environ as pyo
 from suspect.fbbt.initialization.rules import (
     SqrtRule,
     LogRule,
@@ -31,6 +32,16 @@ _rule = CombineUnaryFunctionRules({
     'acos': AcosRule()},
     needs_matching_rules=False,
 )
+
+
+def initialize_bounds(expr, bounds):
+    if isinstance(expr, pyo.Constraint):
+        lower = pyo.value(expr.lower)
+        upper = pyo.value(expr.upper)
+        return [Interval(lower, upper)]
+    if isinstance(expr, UnaryFunctionExpression):
+        return _rule.apply(expr, bounds)
+    return None
 
 
 class BoundsInitializationVisitor(BackwardVisitor):

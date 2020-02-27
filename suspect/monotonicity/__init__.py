@@ -14,6 +14,6 @@
 
 """SUSPECT monotonicity detection module."""
 from .monotonicity import Monotonicity
-from .visitor import MonotonicityPropagationVisitor
+from .visitor import MonotonicityPropagationVisitor, propagate_expression_monotonicity
 
-__all__ = ['Monotonicity', 'MonotonicityPropagationVisitor']
+__all__ = ['Monotonicity', 'MonotonicityPropagationVisitor', 'propagate_expression_monotonicity']

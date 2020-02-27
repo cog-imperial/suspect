@@ -14,6 +14,6 @@
 
 """Convexity detection module."""
 from .convexity import Convexity
-from .visitor import ConvexityPropagationVisitor
+from .visitor import ConvexityPropagationVisitor, propagate_expression_convexity
 
-__all__ = ['Convexity', 'ConvexityPropagationVisitor']
+__all__ = ['Convexity', 'ConvexityPropagationVisitor', 'propagate_expression_convexity']

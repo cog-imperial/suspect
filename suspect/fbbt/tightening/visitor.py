@@ -20,8 +20,10 @@ from suspect.fbbt.tightening.rules import (
     LinearRule,
     PowerRule,
     UnaryFunctionRule,
+    QuadraticRule,
 )
 from suspect.interval import Interval
+from suspect.pyomo.quadratic import QuadraticExpression
 from suspect.pyomo.expressions import (
     nonpyomo_leaf_types,
     Constraint,
@@ -38,6 +40,7 @@ _expr_to_rule_map[LinearExpression] = LinearRule()
 _expr_to_rule_map[SumExpression] = SumRule()
 _expr_to_rule_map[PowExpression] = PowerRule()
 _expr_to_rule_map[UnaryFunctionExpression] = UnaryFunctionRule()
+_expr_to_rule_map[QuadraticExpression] = QuadraticRule()
 
 
 def tighten_bounds_root_to_leaf(expr, bounds):

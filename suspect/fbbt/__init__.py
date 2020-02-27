@@ -16,9 +16,9 @@
 from .initialization import BoundsInitializationVisitor
 from .propagation import BoundsPropagationVisitor
 from .tightening import BoundsTighteningVisitor
-from .main import BoundsTightener, FBBTStopCriterion, perform_fbbt
+from .main import perform_fbbt
 
 __all__ = [
     'BoundsInitializationVisitor', 'BoundsPropagationVisitor', 'BoundsTighteningVisitor',
-    'BoundsTightener', 'FBBTStopCriterion', 'perform_fbbt',
+    'perform_fbbt',
 ]

@@ -63,7 +63,7 @@ _expr_to_rule_map[UnaryFunctionExpression] = CombineUnaryFunctionRules({
 })
 
 
-def expression_monotonicity(expr, mono, bounds):
+def propagate_expression_monotonicity(expr, mono, bounds):
     if type(expr) in nonpyomo_leaf_types:
         rule = _expr_to_rule_map[NumericConstant]
     elif expr.is_constant():
@@ -83,4 +83,4 @@ class MonotonicityPropagationVisitor(Visitor):
         return True
 
     def visit_expression(self, expr, mono, bounds):
-        return True, expression_monotonicity(expr, mono, bounds)
+        return True, propagate_expression_monotonicity(expr, mono, bounds)

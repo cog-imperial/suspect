@@ -32,6 +32,7 @@ from suspect.pyomo.expressions import (
     UnaryFunctionExpression,
 )
 from suspect.visitor import ForwardVisitor
+from suspect.pyomo.quadratic import QuadraticExpression
 from suspect.fbbt.propagation.rules import (
     VariableRule,
     ConstantRule,
@@ -45,6 +46,7 @@ from suspect.fbbt.propagation.rules import (
     PowerRule,
     NegationRule,
     AbsRule,
+    QuadraticRule,
     UnaryFunctionRule,
 )
 
@@ -64,6 +66,7 @@ _expr_to_rule_map[PowExpression] = PowerRule()
 _expr_to_rule_map[NegationExpression] = NegationRule()
 _expr_to_rule_map[AbsExpression] = AbsRule()
 _expr_to_rule_map[UnaryFunctionExpression] = UnaryFunctionRule()
+_expr_to_rule_map[QuadraticExpression] = QuadraticRule()
 
 
 def propagate_bounds_leaf_to_root(expr, bounds):

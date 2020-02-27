@@ -13,92 +13,120 @@
 # limitations under the License.
 
 """Class to run bound tightener or a problem."""
+import pyomo.environ as pyo
+
+from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.kernel.component_map import ComponentMap
-from suspect.dag.iterator import DagForwardIterator, DagBackwardIterator
-from suspect.fbbt.initialization import BoundsInitializationVisitor
-from suspect.fbbt.propagation import BoundsPropagationVisitor
-from suspect.fbbt.tightening import BoundsTighteningVisitor
+
+from suspect.interval import Interval
+from suspect.fbbt.initialization import initialize_bounds
+from suspect.fbbt.propagation import propagate_bounds_leaf_to_root
+from suspect.fbbt.tightening import tighten_bounds_root_to_leaf
 
 
-def perform_fbbt(problem):
-    """Perform FBBT on problem.
+def perform_fbbt(model, max_iter=10, active=True):
+    """Perform FBBT on the model.
 
     Parameters
     ----------
-    problem: suspect.dag.ProblemDag
-        the problem
+    model : pyomo.environ.ConcreteModel
+        the pyomo model
+    max_iter : int
+        maximum number of FBBT iterations
+    active : boolean
+        perform FBBT only on active constraints
 
     Returns
     -------
     ComponentMap
         tightened bounds for variables and expressions
     """
+    if max_iter < 1:
+        raise ValueError("max_iter must be >= 1")
+
     bounds = ComponentMap()
 
-    bounds_tightener = BoundsTightener(
-        DagForwardIterator(),
-        DagBackwardIterator(),
-        FBBTStopCriterion(),
-    )
-    bounds_tightener.tighten(problem, bounds)
+    for constraint in model.component_data_objects(pyo.Constraint, active=active, descend_into=True):
+        lower = pyo.value(constraint.lower)
+        upper = pyo.value(constraint.upper)
+        bounds[constraint.body] = Interval(lower, upper)
+
+    for iter in range(max_iter):
+        changed = _perform_fbbt_step(model, bounds, iter, active)
+        if not changed:
+            break
+
     return bounds
 
 
-class FBBTStopCriterion(object):
-    """Stop criterion for FBBT."""
-    def __init__(self, max_iter=10):
-        self._max_iter = max_iter
-        self._iter = 0
+def _perform_fbbt_step(model, bounds, iter, active):
+    if iter == 0:
+        func = _initialize_then_propagate_bounds_on_expr
+    else:
+        func = _tighten_then_propagate_bounds_on_expr
 
-    def should_stop(self):
-        """Predicate to check if FBBT should stop."""
-        return self._iter >= self._max_iter
+    changed = False
+    for objective in model.component_data_objects(pyo.Objective, active=active, descend_into=True):
+        changed |= func(objective.expr, bounds)
 
-    def iteration_end(self):
-        """Callback called at the end of each FBBT iteration."""
-        self._iter += 1
+    for constraint in model.component_data_objects(pyo.Constraint, active=active, descend_into=True):
+        changed |= func(constraint.body, bounds)
 
-    def intercept_changes(self, visitor):
-        if not hasattr(visitor, 'handle_result'):
-            raise RuntimeError('expected decorated visitor to have handle_result method')
-        original_visitor_handle = visitor.handle_result
-        def _wrapper(expr, new_bound, ctx):
-            return original_visitor_handle(expr, new_bound, ctx)
-        visitor.handle_result = _wrapper
-        return visitor
+    return changed
 
 
-class BoundsTightener(object):
-    """Configure and run FBBT on a problem.
+def _initialize_then_propagate_bounds_on_expr(expr, bounds):
+    return _perform_fbbt_iteration_on_expr(expr, bounds, initialize_bounds, propagate_bounds_leaf_to_root)
 
-    Parameters
-    ----------
-    forward_iterator:
-       forward iterator over vertices of the problem
-    backward_iterator:
-       backward iterator over vertices of the problem
-    stop_criterion:
-       criterion used to stop iteration
-    """
-    def __init__(self, forward_iterator, backward_iterator, stop_criterion):
-        self._forward_iterator = forward_iterator
-        self._backward_iterator = backward_iterator
-        self._stop_criterion = stop_criterion
 
-    def tighten(self, problem, bounds):
-        """Tighten bounds of ``problem`` storing them in ``bounds``."""
-        self._forward_iterator.iterate(problem, BoundsInitializationVisitor(), bounds)
-        prop_visitor = self._stop_criterion.intercept_changes(BoundsPropagationVisitor())
-        tigh_visitor = self._stop_criterion.intercept_changes(BoundsTighteningVisitor())
-        changes_tigh = None
-        changes_prop = None
-        while not self._stop_criterion.should_stop():
-            changes_prop = self._forward_iterator.iterate(
-                problem, prop_visitor, bounds, starting_vertices=changes_tigh
-            )
-            changes_tigh = self._backward_iterator.iterate(
-                problem, tigh_visitor, bounds, starting_vertices=changes_prop
-            )
-            if len(changes_prop) == 0 and len(changes_tigh) == 0:
-                return
-            self._stop_criterion.iteration_end()
+def _tighten_then_propagate_bounds_on_expr(expr, bounds):
+    return _perform_fbbt_iteration_on_expr(
+        expr, bounds, tighten_bounds_root_to_leaf, propagate_bounds_leaf_to_root
+    )
+
+
+def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate):
+    def enter_node(node):
+        result = tighten(node, bounds)
+        if result is None:
+            return None, None
+        if isinstance(result, list):
+            for arg, r in zip(expr.args, result):
+                _update_bounds_map(bounds, arg, r)
+        else:
+            for arg, v in result.items():
+                _update_bounds_map(bounds, arg, v)
+        return None, None
+
+    def exit_node(node, data):
+        result = propagate(node, bounds)
+        existing = bounds.get(node, None)
+        _update_bounds_map(bounds, node, result)
+        if existing is None:
+            return True
+        return existing != result
+
+    return StreamBasedExpressionVisitor(
+        enterNode=enter_node,
+        exitNode=exit_node,
+    ).walk_expression(expr)
+
+
+def _update_bounds_map(bounds, expr, value):
+    if value is None:
+        new_bounds = Interval(None, None)
+    else:
+        new_bounds = value
+
+    old_bounds = bounds.get(expr, None)
+
+    if old_bounds is not None:
+        new_bounds = old_bounds.intersect(
+            new_bounds,
+            abs_eps=1e-6,
+        )
+        has_changed = old_bounds != new_bounds
+    else:
+        has_changed = True
+    bounds[expr] = new_bounds
+    return has_changed

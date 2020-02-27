@@ -13,6 +13,6 @@
 # limitations under the License.
 
 """FBBT bounds initialization."""
-from .visitor import BoundsInitializationVisitor
+from .visitor import BoundsInitializationVisitor, initialize_bounds
 
-__all__ = ['BoundsInitializationVisitor']
+__all__ = ['BoundsInitializationVisitor', 'initialize_bounds']

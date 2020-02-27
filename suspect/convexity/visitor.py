@@ -61,7 +61,7 @@ _expr_to_rule_map[UnaryFunctionExpression] = CombineUnaryFunctionRules({
 })
 
 
-def expression_convexity(expr, convexity, mono, bounds):
+def propagate_expression_convexity(expr, convexity, mono, bounds):
     if type(expr) in nonpyomo_leaf_types:
         rule = _expr_to_rule_map[NumericConstant]
     elif expr.is_constant():
@@ -81,4 +81,4 @@ class ConvexityPropagationVisitor(Visitor):
         return not result.is_unknown()
 
     def visit_expression(self, expr, convexity, mono, bounds):
-        return True, expression_convexity(expr, convexity, mono, bounds)
+        return True, propagate_expression_convexity(expr, convexity, mono, bounds)

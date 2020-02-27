@@ -13,6 +13,6 @@
 # limitations under the License.
 
 """FBBT bounds propagation."""
-from .visitor import BoundsPropagationVisitor
+from .visitor import BoundsPropagationVisitor, propagate_bounds_leaf_to_root
 
-__all__ = ['BoundsPropagationVisitor']
+__all__ = ['BoundsPropagationVisitor', 'propagate_bounds_leaf_to_root']

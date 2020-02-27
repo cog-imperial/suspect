@@ -13,6 +13,6 @@
 # limitations under the License.
 
 """FBBT bounds tightening."""
-from .visitor import BoundsTighteningVisitor
+from .visitor import BoundsTighteningVisitor, tighten_bounds_root_to_leaf
 
-__all__ = ['BoundsTighteningVisitor']
+__all__ = ['BoundsTighteningVisitor', 'tighten_bounds_root_to_leaf']

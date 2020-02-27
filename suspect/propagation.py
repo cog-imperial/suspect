@@ -14,9 +14,11 @@
 
 import logging
 import pkg_resources
+import pyomo.environ as pyo
 from pyomo.core.kernel.component_map import ComponentMap
-from suspect.monotonicity import MonotonicityPropagationVisitor
-from suspect.convexity import ConvexityPropagationVisitor
+from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
+from suspect.monotonicity import MonotonicityPropagationVisitor, propagate_expression_monotonicity
+from suspect.convexity import ConvexityPropagationVisitor, propagate_expression_convexity
 from suspect.dag.iterator import DagForwardIterator
 
 
@@ -66,7 +68,7 @@ class SpecialStructurePropagationVisitor(object):
         return [expr]
 
 
-def propagate_special_structure(problem, bounds):
+def propagate_special_structure(model, bounds, active=True):
     """Propagate special structure.
 
     Arguments
@@ -74,7 +76,9 @@ def propagate_special_structure(problem, bounds):
     problem: ProblemDag
         the problem.
     bounds: dict-like
-        a dict-like object contaninig bounds
+        a dict-like object containing bounds
+    active : bool
+        only propagate special structure on active components
 
     Returns
     -------
@@ -83,9 +87,29 @@ def propagate_special_structure(problem, bounds):
     convexity: dict-like
         convexity information for the problem.
     """
-    visitor = SpecialStructurePropagationVisitor(problem)
-    iterator = DagForwardIterator()
     mono = ComponentMap()
-    convexity = ComponentMap()
-    iterator.iterate(problem, visitor, convexity, mono, bounds)
-    return mono, convexity
+    cvx = ComponentMap()
+
+    for objective in model.component_data_objects(pyo.Objective, active=active, descend_into=True):
+        _propagate_special_structure(objective.expr, bounds, cvx, mono)
+
+    for constraint in model.component_data_objects(pyo.Constraint, active=active, descend_into=True):
+        _propagate_special_structure(constraint.body, bounds, cvx, mono)
+
+    return mono, cvx
+
+
+def _propagate_special_structure(expr, bounds, cvx, mono):
+    def enter_node(node):
+        return None, None
+
+    def exit_node(node, data):
+        mono_result = propagate_expression_monotonicity(node, mono, bounds)
+        mono[node] = mono_result
+        result = propagate_expression_convexity(node, cvx, mono, bounds)
+        cvx[node] = result
+
+    return StreamBasedExpressionVisitor(
+        enterNode=enter_node,
+        exitNode=exit_node,
+    ).walk_expression(expr)

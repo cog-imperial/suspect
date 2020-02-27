@@ -107,7 +107,7 @@ class QuadraticRule(Rule):
                 for i, t in enumerate(terms) if i != term_idx
             )
             term_bound = (expr_bound - siblings_bound) / term.coefficient
-            if var1 is var2:
+            if id(var1) == id(var2):
                 term_bound = term_bound.intersect(Interval(0, None))
                 upper_bound = term_bound.sqrt().upper_bound
                 new_bound = Interval(-upper_bound, upper_bound)
@@ -134,7 +134,7 @@ class QuadraticRule(Rule):
                 else:
                     child_bounds[id(var2)] = new_bound_var2
 
-        return [child_bounds[id(v)] for v in expr.args]
+        return child_bounds
 
     def _term_bound(self, term, bounds):
         if term.var1 is term.var2:

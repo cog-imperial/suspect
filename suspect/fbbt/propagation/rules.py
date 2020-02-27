@@ -65,7 +65,7 @@ class QuadraticRule(Rule):
         return sum([self._term_bounds(term, bounds) for term in expr.terms])
 
     def _term_bounds(self, term, bounds):
-        if term.var1 != term.var2:
+        if id(term.var1) != id(term.var2):
             return bounds[term.var1] * bounds[term.var2] * term.coefficient
         return term.coefficient * (bounds[term.var1] ** 2)
 

@@ -13,9 +13,9 @@ def enable_standard_repn_for_quadratic_expression():
 
 
 class BilinearTerm(NamedTuple):
-    v0: pyo.Var
-    v1: pyo.Var
-    coef: float
+    var1: pyo.Var
+    var2: pyo.Var
+    coefficient: float
 
 
 def _make_uid_index(v0, v1):
