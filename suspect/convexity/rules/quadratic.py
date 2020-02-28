@@ -15,6 +15,7 @@
 """Convexity detection rules for quadratic expressions."""
 import numpy as np
 
+from pyomo.environ import ComponentMap
 from suspect.convexity.convexity import Convexity
 from suspect.convexity.rules.rule import ConvexityRule
 
@@ -38,7 +39,7 @@ def _gershgorin_circles_test(expr, var_to_idx):
     -------
     Convexity if the expression is Convex or Concave, None otherwise.
     """
-    n = expr.nargs()
+    n = len(var_to_idx)
     row_circles = np.zeros(n)
     diagonal = np.zeros(n)
 
@@ -79,6 +80,21 @@ def _eigval_test(A):
     return None
 
 
+def _build_var_to_idx_map(expr):
+    map = ComponentMap()
+    idx = 0
+    for term in expr.terms:
+        v1 = term.var1
+        v2 = term.var2
+        if v1 not in map:
+            map[v1] = idx
+            idx += 1
+        if v2 not in map:
+            map[v2] = idx
+            idx += 1
+    return map
+
+
 class QuadraticRule(ConvexityRule):
     """Return convexity of quadratic."""
     def __init__(self, max_expr_children=None):
@@ -87,14 +103,14 @@ class QuadraticRule(ConvexityRule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, convexity, mono, bounds):
-        var_to_idx = dict([(v, i) for i, v in enumerate(expr.args)])
+        var_to_idx = _build_var_to_idx_map(expr)
         convexity = _gershgorin_circles_test(expr, var_to_idx)
 
         if convexity is not None:
             return convexity
 
         # Build coefficient matrix
-        n = len(expr.args)
+        n = len(var_to_idx)
         if self.max_expr_children and n > self.max_expr_children:
             return Convexity.Unknown
 
@@ -102,7 +118,7 @@ class QuadraticRule(ConvexityRule):
         for term in expr.terms:
             i = var_to_idx[term.var1]
             j = var_to_idx[term.var2]
-            if term.var1 == term.var2:
+            if term.var1 is term.var2:
                 A[i, j] = term.coefficient
             else:
                 A[i, j] = term.coefficient / 2.0

@@ -54,29 +54,48 @@ def perform_fbbt(model, max_iter=10, active=True):
     for iter in range(max_iter):
         changed = _perform_fbbt_step(model, bounds, iter, active)
         if not changed:
+            print('Iter = ', iter)
             break
-
+    print('Iter = ', iter)
     return bounds
 
-
+nnode = 0
 def _perform_fbbt_step(model, bounds, iter, active):
+    from timeit import default_timer as timer
+    global nnode
+    nnode = 0
     if iter == 0:
         func = _initialize_then_propagate_bounds_on_expr
     else:
         func = _tighten_then_propagate_bounds_on_expr
 
     changed = False
+    cchanged_counter = 0
     for objective in model.component_data_objects(pyo.Objective, active=active, descend_into=True):
-        changed |= func(objective.expr, bounds)
+        s = timer()
+        c = func(objective.expr, bounds)
+        end = timer()
+        if c:
+            cchanged_counter += 1
+        changed |= c
 
     for constraint in model.component_data_objects(pyo.Constraint, active=active, descend_into=True):
-        changed |= func(constraint.body, bounds)
+        s = timer()
+        c = func(constraint.body, bounds)
+        end = timer()
+        if c:
+            cchanged_counter += 1
+        changed |= c
 
+    print('   CHanged Counter = ', cchanged_counter)
+    print('   Nodes visited = ', nnode)
     return changed
 
 
 def _initialize_then_propagate_bounds_on_expr(expr, bounds):
-    return _perform_fbbt_iteration_on_expr(expr, bounds, initialize_bounds, propagate_bounds_leaf_to_root)
+    return _perform_fbbt_iteration_on_expr(
+        expr, bounds, initialize_bounds, propagate_bounds_leaf_to_root
+    )
 
 
 def _tighten_then_propagate_bounds_on_expr(expr, bounds):
@@ -88,6 +107,8 @@ def _tighten_then_propagate_bounds_on_expr(expr, bounds):
 def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate):
     def enter_node(node):
         result = tighten(node, bounds)
+        global nnode
+        nnode += 1
         if result is None:
             return None, None
         if isinstance(result, list):

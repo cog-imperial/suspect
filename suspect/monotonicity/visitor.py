@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """Visitor applying rules for monotonicity propagation."""
+from suspect.interfaces import CombineUnaryFunctionRules
+from suspect.monotonicity.rules import *
 from suspect.pyomo.expressions import (
     nonpyomo_leaf_types,
     NumericConstant,
@@ -30,10 +32,8 @@ from suspect.pyomo.expressions import (
     NegationExpression,
     UnaryFunctionExpression,
 )
-from suspect.interfaces import CombineUnaryFunctionRules
+from suspect.pyomo.quadratic import QuadraticExpression
 from suspect.visitor import Visitor
-from suspect.monotonicity.rules import *
-
 
 _expr_to_rule_map = dict()
 _expr_to_rule_map[NumericConstant] = ConstantRule()
@@ -49,6 +49,7 @@ _expr_to_rule_map[SumExpression] = SumRule()
 _expr_to_rule_map[PowExpression] = PowerRule()
 _expr_to_rule_map[NegationExpression] = NegationRule()
 _expr_to_rule_map[AbsExpression] = AbsRule()
+_expr_to_rule_map[QuadraticExpression] = QuadraticRule()
 _expr_to_rule_map[UnaryFunctionExpression] = CombineUnaryFunctionRules({
     'abs': AbsRule(),
     'sqrt': SqrtRule(),
