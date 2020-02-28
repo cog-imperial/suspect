@@ -98,12 +98,16 @@ class QuadraticRule(Rule):
         if len(expr.terms) > self.max_expr_children:
             return None
 
+        # Build bounds for all terms
+        terms_bounds = [self._term_bound(t, bounds) for t in expr.terms]
+
         terms = expr.terms
+
         for term_idx, term in enumerate(terms):
             var1 = term.var1
             var2 = term.var2
             siblings_bound = sum(
-                self._term_bound(t, bounds)
+                terms_bounds[i]
                 for i, t in enumerate(terms) if i != term_idx
             )
             term_bound = (expr_bound - siblings_bound) / term.coefficient
