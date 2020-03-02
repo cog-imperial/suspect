@@ -75,7 +75,7 @@ def _perform_fbbt_step(model, bounds, iter, active):
 
 def _initialize_then_propagate_bounds_on_expr(expr, bounds):
     return _perform_fbbt_iteration_on_expr(
-        expr, bounds, initialize_bounds, propagate_bounds_leaf_to_root
+        expr, bounds, initialize_bounds, propagate_bounds_leaf_to_root, visit_all=True
     )
 
 
@@ -85,7 +85,7 @@ def _tighten_then_propagate_bounds_on_expr(expr, bounds):
     )
 
 
-def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate):
+def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate, visit_all=False):
     def enter_node(node):
         result = tighten(node, bounds)
         if result is None:
@@ -95,6 +95,8 @@ def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate):
         else:
             result_iter = result.items()
 
+        if visit_all:
+            return None, None
         descend_into_args = []
         for arg, value in result_iter:
             changed = _update_bounds_map(bounds, arg, value)
