@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """FBBT bounds tightening rules."""
+from pyomo.environ import ComponentMap
 from suspect.expression import UnaryFunctionType
 from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.interval import Interval
@@ -94,7 +95,7 @@ class QuadraticRule(Rule):
 
     def apply(self, expr, bounds):
         expr_bound = bounds[expr]
-        child_bounds = {}
+        child_bounds = ComponentMap()
         if len(expr.terms) > self.max_expr_children:
             return None
 
@@ -116,27 +117,27 @@ class QuadraticRule(Rule):
                 upper_bound = term_bound.sqrt().upper_bound
                 new_bound = Interval(-upper_bound, upper_bound)
 
-                if id(var1) in child_bounds:
-                    existing = child_bounds[id(var1)]
-                    child_bounds[id(var1)] = existing.intersect(new_bound)
+                if var1 in child_bounds:
+                    existing = child_bounds[var1]
+                    child_bounds[var1] = existing.intersect(new_bound)
                 else:
-                    child_bounds[id(var1)] = Interval(new_bound.lower_bound, new_bound.upper_bound)
+                    child_bounds[var1] = Interval(new_bound.lower_bound, new_bound.upper_bound)
 
             else:
                 new_bound_var1 = term_bound / bounds[var2]
                 new_bound_var2 = term_bound / bounds[var1]
 
-                if id(var1) in child_bounds:
-                    existing = child_bounds[id(var1)]
-                    child_bounds[id(var1)] = existing.intersect(new_bound_var1)
+                if var1 in child_bounds:
+                    existing = child_bounds[var1]
+                    child_bounds[var1] = existing.intersect(new_bound_var1)
                 else:
-                    child_bounds[id(var1)] = new_bound_var1
+                    child_bounds[var1] = new_bound_var1
 
-                if id(var2) in child_bounds:
-                    existing = child_bounds[id(var2)]
-                    child_bounds[id(var2)] = existing.intersect(new_bound_var2)
+                if var2 in child_bounds:
+                    existing = child_bounds[var2]
+                    child_bounds[var2] = existing.intersect(new_bound_var2)
                 else:
-                    child_bounds[id(var2)] = new_bound_var2
+                    child_bounds[var2] = new_bound_var2
 
         return child_bounds
 
