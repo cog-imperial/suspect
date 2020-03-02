@@ -54,41 +54,22 @@ def perform_fbbt(model, max_iter=10, active=True):
     for iter in range(max_iter):
         changed = _perform_fbbt_step(model, bounds, iter, active)
         if not changed:
-            print('Iter = ', iter)
             break
-    print('Iter = ', iter)
     return bounds
 
-nnode = 0
+
 def _perform_fbbt_step(model, bounds, iter, active):
-    from timeit import default_timer as timer
-    global nnode
-    nnode = 0
     if iter == 0:
         func = _initialize_then_propagate_bounds_on_expr
     else:
         func = _tighten_then_propagate_bounds_on_expr
 
     changed = False
-    cchanged_counter = 0
     for objective in model.component_data_objects(pyo.Objective, active=active, descend_into=True):
-        s = timer()
-        c = func(objective.expr, bounds)
-        end = timer()
-        if c:
-            cchanged_counter += 1
-        changed |= c
+        changed |= func(objective.expr, bounds)
 
     for constraint in model.component_data_objects(pyo.Constraint, active=active, descend_into=True):
-        s = timer()
-        c = func(constraint.body, bounds)
-        end = timer()
-        if c:
-            cchanged_counter += 1
-        changed |= c
-
-    print('   CHanged Counter = ', cchanged_counter)
-    print('   Nodes visited = ', nnode)
+        changed |= func(constraint.body, bounds)
     return changed
 
 
@@ -107,25 +88,23 @@ def _tighten_then_propagate_bounds_on_expr(expr, bounds):
 def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate):
     def enter_node(node):
         result = tighten(node, bounds)
-        global nnode
-        nnode += 1
         if result is None:
             return None, None
         if isinstance(result, list):
-            for arg, r in zip(expr.args, result):
-                _update_bounds_map(bounds, arg, r)
+            result_iter = zip(expr.args, result)
         else:
-            for arg, v in result.items():
-                _update_bounds_map(bounds, arg, v)
-        return None, None
+            result_iter = result.items()
+
+        descend_into_args = []
+        for arg, value in result_iter:
+            changed = _update_bounds_map(bounds, arg, value)
+            if changed:
+                descend_into_args.append(arg)
+        return descend_into_args, None
 
     def exit_node(node, data):
         result = propagate(node, bounds)
-        existing = bounds.get(node, None)
-        _update_bounds_map(bounds, node, result)
-        if existing is None:
-            return True
-        return existing != result
+        return _update_bounds_map(bounds, node, result)
 
     return StreamBasedExpressionVisitor(
         enterNode=enter_node,
