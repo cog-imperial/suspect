@@ -14,3 +14,4 @@
 
 from .convert import dag_from_pyomo_model
 from .osil_reader import read_osil
+from .qplib_reader import read_qplib

@@ -60,3 +60,8 @@ class QuadraticExpression(SumExpression):
             assert v0_uid <= v1_uid
             bilinear_term = BilinearTerm(v0, v1, coef)
             self._coef_matrix[(v0_uid, v1_uid)] = bilinear_term
+
+        if repn_result.nonlinear_expr is not None:
+            pass
+        else:
+            assert not repn_result.nonlinear_vars
