@@ -99,6 +99,10 @@ def _convert_quadratic_expression(expr):
     # Check if there is any non bilinear term
     nonbilinear_found = False
     for arg in expr.args:
+        if type(arg) in nonpyomo_leaf_types:
+            nonbilinear_found = True
+            break
+
         if arg.polynomial_degree() != 2:
             nonbilinear_found = True
             break

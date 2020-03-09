@@ -18,7 +18,7 @@ import numpy as np
 
 make_number = np.float
 inf = np.inf
-zero = np.float(0.0)
+zero = float(0.0)
 pi = np.pi
 isnan = lambda n: np.isnan(n)
 isinf = lambda n: np.isinf(n)
@@ -26,12 +26,12 @@ isinf = lambda n: np.isinf(n)
 
 def _declare_unary_function(name, fun):
     # skip rounding mode since we don't round
-    globals()[name] = lambda n, _: fun(n)
+    globals()[name] = lambda n, _: float(fun(n))
 
 
 def _declare_binary_function(name, fun):
     # skip rounding mode since we don't round
-    globals()[name] = lambda x, y, _: fun(x, y)
+    globals()[name] = lambda x, y, _: float(fun(x, y))
 
 
 _UNARY_FUNCTIONS = [
