@@ -78,6 +78,10 @@ def _instance_constraints(root):
     return root.findall('osil:instanceData/osil:constraints/osil:con', NS)
 
 
+def _instance_sos(root):
+    return root.findall('osil:instanceData/osil:specialOrderedSets/osil:sos', NS)
+
+
 def _quadratic_coefficients(root, i):
     qterms = root.findall('osil:instanceData/osil:quadraticCoefficients/osil:qTerm[@idx="{}"]'.format(i), NS)
     for qterm in qterms:
@@ -222,6 +226,9 @@ class OsilParser(object):
             elif name == 'cos':
                 assert len(cs) == 1
                 return aml.cos(_eval(cs[0]))
+            elif name == 'log10':
+                assert len(cs) == 1
+                return aml.log10(_eval(cs[0]))
             raise RuntimeError('unhandled tag {}'.format(name))
         nl = self.root.find('osil:instanceData/osil:nonlinearExpressions/osil:nl[@idx="{}"]'.format(i), NS)
         if nl is None:
@@ -250,6 +257,10 @@ class OsilParser(object):
             return self.constraint_prefix + constraint.attrib['name']
 
     def parse(self):
+        sos = list(_instance_sos(self.root))
+        if len(sos) != 0:
+            raise NotImplementedError('The OsilParser does not support SOS constraints.')
+        
         self.model.name = _instance_name(self.root)
 
         for var_def in _instance_variables(self.root):
@@ -285,8 +296,11 @@ class OsilParser(object):
                 lb = NumericConstant(float(lb))
             if ub is not None:
                 ub = NumericConstant(float(ub))
-            cons = aml.Constraint(expr=aml.inequality(lb, expr, ub))
-            setattr(self.model, cons_name, cons)
+            # some osil files from MINLPLib have constraints without upper or lower
+            # bounds (e.g., arki0011, constraint e1766)
+            if lb is not None or ub is not None:
+                cons = aml.Constraint(expr=aml.inequality(lb, expr, ub))
+                setattr(self.model, cons_name, cons)
 
         return self.model
 
