@@ -75,14 +75,14 @@ def almosteq(a, b, rel_eps=None, abs_eps=None):
         rel_eps = 1.0e-5
     if abs_eps is None:
         abs_eps = 1.0e-8
-    return np.isclose(a, b, rtol=rel_eps, atol=abs_eps)
+    return np.all(np.isclose(a, b, rtol=rel_eps, atol=abs_eps))
 
 
 def almostgte(a, b):
     """Return True if a >= b."""
-    return a > b or almosteq(a, b)
+    return np.all(np.logical_or(a > b, almosteq(a, b)))
 
 
 def almostlte(a, b):
     """Return True if a <= b."""
-    return a < b or almosteq(a, b)
+    return np.all(np.logical_or(a < b, almosteq(a, b)))

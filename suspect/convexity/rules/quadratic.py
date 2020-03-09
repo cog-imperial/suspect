@@ -15,6 +15,7 @@
 """Convexity detection rules for quadratic expressions."""
 import numpy as np
 
+from suspect.math import almostgte, almostlte
 from pyomo.environ import ComponentMap
 from suspect.convexity.convexity import Convexity
 from suspect.convexity.rules.rule import ConvexityRule
@@ -53,9 +54,12 @@ def _gershgorin_circles_test(expr, var_to_idx):
             row_circles[j] += coef
             row_circles[i] += coef
 
-    if np.all((diagonal - row_circles) >= 0):
+    diagonal_minus_row_circles = diagonal - row_circles
+    diagonal_plus_row_circles = diagonal + row_circles
+
+    if np.all(almostgte(diagonal_minus_row_circles, 0.0)):
         return Convexity.Convex
-    if np.all((diagonal + row_circles) <= 0):
+    if np.all(almostlte(diagonal_plus_row_circles, 0.0)):
         return Convexity.Concave
     return None
 
