@@ -16,7 +16,6 @@ from suspect.pyomo.expressions import (
     PowExpression,
     SumExpression,
     NegationExpression,
-    ReciprocalExpression,
     DivisionExpression,
     Constraint,
     Objective,
@@ -299,23 +298,6 @@ def test_division(visitor, f, g, mono_f, mono_g, bound_f, bound_g, expected):
 
     expr = f / g
     # assume(isinstance(expr, DivisionExpression))
-    matched, result = visitor.visit_expression(expr, mono, bounds)
-    assert matched
-    assert result == expected
-
-
-@pytest.mark.parametrize('mono_g,bound_g,expected', [
-    (M.Constant, I(2.0, 2.0), M.Constant),
-    (M.Constant, I(0.0, 0.0), M.Unknown),
-])
-@given(g=expressions())
-def test_reciprocal(visitor, g, mono_g, bound_g, expected):
-    bounds = ComponentMap()
-    bounds[g] = bound_g
-    mono = ComponentMap()
-    mono[g] = mono_g
-
-    expr = ReciprocalExpression([g])
     matched, result = visitor.visit_expression(expr, mono, bounds)
     assert matched
     assert result == expected
@@ -651,7 +633,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1),
+        expo=st.integers(min_value=1, max_value=1000),
     )
     def test_positive_even_integer(self, visitor, base, expo, mono_base, bounds_base, expected):
         mono = self._result_with_base_expo(visitor, base, mono_base, bounds_base, 2*expo)
@@ -666,7 +648,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1)
+        expo=st.integers(min_value=1, max_value=1000)
     )
     def test_negative_even_integer(self, visitor, base, expo, mono_base, bounds_base, expected):
         mono = self._result_with_base_expo(visitor, base, mono_base, bounds_base, -2*expo)
@@ -678,7 +660,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1)
+        expo=st.integers(min_value=1, max_value=1000)
     )
     def test_positive_odd_integer(self, visitor, base, expo, mono_base, expected):
         mono = self._result_with_base_expo(visitor, base, mono_base, I(None, None), 2*expo+1)
@@ -690,7 +672,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1)
+        expo=st.integers(min_value=1, max_value=1000)
     )
     def test_negative_odd_integer(self, visitor, base, expo, mono_base, expected):
         mono = self._result_with_base_expo(
@@ -701,7 +683,7 @@ class TestPowConstantExponent(object):
     @pytest.mark.parametrize('mono_base', [M.Nondecreasing, M.Nondecreasing])
     @given(
         base=expressions(),
-        expo=reals(allow_infinity=False, max_value=1e5),
+        expo=reals(allow_infinity=False, min_value=-1e5, max_value=1e5),
     )
     def test_noninteger_negative_base(self, visitor, base, expo, mono_base):
         assume(not almosteq(expo,  0))
@@ -717,7 +699,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=reals(allow_infinity=False, min_value=1e-5)
+        expo=reals(allow_infinity=False, min_value=1e-5, max_value=1e-5)
     )
     def test_positive_noninteger(self, visitor, base, expo, mono_base, expected):
         mono = self._result_with_base_expo(visitor, base, mono_base, I(0, None), expo)
@@ -729,7 +711,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=reals(allow_infinity=False, max_value=-1e-5)
+        expo=reals(allow_infinity=False, min_value=-1e5, max_value=-1e-5)
     )
     def test_negative_noninteger(self, visitor, base, expo, mono_base, expected):
         mono = self._result_with_base_expo(visitor, base, mono_base, I(0, None), expo)

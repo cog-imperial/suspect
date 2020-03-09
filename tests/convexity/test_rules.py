@@ -859,7 +859,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1),
+        expo=st.integers(min_value=1, max_value=1000),
     )
     def test_positive_even_integer(self, visitor, base, expo, cvx_base, mono_base,
                                    bounds_base, expected):
@@ -875,7 +875,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1),
+        expo=st.integers(min_value=1, max_value=1000),
     )
     def test_negative_even_integer(self, visitor, base, expo, cvx_base, mono_base,
                                    bounds_base, expected):
@@ -890,7 +890,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1),
+        expo=st.integers(min_value=1, max_value=1000),
     )
     def test_positive_odd_integer(self, visitor, base, expo, cvx_base, mono_base,
                                   bounds_base, expected):
@@ -905,7 +905,7 @@ class TestPowConstantExponent(object):
     ])
     @given(
         base=expressions(),
-        expo=st.integers(min_value=1),
+        expo=st.integers(min_value=1, max_value=1000),
     )
     def test_negative_odd_integer(self, visitor, base, expo, cvx_base, mono_base,
                                   bounds_base, expected):
@@ -914,17 +914,17 @@ class TestPowConstantExponent(object):
 
     @given(
         base=expressions(),
-        expo=reals(min_value=1, allow_infinity=False),
+        expo=reals(min_value=1, allow_infinity=False, max_value=1000),
     )
     def test_positive_gt_1_non_integer_negative_base(self, visitor, base, expo):
-        expo = expo + 1e-6
+        expo = expo + 1e-3
         assume(expo != int(expo))
         cvx = self._rule_result(visitor, base, C.Convex, M.Unknown, I(None, -1), expo)
         assert cvx == C.Unknown
 
     @given(
         base=expressions(),
-        expo=reals(min_value=1, allow_infinity=False),
+        expo=reals(min_value=1, allow_infinity=False, max_value=1000),
     )
     def test_positive_gt_1_non_integer(self, visitor, base, expo):
         expo = expo + 1e-5 # make it positive
@@ -935,7 +935,7 @@ class TestPowConstantExponent(object):
     @pytest.mark.parametrize('cvx,expected', [(C.Convex, C.Concave), (C.Concave, C.Convex)])
     @given(
         base=expressions(),
-        expo=reals(max_value=0, allow_infinity=False),
+        expo=reals(min_value=-1000, max_value=0, allow_infinity=False),
     )
     def test_positive_lt_0_non_integer(self, visitor, base, expo, cvx, expected):
         expo = expo - 1e-5 # make it negative

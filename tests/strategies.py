@@ -81,11 +81,6 @@ def monomials(draw, vars=variables()):
 
 
 @st.composite
-def reciprocals(draw, arg):
-    return py5.ReciprocalExpression([draw(arg)])
-
-
-@st.composite
 def products(draw, arg1, arg2):
     return py5.ProductExpression([draw(arg1), draw(arg2)])
 
@@ -99,7 +94,6 @@ def sums(draw, args):
 def _combine_nodes(nodes):
     return st.one_of(
         unary_functions(nodes),
-        reciprocals(nodes),
         products(nodes, nodes),
         sums(st.lists(nodes, min_size=2)))
 

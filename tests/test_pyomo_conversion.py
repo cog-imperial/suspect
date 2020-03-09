@@ -98,19 +98,3 @@ class TestConvertVariable(object):
             assert new_var.is_binary()
             count += 1
         assert count == 10
-
-
-@given(models(max_constraints=1))
-def test_conversion(model):
-    dag = dag_from_pyomo_model(model)
-
-    for obj in dag.objectives.values():
-        expected_obj = getattr(model, obj.name)
-        expected_expr = expected_obj.expr
-        assert expression_equal(expected_expr, obj.body)
-        print('Done')
-
-    for cons in dag.constraints.values():
-        expected_cons = getattr(model, cons.name)
-        expected_expr = expected_cons.body
-        assert expression_equal(expected_expr, cons.body)

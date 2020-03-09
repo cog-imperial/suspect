@@ -10,7 +10,6 @@ from suspect.polynomial.visitor import PolynomialDegreeVisitor
 from suspect.pyomo.expressions import (
     MonomialTermExpression,
     DivisionExpression,
-    ReciprocalExpression,
     SumExpression,
     Constraint,
     Objective,
@@ -74,28 +73,6 @@ def test_negation(visitor, child, child_degree):
     matched, result = visitor.visit_expression(expr, poly)
     assert matched
     assert result == child_degree
-
-
-def test_reciprocal_rule_with_constant_denominator(visitor):
-    child = pe.Var()
-    poly = ComponentMap()
-    poly[child] = PolynomialDegree(0)
-    expr = ReciprocalExpression([child])
-    matched, result = visitor.visit_expression(expr, poly)
-    assert matched
-    assert result.is_constant()
-
-
-@given(polynomial_degrees())
-def test_reciprocal_rule_with_nonconstant_denominator(visitor, den_degree):
-    assume(not den_degree.is_constant())
-    child = pe.Var()
-    expr = ReciprocalExpression([child])
-    poly = ComponentMap()
-    poly[child] = den_degree
-    matched, result = visitor.visit_expression(expr, poly)
-    assert matched
-    assert not result.is_polynomial()
 
 
 def test_division_rule_with_constant_denominator(visitor):

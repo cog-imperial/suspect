@@ -103,20 +103,6 @@ def test_division_bound(visitor, bound, expected):
     assert result == expected
 
 
-@pytest.mark.parametrize('bound,expected', [
-    (Interval(-1, 1), Interval(None, None)),
-    (Interval(2, 10), Interval(0.1, 0.5)),
-])
-def test_reciprocal_bound(visitor, bound, expected):
-    child = pe.Var()
-    expr = ReciprocalExpression([child])
-    bounds = ComponentMap()
-    bounds[child] = bound
-    matched, result = visitor.visit_expression(expr, bounds)
-    assert matched
-    assert result == expected
-
-
 @given(expressions(), intervals())
 def test_negation_bound(visitor, child, child_bounds):
     expr = -child
