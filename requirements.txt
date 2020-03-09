@@ -8,3 +8,4 @@ boto3>=1.4.8
 sphinx>=1.7.2
 tox>=3.0.0
 pandas>=0.23.0
+simpy
