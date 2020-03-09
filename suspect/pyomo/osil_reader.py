@@ -82,18 +82,34 @@ def _instance_sos(root):
     return root.findall('osil:instanceData/osil:specialOrderedSets/osil:sos', NS)
 
 
-def _quadratic_coefficients(root, i):
-    qterms = root.findall('osil:instanceData/osil:quadraticCoefficients/osil:qTerm[@idx="{}"]'.format(i), NS)
+def _quadratic_coefficients(root):
+    qterms = root.findall('osil:instanceData/osil:quadraticCoefficients/osil:qTerm', NS)
+    qterms_dict = dict()
     for qterm in qterms:
         attr = qterm.attrib
+        idx = int(attr['idx'])
         idx_one = int(attr['idxOne'])
         idx_two = int(attr['idxTwo'])
         coef = float(attr['coef'])
-        yield {
+        if idx not in qterms_dict:
+            qterms_dict[idx] = list()
+        qterms_dict[idx].append({
             'idx_one': idx_one,
             'idx_two': idx_two,
-            'coef': coef,
-        }
+            'coef': coef
+        })
+    return qterms_dict
+
+
+def _nonlinear_terms(root):
+    nl_terms = root.findall('osil:instanceData/osil:nonlinearExpressions/osil:nl', NS)
+    nl_terms_dict = dict()
+    for nl_term in nl_terms:
+        attr = nl_term.attrib
+        idx = int(attr['idx'])
+        assert idx not in nl_terms_dict
+        nl_terms_dict[idx] = nl_term
+    return nl_terms_dict
 
 
 def _flatten(xs):
@@ -158,6 +174,8 @@ class OsilParser(object):
         self.model = aml.ConcreteModel()
         self.objective_prefix = objective_prefix
         self.constraint_prefix = constraint_prefix
+        self._qterms_dict = None
+        self._nl_terms_dict = None
 
         self.indexed_vars = []
 
@@ -166,9 +184,11 @@ class OsilParser(object):
         return getattr(self.model, vname)
 
     def _quadratic_terms(self, i):
+        if i not in self._qterms_dict:
+            return 0
         return sum(
             c['coef'] * self._v(c['idx_one']) * self._v(c['idx_two'])
-            for c in _quadratic_coefficients(self.root, i)
+            for c in self._qterms_dict[i]
         )
 
     def _nonlinear_terms(self, i):
@@ -230,9 +250,9 @@ class OsilParser(object):
                 assert len(cs) == 1
                 return aml.log10(_eval(cs[0]))
             raise RuntimeError('unhandled tag {}'.format(name))
-        nl = self.root.find('osil:instanceData/osil:nonlinearExpressions/osil:nl[@idx="{}"]'.format(i), NS)
-        if nl is None:
+        if i not in self._nl_terms_dict:
             return 0.0
+        nl = self._nl_terms_dict[i]
         with gc_disabled():
             children = list(nl)
             expr = _eval(children[0])
@@ -271,6 +291,9 @@ class OsilParser(object):
             )
             setattr(self.model, var_def['name'], new_var)
             self.indexed_vars.append(var_def['name'])
+
+        self._qterms_dict = _quadratic_coefficients(self.root)
+        self._nl_terms_dict = _nonlinear_terms(self.root)
 
         for i, objective in enumerate(_instance_objectives(self.root)):
             linear = self._objective_linear(objective)
