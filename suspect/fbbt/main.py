@@ -24,7 +24,7 @@ from suspect.fbbt.propagation import propagate_bounds_leaf_to_root
 from suspect.fbbt.tightening import tighten_bounds_root_to_leaf
 
 
-def perform_fbbt(model, max_iter=10, active=True):
+def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, should_continue=None):
     """Perform FBBT on the model.
 
     Parameters
@@ -35,6 +35,10 @@ def perform_fbbt(model, max_iter=10, active=True):
         maximum number of FBBT iterations
     active : boolean
         perform FBBT only on active constraints
+    objective_bounds : dict-like
+        map between an objective and its lower and upper bound
+    should_continue : callable
+        predicate that returns False if fbbt should stop early
 
     Returns
     -------
@@ -46,20 +50,33 @@ def perform_fbbt(model, max_iter=10, active=True):
 
     bounds = ComponentMap()
 
+    if should_continue is None:
+        should_continue = lambda: True
+
     for constraint in model.component_data_objects(pyo.Constraint, active=active, descend_into=True):
         lower = pyo.value(constraint.lower)
         upper = pyo.value(constraint.upper)
         bounds[constraint.body] = Interval(lower, upper)
 
-    for iter in range(max_iter):
-        changed = _perform_fbbt_step(model, bounds, iter, active)
+    for objective in model.component_data_objects(pyo.Objective, active=active, descend_into=True):
+        obj_lower, obj_upper = objective_bounds.get(objective, (None, None))
+        bounds[objective.expr] = Interval(obj_lower, obj_upper)
+
+    # Force one full iteration of bounds propagation
+    _perform_fbbt_step(model, bounds, -1, active, lambda: True)
+
+    for iter in range(max_iter-1):
+        changed = _perform_fbbt_step(model, bounds, iter, active, should_continue)
         if not changed:
             break
+        if not should_continue():
+            break
+
     return bounds
 
 
-def _perform_fbbt_step(model, bounds, iter, active):
-    if iter == 0:
+def _perform_fbbt_step(model, bounds, iter, active, should_continue):
+    if iter < 0:
         func = _initialize_then_propagate_bounds_on_expr
     else:
         func = _tighten_then_propagate_bounds_on_expr
@@ -67,9 +84,14 @@ def _perform_fbbt_step(model, bounds, iter, active):
     changed = False
     for objective in model.component_data_objects(pyo.Objective, active=active, descend_into=True):
         changed |= func(objective.expr, bounds)
+        if not should_continue():
+            return changed
 
     for constraint in model.component_data_objects(pyo.Constraint, active=active, descend_into=True):
         changed |= func(constraint.body, bounds)
+        if not should_continue():
+            return changed
+
     return changed
 
 
