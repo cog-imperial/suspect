@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .convert import dag_from_pyomo_model
+from .connected_model import create_connected_model
 from .osil_reader import read_osil
 from .qplib_reader import read_qplib
+from .quadratic import QuadraticExpression, enable_standard_repn_for_quadratic_expression

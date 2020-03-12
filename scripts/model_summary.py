@@ -25,12 +25,13 @@ import tempfile
 import traceback
 from mpmath import mpf
 import boto3
-from suspect.pyomo.osil_reader import read_osil
-from suspect.pyomo.convert import dag_from_pyomo_model
+from suspect.pyomo import create_connected_model, read_osil, enable_standard_repn_for_quadratic_expression
 from suspect import (
     detect_special_structure,
     logger,
 )
+
+enable_standard_repn_for_quadratic_expression()
 
 
 class Timeout(object):
@@ -84,6 +85,7 @@ class S3Storage(object):
 
 class RunResources(object):
     """Context Manager to provide uniform interface for local and S3 objects"""
+
     def __init__(self, problem, solution, output):
         s3 = S3Storage()
         self.s3 = s3
@@ -91,14 +93,14 @@ class RunResources(object):
         if problem.startswith(s3.PREFIX):
             # keep a ref to problem dir so it does not get cleaned self
             self.problem, self.problem_dir = \
-              s3.download_to_temp(problem, prefix='problem')
+                s3.download_to_temp(problem, prefix='problem')
         else:
             self.problem = problem
 
         if solution is not None and solution.startswith(s3.PREFIX):
             # keep a ref to solution dir so it does not get cleaned self
             self.solution, self.solution_dir = \
-              s3.download_to_temp(solution, prefix='solution')
+                s3.download_to_temp(solution, prefix='solution')
         else:
             self.solution = solution
 
@@ -210,7 +212,7 @@ def run_for_problem(filename, solution_filename, timeout_):
             logging.info('\tReading Problem')
             model = read_problem(filename)
             logging.info('\tConverting DAG')
-            model = dag_from_pyomo_model(model)
+            model, _ = create_connected_model(model)
     except Exception as err:
         logging.error('{}: Error reading: {}'.format(filename, str(err)))
         return None
@@ -276,7 +278,7 @@ def check_solution_bounds(variables, objectives, solution_filename):
         lower_bound = obj['lower_bound']
         upper_bound = obj['upper_bound']
         obj_bounds_ok = (
-            objvar_value >= lower_bound and objvar_value <= upper_bound
+                objvar_value >= lower_bound and objvar_value <= upper_bound
         )
         return var_bounds_ok, obj_bounds_ok
 

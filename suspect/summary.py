@@ -12,18 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
 import logging
-from pyomo.core.kernel.component_map import ComponentMap
-from suspect.pyomo.convert import dag_from_pyomo_model
-from suspect.fbbt import perform_fbbt
-from suspect.dag.iterator import DagForwardIterator, DagBackwardIterator
-from suspect.context import SpecialStructurePropagationContext
-from suspect.interval import Interval
-from suspect.propagation import propagate_special_structure
-from suspect.polynomial_degree import polynomial_degree
-from pyomo.environ import ConcreteModel # pylint: disable=no-name-in-module,import-error
+import warnings
 
+import pyomo.environ as pe
+
+from suspect.fbbt import perform_fbbt
+from suspect.interval import Interval
+from suspect.polynomial_degree import polynomial_degree
+from suspect.propagation import propagate_special_structure
 
 logger = logging.getLogger('suspect')
 
@@ -92,9 +89,9 @@ class ModelInformation(object):
             if cvx.is_linear():
                 assert deg.is_linear()
                 return 'linear'
-            elif deg.is_quadratic():
+            elif deg == 2:
                 return 'quadratic'
-            elif deg.is_polynomial():
+            elif deg is not None:
                 return 'polynomial'
             else:
                 return 'nonlinear'
@@ -121,16 +118,12 @@ def detect_special_structure(problem, max_iter=10):
     ModelInformation
         an object containing the detected infomation about the problem.
     """
-    if isinstance(problem, ConcreteModel):
-        problem = dag_from_pyomo_model(problem)
-
     bounds = perform_fbbt(problem)
 
-    polynomial = polynomial_degree(problem)
     monotonicity, convexity = propagate_special_structure(problem, bounds)
 
     variables = {}
-    for variable_name, variable in problem.variables.items():
+    for variable in problem.component_data_objects(pe.Var, active=True, descend_into=True):
         if variable.is_binary():
             variable_type = 'binary'
         elif variable.is_integer():
@@ -138,9 +131,7 @@ def detect_special_structure(problem, max_iter=10):
         else:
             variable_type = 'continuous'
         var_bounds = bounds[variable]
-
-        if variable.name in variables:
-            warnings.warn('Duplicate variable {}'.format(variable.name))
+        variable_name = variable.name
 
         variables[variable_name] = {
             'name': variable_name,
@@ -150,17 +141,14 @@ def detect_special_structure(problem, max_iter=10):
         }
 
     objectives = {}
-    for obj_name, obj in problem.objectives.items():
-        if obj_name in objectives:
-            warnings.warn('Duplicate objective {}'.format(obj_name))
-
+    for obj in problem.component_data_objects(pe.Objective, active=True, descend_into=True):
         if obj.is_minimizing():
             sense = 'min'
         else:
             sense = 'max'
-        obj_bounds = bounds.get(obj, Interval(None, None))
-        cvx = convexity[obj]
-        poly = polynomial[obj]
+        obj_bounds = bounds.get(obj.expr, Interval(None, None))
+        cvx = convexity[obj.expr]
+        poly = obj.expr.polynomial_degree()
 
         objectives[obj.name] = {
             'sense': sense,
@@ -171,20 +159,17 @@ def detect_special_structure(problem, max_iter=10):
         }
 
     constraints = {}
-    for cons_name, cons in problem.constraints.items():
-        if cons_name in constraints:
-            warnings.warn('Duplicate constraint {}'.format(cons_name))
-
-        if cons.is_equality():
+    for cons in problem.component_data_objects(pe.Constraint, active=True, descend_into=True):
+        if cons.has_lb() and cons.has_ub():
             type_ = 'equality'
         else:
             type_ = 'inequality'
 
-        cons_bounds = bounds.get(cons, Interval(None, None))
-        cvx = convexity[cons]
-        poly = polynomial[cons]
+        cons_bounds = bounds.get(cons.body, Interval(None, None))
+        cvx = convexity[cons.body]
+        poly = cons.body.polynomial_degree()
 
-        constraints[cons_name] = {
+        constraints[cons.name] = {
             'type': type_,
             'convexity': cvx,
             'polynomial_degree': poly,

@@ -14,7 +14,7 @@
 
 import logging
 from .summary import detect_special_structure
-from .pyomo import dag_from_pyomo_model
+from .pyomo import create_connected_model
 from .fbbt import perform_fbbt
 from .propagation import propagate_special_structure
 from .polynomial_degree import polynomial_degree

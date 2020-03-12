@@ -30,6 +30,8 @@ class QuadraticExpression(SumExpression):
     def __init__(self, args):
         if isinstance(args, SumExpression):
             args = args.args
+        if not isinstance(args, list):
+            args = [args]
         super().__init__(args)
         self._coef_matrix = None
 
@@ -47,6 +49,9 @@ class QuadraticExpression(SumExpression):
         return self._coef_matrix.values()
 
     def _ensure_coef_matrix(self):
+        if not hasattr(self, '_coef_matrix'):
+            self._coef_matrix = None
+
         if self._coef_matrix is not None:
             return
 
@@ -54,6 +59,7 @@ class QuadraticExpression(SumExpression):
 
         repn_result = generate_standard_repn(self, compute_values=False)
         assert not repn_result.linear_vars
+        assert not repn_result.nonlinear_vars
 
         for ((v0, v1), coef) in zip(repn_result.quadratic_vars, repn_result.quadratic_coefs):
             (v0, v0_uid), (v1, v1_uid) = _make_uid_index(v0, v1)
