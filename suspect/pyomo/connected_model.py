@@ -5,6 +5,7 @@ from pyomo.core.expr.numeric_expr import (
     nonpyomo_leaf_types,
     NumericConstant,
     SumExpression,
+    LinearExpression,
 )
 from pyomo.core.expr.visitor import ExpressionValueVisitor
 from pyomo.core.kernel.component_map import ComponentMap
@@ -14,7 +15,7 @@ from suspect.pyomo.expr_dict import ExpressionDict
 from suspect.pyomo.quadratic import QuadraticExpression
 
 
-def create_connected_model(model, active=True):
+def create_connected_model(model, active=True, connect_max_quadratic_children=100):
     connected = model.clone()
 
     model_to_connected_map = ComponentMap()
@@ -33,7 +34,7 @@ def create_connected_model(model, active=True):
         connected_objective = connected.find_component(objective.getname(fully_qualified=True))
         model_to_connected_map[objective] = connected_objective
 
-    convert_visitor = _ConvertExpressionVisitor(components, model_to_connected_map)
+    convert_visitor = _ConvertExpressionVisitor(components, model_to_connected_map, connect_max_quadratic_children)
 
     for constraint in connected.component_data_objects(pyo.Constraint, active=active, sort=True, descend_into=True):
         new_body = convert_visitor.dfs_postorder_stack(constraint.body)
@@ -47,9 +48,10 @@ def create_connected_model(model, active=True):
 
 
 class _ConvertExpressionVisitor(ExpressionValueVisitor):
-    def __init__(self, memo, component_map):
+    def __init__(self, memo, component_map, connect_max_quadratic_children):
         self.memo = memo
         self.component_map = component_map
+        self.connect_max_quadratic_children = connect_max_quadratic_children
 
     def visiting_potential_leaf(self, node):
         if node.__class__ in nonpyomo_leaf_types:
@@ -65,6 +67,13 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             var = self.get(node)
             assert var is not None
             return True, var
+
+        if _is_quadratic_expression(node) and node.nargs() > self.connect_max_quadratic_children:
+            return True, node
+
+        if _is_linear_expression(node):
+            return True, node
+
         return False, None
 
     def visit(self, node, values):
@@ -73,7 +82,7 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             self.set(node, new_expr)
             return new_expr
 
-        if type(node) == SumExpression and node.polynomial_degree() == 2:
+        if _is_quadratic_expression(node):
             new_expr = _convert_quadratic_expression(node)
         else:
             new_expr = node.create_node_with_local_data(tuple(values))
@@ -93,6 +102,17 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
             return self.memo[expr]
         self.memo[expr] = new_expr
         return new_expr
+
+
+def _is_quadratic_expression(node):
+    return type(node) == SumExpression and node.polynomial_degree() == 2
+
+
+def _is_linear_expression(node):
+    return (
+        type(node) in (SumExpression, LinearExpression)
+        and node.polynomial_degree() == 1
+    )
 
 
 def _convert_quadratic_expression(expr):
