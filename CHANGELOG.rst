@@ -1,8 +1,11 @@
 Changelog
 =========
 
-Next
-----
+2.0.0 (2020-04-28)
+------------------
+
+* Use Pyomo expressions to represent the DAG
+* Replace DAG with connected_model
 
 1.6.0 (2019-11-15)
 ------------------
