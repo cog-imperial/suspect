@@ -53,6 +53,9 @@ def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, should_
     if should_continue is None:
         should_continue = lambda: True
 
+    if objective_bounds is None:
+        objective_bounds = ComponentMap()
+
     objectives = list(model.component_data_objects(pe.Objective, active=active, descend_into=True))
     constraints = list(model.component_data_objects(pe.Constraint, active=active, descend_into=True))
 
