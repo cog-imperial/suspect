@@ -15,7 +15,7 @@ from suspect.pyomo.expr_dict import ExpressionDict
 from suspect.pyomo.quadratic import QuadraticExpression
 
 
-def create_connected_model(model, active=True, connect_max_quadratic_children=100):
+def create_connected_model(model, active=True, connect_max_linear_children=50, connect_max_quadratic_children=100):
     connected = model.clone()
 
     model_to_connected_map = ComponentMap()
@@ -34,7 +34,9 @@ def create_connected_model(model, active=True, connect_max_quadratic_children=10
         connected_objective = connected.find_component(objective.getname(fully_qualified=True))
         model_to_connected_map[objective] = connected_objective
 
-    convert_visitor = _ConvertExpressionVisitor(components, model_to_connected_map, connect_max_quadratic_children)
+    convert_visitor = _ConvertExpressionVisitor(
+        components, model_to_connected_map, connect_max_linear_children, connect_max_quadratic_children
+    )
 
     for constraint in connected.component_data_objects(pyo.Constraint, active=active, sort=True, descend_into=True):
         new_body = convert_visitor.dfs_postorder_stack(constraint.body)
@@ -48,9 +50,10 @@ def create_connected_model(model, active=True, connect_max_quadratic_children=10
 
 
 class _ConvertExpressionVisitor(ExpressionValueVisitor):
-    def __init__(self, memo, component_map, connect_max_quadratic_children):
+    def __init__(self, memo, component_map, connect_max_linear_children, connect_max_quadratic_children):
         self.memo = memo
         self.component_map = component_map
+        self.connect_max_linear_children = connect_max_linear_children
         self.connect_max_quadratic_children = connect_max_quadratic_children
 
     def visiting_potential_leaf(self, node):
@@ -71,7 +74,7 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
         if _is_quadratic_expression(node) and node.nargs() > self.connect_max_quadratic_children:
             return True, node
 
-        if _is_linear_expression(node):
+        if _is_linear_expression(node) and node.nargs() > self.connect_max_linear_children:
             return True, node
 
         return False, None
