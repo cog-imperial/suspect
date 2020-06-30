@@ -44,8 +44,38 @@ structure information
     info = detect_special_structure(model)
 
     # try info.variables, info.objectives, and info.constraints
+    # in this case, objective is not detected as convex
     print(info.objectives['obj'])
 
+
+We can convert the Pyomo model to a _connected_ Pyomo model, where common sub-expressions
+are connected together in a Directed Acyclic Graph (DAG). With this extra information,
+SUSPECT will detect the objective as convex.
+
+.. code-block:: python
+
+    from suspect import create_connected_model
+
+    connected, _ = create_connected_model(model)
+
+    info = detect_special_structure(connected)
+
+    # now the objective is detected as convex!
+    print(info.objectives['obj'])
+
+
+Quadratic Expression Support
+----------------------------
+
+SUSPECT extends Pyomo to include Quadratic expressions.
+If you use this feature, you should need to call the following function at the beginning of
+your script:
+
+.. code-block:: python
+
+    from suspect.pyomo import enable_standard_repn_for_quadratic_expression
+
+    enable_standard_repn_for_quadratic_expression()
 
 
 Command Line Usage
@@ -64,15 +94,6 @@ This command will print a summary about the problem objective and constraints, f
     INFO:root:	Starting Special Structure Detection
     INFO:root:	Special Structure Detection Finished
     {"bounds_obj_ok": true, "bounds_var_ok": true, "conscurvature": "convex", "name": "rsyn0805h", "nbinvars": 37, "ncons": 429, "nintvars": 0, "nvars": 308, "objcurvature": "linear", "objsense": "max", "objtype": "linear", "runtime": 0.21518850326538086, "status": "ok"}
-
-
-Extending SUSPECT
------------------
-
-.. toctree::
-   :maxdepth: 2
-
-   extending
 
 
 API Documentation

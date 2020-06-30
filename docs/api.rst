@@ -37,12 +37,6 @@ Interval
 Pyomo Compatibility
 -------------------
 
-.. autofunction:: suspect.pyomo.dag_from_pyomo_model
+.. autofunction:: suspect.pyomo.create_connected_model
 .. autofunction:: suspect.pyomo.read_osil
 
-
-Directed Acyclic Graph
-----------------------
-
-.. autoclass:: suspect.dag.ProblemDag
-   :members:
