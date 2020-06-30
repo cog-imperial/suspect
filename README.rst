@@ -83,7 +83,7 @@ Library Usage
 
 .. code-block:: python
 
-    from suspect import detect_special_structure
+    from suspect import detect_special_structure, create_connected_model
     import pyomo.environ as aml
 
 
@@ -94,7 +94,8 @@ Library Usage
     model.obj = aml.Objective(expr=(model.y - model.x)**3)
     model.c1 = aml.Constraint(expr=model.y - model.x >= 0)
 
-    info = detect_special_structure(model)
+    connected, _ = create_connected_model(model)
+    info = detect_special_structure(connected)
 
     # try info.variables, info.objectives, and info.constraints
     print(info.objectives['obj'])
@@ -103,7 +104,7 @@ Library Usage
 License
 -------
 
-Copyright 2018 Francesco Ceccon
+Copyright 2020 Francesco Ceccon
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
