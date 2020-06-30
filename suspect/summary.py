@@ -19,6 +19,7 @@ import pyomo.environ as pe
 
 from suspect.fbbt import perform_fbbt
 from suspect.interval import Interval
+from suspect.convexity import Convexity
 from suspect.polynomial_degree import polynomial_degree
 from suspect.propagation import propagate_special_structure
 
@@ -87,7 +88,7 @@ class ModelInformation(object):
             cvx = v['convexity']
             deg = v['polynomial_degree']
             if cvx.is_linear():
-                assert deg.is_linear()
+                assert deg == 1
                 return 'linear'
             elif deg == 2:
                 return 'quadratic'
@@ -150,6 +151,9 @@ def detect_special_structure(problem, max_iter=10):
         cvx = convexity[obj.expr]
         poly = obj.expr.polynomial_degree()
 
+        if sense == 'max':
+            cvx = cvx.negate()
+
         objectives[obj.name] = {
             'sense': sense,
             'convexity': cvx,
@@ -168,6 +172,13 @@ def detect_special_structure(problem, max_iter=10):
         cons_bounds = bounds.get(cons.body, Interval(None, None))
         cvx = convexity[cons.body]
         poly = cons.body.polynomial_degree()
+
+        if type_ == 'equality':
+            if not cvx.is_linear():
+                cvx = Convexity.Unknown
+        else:
+            if cons.has_lb():
+                cvx = cvx.negate()
 
         constraints[cons.name] = {
             'type': type_,

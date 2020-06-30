@@ -149,8 +149,8 @@ class TestQuadraticRule:
             [I(None, None), I(None, None)],
             I(None, 10),
         )
-        assert new_bounds[0] == I(-np.sqrt(10.0), np.sqrt(10))
-        assert new_bounds[1] == I(-np.sqrt(5), np.sqrt(5))
+        assert new_bounds[x] == I(-np.sqrt(10.0), np.sqrt(10))
+        assert new_bounds[y] == I(-np.sqrt(5), np.sqrt(5))
 
 
 class TestPowerRuleConstantExpo:

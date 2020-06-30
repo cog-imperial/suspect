@@ -24,7 +24,7 @@ from suspect.fbbt.propagation import propagate_bounds_leaf_to_root
 from suspect.fbbt.tightening import tighten_bounds_root_to_leaf
 
 
-def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, should_continue=None):
+def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, initial_bounds=None, should_continue=None):
     """Perform FBBT on the model.
 
     Parameters
@@ -37,6 +37,8 @@ def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, should_
         perform FBBT only on active constraints
     objective_bounds : dict-like
         map between an objective and its lower and upper bound
+    initial_bounds : dict-like
+        map with existing bounds
     should_continue : callable
         predicate that returns False if fbbt should stop early
 
@@ -48,7 +50,10 @@ def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, should_
     if max_iter < 1:
         raise ValueError("max_iter must be >= 1")
 
-    bounds = ComponentMap()
+    if initial_bounds is None:
+        bounds = ComponentMap()
+    else:
+        bounds = initial_bounds
 
     if should_continue is None:
         should_continue = lambda: True
