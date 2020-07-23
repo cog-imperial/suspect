@@ -14,6 +14,7 @@
 
 """FBBT bounds tightening rules."""
 from pyomo.environ import ComponentMap
+import pyomo.environ as pe
 from suspect.expression import UnaryFunctionType
 from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.interval import Interval
@@ -170,6 +171,19 @@ class PowerRule(Rule):
             Interval(-sqrt_bound.upper_bound, sqrt_bound.upper_bound),
             None,
         ]
+
+
+class MonomialTermRule(Rule):
+    """Return new bounds for monomial term expressions."""
+    def apply(self, expr, bounds):
+        expr_bound = bounds[expr]
+        const, expr = expr.args
+        const = pe.value(const)
+        if almosteq(const, 0.0):
+            return None
+        child_bounds = ComponentMap()
+        child_bounds[expr] = expr_bound / const
+        return child_bounds
 
 
 class _UnaryFunctionRule(UnaryFunctionRule):

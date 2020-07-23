@@ -19,6 +19,7 @@ from suspect.fbbt.tightening.rules import (
     SumRule,
     LinearRule,
     PowerRule,
+    MonomialTermRule,
     UnaryFunctionRule,
     QuadraticRule,
 )
@@ -30,6 +31,7 @@ from suspect.pyomo.expressions import (
     LinearExpression,
     SumExpression,
     PowExpression,
+    MonomialTermExpression,
     UnaryFunctionExpression,
 )
 from suspect.visitor import BackwardVisitor
@@ -40,6 +42,7 @@ _expr_to_rule_map[LinearExpression] = LinearRule()
 _expr_to_rule_map[SumExpression] = SumRule()
 _expr_to_rule_map[PowExpression] = PowerRule()
 _expr_to_rule_map[UnaryFunctionExpression] = UnaryFunctionRule()
+_expr_to_rule_map[MonomialTermExpression] = MonomialTermRule()
 _expr_to_rule_map[QuadraticExpression] = QuadraticRule()
 
 
