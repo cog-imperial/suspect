@@ -23,6 +23,7 @@ from suspect.pyomo.expressions import (
     AbsExpression,
     ProductExpression,
     ReciprocalExpression,
+    DivisionExpression,
     LinearExpression,
     SumExpression,
     PowExpression,
@@ -43,6 +44,7 @@ _expr_to_rule_map[Objective] = ObjectiveRule()
 _expr_to_rule_map[MonomialTermExpression] = ProductRule()
 _expr_to_rule_map[ProductExpression] = ProductRule()
 _expr_to_rule_map[ReciprocalExpression] = ReciprocalRule()
+_expr_to_rule_map[DivisionExpression] = DivisionRule()
 _expr_to_rule_map[LinearExpression] = LinearRule()
 _expr_to_rule_map[SumExpression] = SumRule()
 _expr_to_rule_map[PowExpression] = PowerRule()
