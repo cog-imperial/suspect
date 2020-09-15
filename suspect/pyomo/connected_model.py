@@ -1,6 +1,7 @@
 from numbers import Number
 
 import pyomo.environ as pyo
+from pyomo.repn.standard_repn import generate_standard_repn
 from pyomo.core.expr.numeric_expr import (
     nonpyomo_leaf_types,
     NumericConstant,
@@ -108,7 +109,7 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
 
 
 def _is_quadratic_expression(node):
-    return type(node) == SumExpression and node.polynomial_degree() == 2
+    return type(node) == SumExpression and node.polynomial_degree() == 2 and node.nargs() > 1
 
 
 def _is_linear_expression(node):
@@ -120,28 +121,21 @@ def _is_linear_expression(node):
 
 def _convert_quadratic_expression(expr):
     # Check if there is any non bilinear term
-    nonbilinear_found = False
-    for arg in expr.args:
-        if type(arg) in nonpyomo_leaf_types:
-            nonbilinear_found = True
-            break
+    repn_result = generate_standard_repn(expr, compute_values=False)
+    assert repn_result.quadratic_vars
+    assert not repn_result.nonlinear_expr
+    quadratic_expr = 0.0
 
-        if arg.polynomial_degree() != 2:
-            nonbilinear_found = True
-            break
+    for (v1, v2), coeff in zip(repn_result.quadratic_vars, repn_result.quadratic_coefs):
+        quadratic_expr += (v1 * v2) * float(coeff)
 
-    if not nonbilinear_found:
-        return QuadraticExpression(expr)
+    if not repn_result.linear_vars:
+        return QuadraticExpression(quadratic_expr)
 
-    quadratic_args = []
-    nonquadratic_args = []
-    for arg in expr.args:
-        if arg.__class__ not in nonpyomo_leaf_types and arg.polynomial_degree() == 2:
-            quadratic_args.append(arg)
-        else:
-            nonquadratic_args.append(arg)
+    linear_expr = repn_result.constant
 
-    assert len(nonquadratic_args) > 0
-    quadratic = QuadraticExpression(quadratic_args)
-    nonquadratic_args.append(quadratic)
-    return SumExpression(nonquadratic_args)
+    for linear_var, linear_coeff in zip(repn_result.linear_vars, repn_result.linear_coefs):
+        linear_expr += linear_var * float(linear_coeff)
+
+    quadratic = QuadraticExpression(quadratic_expr)
+    return SumExpression([quadratic, linear_expr])

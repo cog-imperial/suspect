@@ -35,6 +35,10 @@ class QuadraticExpression(SumExpression):
         super().__init__(args)
         self._coef_matrix = None
 
+    @property
+    def __class__(self):
+        return SumExpression
+
     def coefficient(self, v0, v1):
         self._ensure_coef_matrix()
         (_, v0_uid), (_, v1_uid) = _make_uid_index(v0, v1)

@@ -71,7 +71,6 @@ class BoundsTighteningVisitor(BackwardVisitor):
     def handle_result(self, expr, value, bounds):
         if value is None:
             new_bounds = Interval(None, None)
-        else:
             new_bounds = value
 
         old_bounds = bounds.get(expr, None)
