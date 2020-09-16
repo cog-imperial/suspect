@@ -21,6 +21,7 @@ import pyomo.environ as pyo
 from suspect.fbbt.initialization.rules import (
     SqrtRule,
     LogRule,
+    Log10Rule,
     AsinRule,
     AcosRule,
 )
@@ -28,6 +29,7 @@ from suspect.fbbt.initialization.rules import (
 _rule = CombineUnaryFunctionRules({
     'sqrt': SqrtRule(),
     'log': LogRule(),
+    'log10': Log10Rule(),
     'asin': AsinRule(),
     'acos': AcosRule()},
     needs_matching_rules=False,

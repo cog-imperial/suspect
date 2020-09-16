@@ -35,7 +35,7 @@ def _declare_binary_function(name, fun):
 
 
 _UNARY_FUNCTIONS = [
-    ('sqrt', 'sqrt'), ('log', 'log'), ('exp', 'exp'), ('sin', 'sin'),
+    ('sqrt', 'sqrt'), ('log', 'log'), ('log10', 'log10'), ('exp', 'exp'), ('sin', 'sin'),
     ('asin', 'arcsin'), ('cos', 'cos'), ('acos', 'arccos'),
     ('tan', 'tan'), ('atan', 'arctan')
 ]

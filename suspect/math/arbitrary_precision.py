@@ -36,7 +36,7 @@ def _declare_binary_function(name, fun):
     globals()[name] = lambda x, y, _: fun(x, y)
 
 
-_UNARY_FUNCTIONS = ['sqrt', 'log', 'exp', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan']
+_UNARY_FUNCTIONS = ['sqrt', 'log', 'log10', 'exp', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan']
 for fun in _UNARY_FUNCTIONS:
     _declare_unary_function(fun, getattr(mpmath, fun))
 

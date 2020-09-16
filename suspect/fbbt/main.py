@@ -124,7 +124,7 @@ def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate, visit_all=
         if result is None:
             return None, None
         if isinstance(result, list):
-            result_iter = zip(expr.args, result)
+            result_iter = zip(node.args, result)
         else:
             result_iter = result.items()
         descend_into_args = []

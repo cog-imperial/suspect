@@ -39,6 +39,11 @@ class LogRule(NondecreasingFunctionRule):
     pass
 
 
+class Log10Rule(NondecreasingFunctionRule):
+    """Return monotonicity of log10 function."""
+    pass
+
+
 class TanRule(NondecreasingFunctionRule):
     """Return monotonicity of tan function."""
     pass

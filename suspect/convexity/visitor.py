@@ -56,6 +56,7 @@ _expr_to_rule_map[UnaryFunctionExpression] = CombineUnaryFunctionRules({
     'sqrt': SqrtRule(),
     'exp': ExpRule(),
     'log': LogRule(),
+    'log10': Log10Rule(),
     'tan': TanRule(),
     'atan': AtanRule(),
     'sin': SinRule(),

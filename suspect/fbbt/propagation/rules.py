@@ -156,6 +156,10 @@ class LogRule(_UnaryFunctionRule):
     func_name = 'log'
 
 
+class Log10Rule(_UnaryFunctionRule):
+    """Return new bounds for log10."""
+    func_name = 'log10'
+
 
 class SinRule(_UnaryFunctionRule):
     """Return new bounds for sin."""
@@ -192,6 +196,7 @@ _func_name_to_rule_map['abs'] = AbsRule()
 _func_name_to_rule_map['sqrt'] = SqrtRule()
 _func_name_to_rule_map['exp'] = ExpRule()
 _func_name_to_rule_map['log'] = LogRule()
+_func_name_to_rule_map['log10'] = Log10Rule()
 _func_name_to_rule_map['sin'] = SinRule()
 _func_name_to_rule_map['cos'] = CosRule()
 _func_name_to_rule_map['tan'] = TanRule()

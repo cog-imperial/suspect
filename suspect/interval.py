@@ -30,6 +30,7 @@ from suspect.math import (
     max_,
     exp,
     log,
+    log10,
     power,
     sqrt,
     sin,
@@ -185,6 +186,11 @@ class Interval: # pylint: disable=too-many-public-methods
     def log(self):  # pragma: no cover
         """Return the bound of log(self)"""
         return _FunctionOnInterval(self._log, self._exp)
+
+    @property
+    def log10(self):  # pragma: no cover
+        """Return the bound of log10(self)"""
+        return _FunctionOnInterval(self._log10, self._exp10)
 
     @property
     def sin(self):
@@ -371,6 +377,15 @@ class Interval: # pylint: disable=too-many-public-methods
     @monotonic_increasing
     def _log(self):
         return log
+
+    @monotonic_increasing
+    def _log10(self):
+        return log10
+
+    @monotonic_increasing
+    def _exp10(self):
+        # exp10(x) = 10^x
+        return lambda x, r: power(10, x, r)
 
     def _sin(self):
         if almostgte(self.size(), 2*pi):

@@ -35,6 +35,11 @@ class LogRule(_UnaryFunctionBoundsRule):
     initial_bound = Interval(0, None)
 
 
+class Log10Rule(_UnaryFunctionBoundsRule):
+    """Bound propagation rule for log10."""
+    initial_bound = Interval(0, None)
+
+
 class AsinRule(_UnaryFunctionBoundsRule):
     """Bound propagation rule for asin."""
     initial_bound = Interval(-1, 1)

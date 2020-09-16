@@ -27,6 +27,7 @@ class ConcaveFunctionRule(ConvexityRule):
             return Convexity.Concave
         return Convexity.Unknown
 
+
 # TODO(fracek): handle sqrt(x*x) which is same as x
 class SqrtRule(ConcaveFunctionRule):
     """Return convexity of sqrt."""
@@ -35,4 +36,9 @@ class SqrtRule(ConcaveFunctionRule):
 
 class LogRule(ConcaveFunctionRule):
     """Return convexity of log."""
+    pass
+
+
+class Log10Rule(ConcaveFunctionRule):
+    """Return convexity of log10."""
     pass

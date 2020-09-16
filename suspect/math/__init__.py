@@ -51,6 +51,7 @@ The following functions take two parameters, a number and a RoundMode:
 
  * ``sqrt``
  * ``log``
+ * ``log10``
  * ``exp``
  * ``sin``
  * ``cos``
@@ -94,6 +95,7 @@ _COMMON_MEMBERS = [
     'cos',
     'sqrt',
     'log',
+    'log10',
     'exp',
     'power',
     'sin',

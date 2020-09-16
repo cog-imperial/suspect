@@ -1,6 +1,24 @@
 Changelog
 =========
 
+2.1.0 NEXT
+------------------
+
+* Add support for `log10`
+* Improve handling of quadratic expressions in nonlinear problems
+* Fix FBBT bug when handling some types of expressions
+
+2.0.2 (2020-09-01)
+------------------
+
+* Fix convexity on division
+* Handle Pyomo `MonomialTermExpression`
+
+2.0.1 (2020-07-01)
+------------------
+
+* Minor bug fixes
+
 2.0.0 (2020-04-28)
 ------------------
 
