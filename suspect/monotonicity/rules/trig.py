@@ -21,7 +21,9 @@ class SinRule(MonotonicityRule):
     """Return monotonicity of sin."""
     def apply(self, expr, monotonicity, bounds):
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
+        if child_bounds is None:
+            return Monotonicity.Unknown
         cos_bounds = child_bounds.cos()
         mono = monotonicity[child]
 
@@ -40,7 +42,9 @@ class CosRule(MonotonicityRule):
     """Return monotonicity of cos."""
     def apply(self, expr, monotonicity, bounds):
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
+        if child_bounds is None:
+            return Monotonicity.Unknown
         sin_bounds = child_bounds.sin()
         mono = monotonicity[child]
 

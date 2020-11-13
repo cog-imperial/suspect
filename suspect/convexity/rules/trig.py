@@ -23,8 +23,11 @@ class SinRule(ConvexityRule):
     """Return convexity of sin."""
     def apply(self, expr, convexity, _mono, bounds): # pylint: disable=too-many-return-statements
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
         cvx = convexity[child]
+
+        if child_bounds is None:
+            return Convexity.Unknown
 
         if child_bounds.size() > pi:
             return Convexity.Unknown
@@ -57,8 +60,11 @@ class AsinRule(ConvexityRule):
     """Return convexity of asin."""
     def apply(self, expr, convexity, _mono, bounds):
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
         cvx = convexity[child]
+
+        if child_bounds is None:
+            return Convexity.Unknown
 
         concave_domain = Interval(-1, 0)
         if child_bounds in concave_domain and cvx.is_concave():
@@ -76,8 +82,11 @@ class CosRule(ConvexityRule):
     """Return convexity of cos."""
     def apply(self, expr, convexity, _mono, bounds): # pylint: disable=too-many-return-statements
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
         cvx = convexity[child]
+
+        if child_bounds is None:
+            return Convexity.Unknown
 
         if child_bounds.size() > pi:
             return Convexity.Unknown
@@ -110,8 +119,11 @@ class AcosRule(ConvexityRule):
     """Return convexity of acos."""
     def apply(self, expr, convexity, _mono, bounds):
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
         cvx = convexity[child]
+
+        if child_bounds is None:
+            return Convexity.Unknown
 
         convex_domain = Interval(-1, 0)
         if child_bounds in convex_domain and cvx.is_concave():
@@ -128,8 +140,11 @@ class TanRule(ConvexityRule):
     """Return convexity of tan."""
     def apply(self, expr, convexity, _mono, bounds):
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
         cvx = convexity[child]
+
+        if child_bounds is None:
+            return Convexity.Unknown
 
         if 2.0*child_bounds.size() > pi:
             return Convexity.Unknown
@@ -151,8 +166,11 @@ class AtanRule(ConvexityRule):
     """Return convexity of atan."""
     def apply(self, expr, convexity, _mono, bounds):
         child = expr.args[0]
-        child_bounds = bounds[child]
+        child_bounds = bounds.get(child)
         cvx = convexity[child]
+
+        if child_bounds is None:
+            return Convexity.Unknown
 
         if child_bounds.is_nonpositive() and cvx.is_convex():
             return Convexity.Convex

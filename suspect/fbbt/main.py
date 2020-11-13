@@ -73,8 +73,15 @@ def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, initial
         obj_lower, obj_upper = objective_bounds.get(objective, (None, None))
         bounds[objective.expr] = Interval(obj_lower, obj_upper)
 
-    # Force one full iteration of bounds propagation
-    _perform_fbbt_step(model, bounds, -1, active, lambda: True, constraints, objectives)
+    for var in model.component_data_objects(pe.Var, active=active, descend_into=True):
+        lower = pe.value(var.lb)
+        upper = pe.value(var.ub)
+        bounds[var] = Interval(lower, upper)
+
+    if not should_continue():
+        return bounds
+
+    _perform_fbbt_step(model, bounds, -1, active, should_continue, constraints, objectives)
 
     for iter in range(max_iter):
         changed = _perform_fbbt_step(model, bounds, iter, active, should_continue, constraints, objectives)

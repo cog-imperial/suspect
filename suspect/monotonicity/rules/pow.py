@@ -28,8 +28,8 @@ class PowerRule(MonotonicityRule):
         mono_base = monotonicity[base]
         mono_expo = monotonicity[expo]
 
-        bounds_base = bounds[base]
-        bounds_expo = bounds[expo]
+        bounds_base = bounds.get(base)
+        bounds_expo = bounds.get(expo)
 
         if mono_base.is_constant():
             if type(base) not in nonpyomo_leaf_types:
@@ -57,18 +57,22 @@ def _monotonicity_constant_base(base, _expo, _mono_base, mono_expo, _bounds_base
     elif almosteq(base, 0):
         return Monotonicity.Constant
     elif 0 < base < 1:
+        if bounds_expo is None:
+            return Monotonicity.Unknown
         if mono_expo.is_nondecreasing() and bounds_expo.is_nonpositive():
             return Monotonicity.Nondecreasing
         elif mono_expo.is_nonincreasing() and bounds_expo.is_nonnegative():
             return Monotonicity.Nondecreasing
         return Monotonicity.Unknown
     elif almostgte(base, 1):
+        if bounds_expo is None:
+            return Monotonicity.Unknown
         if mono_expo.is_nondecreasing() and bounds_expo.is_nonnegative():
             return Monotonicity.Nondecreasing
         elif mono_expo.is_nonincreasing() and bounds_expo.is_nonpositive():
             return Monotonicity.Nondecreasing
         return Monotonicity.Unknown
-    return Monotonicity.Unknown # pragma: no cover
+    return Monotonicity.Unknown  # pragma: no cover
 
 
 def _monotonicity_constant_exponent(base, expo, mono_base, mono_expo, bounds_base, bounds_expo):
@@ -106,6 +110,8 @@ def _monotonicity_even_exponent(base, expo, mono_base, mono_expo, bounds_base, b
 
 def _monotonicity_even_positive_exponent(_base, _expo, mono_base, _mono_expo,
                                          bounds_base, _bounds_expo):
+    if bounds_base is None:
+        return Monotonicity.Unknown
     # pylint: disable=too-many-return-statements, too-many-arguments
     if mono_base.is_nondecreasing() and bounds_base.is_nonnegative():
         return Monotonicity.Nondecreasing
@@ -115,11 +121,13 @@ def _monotonicity_even_positive_exponent(_base, _expo, mono_base, _mono_expo,
         return Monotonicity.Nonincreasing
     elif mono_base.is_nonincreasing() and bounds_base.is_nonnegative():
         return Monotonicity.Nonincreasing
-    return Monotonicity.Unknown # pragma: no cover
+    return Monotonicity.Unknown  # pragma: no cover
 
 
 def _monotonicity_even_negative_exponent(_base, _expo, mono_base, _mono_expo,
                                          bounds_base, _bounds_expo):
+    if bounds_base is None:
+        return Monotonicity.Unknown
     # pylint: disable=too-many-return-statements, too-many-arguments
     if mono_base.is_nonincreasing() and bounds_base.is_nonnegative():
         return Monotonicity.Nondecreasing
@@ -129,7 +137,7 @@ def _monotonicity_even_negative_exponent(_base, _expo, mono_base, _mono_expo,
         return Monotonicity.Nonincreasing
     elif mono_base.is_nondecreasing() and bounds_base.is_nonnegative():
         return Monotonicity.Nonincreasing
-    return Monotonicity.Unknown # pragma: no cover
+    return Monotonicity.Unknown  # pragma: no cover
 
 
 def _monotonicity_odd_exponent(_base, expo, mono_base, _mono_expo, _bounds_base, _bounds_expo):
@@ -148,7 +156,7 @@ def _monotonicity_odd_exponent(_base, expo, mono_base, _mono_expo, _bounds_base,
 def _monotonicity_noninteger_exponent(_base, expo, mono_base, _mono_expo,
                                       bounds_base, _bounds_expo):
     # pylint: disable=too-many-return-statements, too-many-arguments
-    if not bounds_base.is_nonnegative():
+    if bounds_base is None or not bounds_base.is_nonnegative():
         return Monotonicity.Unknown
     elif expo > 0:
         return mono_base
@@ -157,4 +165,4 @@ def _monotonicity_noninteger_exponent(_base, expo, mono_base, _mono_expo,
             return Monotonicity.Nonincreasing
         elif mono_base.is_nonincreasing():
             return Monotonicity.Nondecreasing
-    return Monotonicity.Unknown # pragma: no cover
+    return Monotonicity.Unknown  # pragma: no cover

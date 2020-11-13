@@ -24,8 +24,10 @@ class DivisionRule(MonotonicityRule):
         f, g = expr.args
         mono_f = monotonicity[f]
         mono_g = monotonicity[g]
-        bound_f = bounds[f]
-        bound_g = bounds[g]
+        bound_f = bounds.get(f)
+        bound_g = bounds.get(g)
+        if bound_f is None or bound_g is None:
+            return Monotonicity.Unknown
         return _division_monotonicity(mono_f, bound_f, mono_g, bound_g)
 
 
@@ -34,7 +36,9 @@ class ReciprocalRule(MonotonicityRule):
     def apply(self, expr, monotonicity, bounds):
         g = expr.args[0]
         mono_g = monotonicity[g]
-        bound_g = bounds[g]
+        bound_g = bounds.get(g)
+        if bound_g is None:
+            return Monotonicity.Unknown
         return _division_monotonicity(
             Monotonicity.Constant, Interval(1.0, 1.0), mono_g, bound_g
         )

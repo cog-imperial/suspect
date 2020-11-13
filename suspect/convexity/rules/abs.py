@@ -22,15 +22,19 @@ class AbsRule(ConvexityRule):
     def apply(self, expr, convexity, _mono, bounds):
         child = expr.args[0]
         cvx = convexity[child]
-        bounds = bounds[child]
+        bounds = bounds.get(child)
         if cvx.is_linear():
             return Convexity.Convex
         elif cvx.is_convex():
+            if bounds is None:
+                return Convexity.Unknown
             if bounds.is_nonnegative():
                 return Convexity.Convex
             elif bounds.is_nonpositive():
                 return Convexity.Concave
         elif cvx.is_concave():
+            if bounds is None:
+                return Convexity.Unknown
             if bounds.is_nonpositive():
                 return Convexity.Convex
             elif bounds.is_nonnegative():

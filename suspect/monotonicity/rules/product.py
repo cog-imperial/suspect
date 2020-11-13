@@ -27,8 +27,8 @@ class ProductRule(MonotonicityRule):
 def _product_monotonicity(f, g, bounds, monotonicity):
     mono_f = monotonicity[f]
     mono_g = monotonicity[g]
-    bound_f = bounds[f]
-    bound_g = bounds[g]
+    bound_f = bounds.get(f)
+    bound_g = bounds.get(g)
 
     if mono_f.is_constant() and mono_g.is_constant():
         return Monotonicity.Constant
@@ -36,6 +36,9 @@ def _product_monotonicity(f, g, bounds, monotonicity):
         return _product_with_constant_g(f, g, mono_f, mono_g, bound_f, bound_g)
     elif mono_f.is_constant():
         return _product_with_constant_g(g, f, mono_g, mono_f, bound_g, bound_f)
+
+    if bound_g is None or bound_f is None:
+        return Monotonicity.Unknown
     # no constant function involved
     nondec_cond1 = (
         mono_f.is_nondecreasing() and bound_g.is_nonnegative()
@@ -62,10 +65,12 @@ def _product_monotonicity(f, g, bounds, monotonicity):
         return Monotonicity.Nondecreasing
     elif noninc_cond1 and noninc_cond2:
         return Monotonicity.Nonincreasing
-    return Monotonicity.Unknown # pragma: no cover
+    return Monotonicity.Unknown  # pragma: no cover
 
 
 def _product_with_constant_g(f, g, mono_f, _mono_g, _bound_f, bound_g):
+    if bound_g is None:
+        return Monotonicity.Unknown
     if mono_f.is_nondecreasing() and bound_g.is_nonnegative():
         return Monotonicity.Nondecreasing
     elif mono_f.is_nonincreasing() and bound_g.is_nonpositive():
@@ -74,4 +79,4 @@ def _product_with_constant_g(f, g, mono_f, _mono_g, _bound_f, bound_g):
         return Monotonicity.Nonincreasing
     elif mono_f.is_nonincreasing() and bound_g.is_nonnegative():
         return Monotonicity.Nonincreasing
-    return Monotonicity.Unknown # pragma: no cover
+    return Monotonicity.Unknown  # pragma: no cover

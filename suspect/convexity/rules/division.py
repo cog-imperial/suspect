@@ -29,8 +29,8 @@ class DivisionRule(ConvexityRule):
         mono_f = monotonicity[f]
         mono_g = monotonicity[g]
 
-        bounds_f = bounds[f]
-        bounds_g = bounds[g]
+        bounds_f = bounds.get(f)
+        bounds_g = bounds.get(g)
 
         return _division_convexity(cvx_f, cvx_g, mono_f, mono_g, bounds_f, bounds_g)
 
@@ -46,7 +46,7 @@ class ReciprocalRule(ConvexityRule):
         mono_g = monotonicity[g]
 
         bounds_f = Interval(1.0, 1.0)
-        bounds_g = bounds[g]
+        bounds_g = bounds.get(g)
 
         return _division_convexity(cvx_f, cvx_g, mono_f, mono_g, bounds_f, bounds_g)
 
@@ -60,6 +60,8 @@ def _division_convexity(cvx_f, cvx_g, mono_f, mono_g, bounds_f, bounds_g):
 
 
 def _division_convexity_constant_g(_mono_f, _mono_g, _bounds_f, bounds_g, cvx_f):
+    if bounds_g is None:
+        return Convexity.Unknown
     if cvx_f.is_convex() and bounds_g.is_positive():
         return Convexity.Convex
     elif cvx_f.is_concave() and bounds_g.is_negative():
@@ -72,6 +74,9 @@ def _division_convexity_constant_g(_mono_f, _mono_g, _bounds_f, bounds_g, cvx_f)
 
 
 def _division_convexity_constant_f(_mono_f, _mono_g, bounds_f, bounds_g, cvx_g):
+    if bounds_g is None or bounds_f is None:
+        return Convexity.Unknown
+
     # want to avoid g == 0
     if 0 in bounds_g:
         return Convexity.Unknown

@@ -32,7 +32,7 @@ class PowerRule(ConvexityRule):
             if type(expo) not in nonpyomo_leaf_types:
                 expo = expo.value
             cvx_base = convexity[base]
-            bounds_base = bounds[base]
+            bounds_base = bounds.get(base)
             return _constant_expo_pow_convexity(expo, cvx_base, bounds_base)
         elif mono_base.is_constant():
             if type(base) not in nonpyomo_leaf_types:
@@ -76,6 +76,8 @@ def _integer_even_expo_pow_convexity(expo, cvx_base, bounds_base):
 def _integer_positive_even_expo_pow_convexity(_expo, cvx_base, bounds_base):
     if cvx_base.is_linear():
         return Convexity.Convex
+    elif bounds_base is None:
+        return Convexity.Unknown
     elif cvx_base.is_convex() and bounds_base.is_nonnegative():
         return Convexity.Convex
     elif cvx_base.is_concave() and bounds_base.is_nonpositive():
@@ -84,7 +86,9 @@ def _integer_positive_even_expo_pow_convexity(_expo, cvx_base, bounds_base):
 
 
 def _integer_negative_even_expo_pow_convexity(_expo, cvx_base, bounds_base):
-    if cvx_base.is_convex() and bounds_base.is_nonpositive():
+    if bounds_base is None:
+        return Convexity.Unknown
+    elif cvx_base.is_convex() and bounds_base.is_nonpositive():
         return Convexity.Convex
     elif cvx_base.is_concave() and bounds_base.is_nonnegative():
         return Convexity.Convex
@@ -102,8 +106,10 @@ def _integer_odd_expo_pow_convexity(expo, cvx_base, bounds_base):
 
 
 def _integer_positive_odd_expo_pow_convexity(expo, cvx_base, bounds_base):
-    if almosteq(expo, 1): # pragma: no cover
-        return cvx_base # we won't reach this because of the check in apply.
+    if almosteq(expo, 1):  # pragma: no cover
+        return cvx_base  # we won't reach this because of the check in apply.
+    elif bounds_base is None:
+        return Convexity.Unknown
     elif cvx_base.is_convex() and bounds_base.is_nonnegative():
         return Convexity.Convex
     elif cvx_base.is_concave() and bounds_base.is_nonpositive():
@@ -112,7 +118,9 @@ def _integer_positive_odd_expo_pow_convexity(expo, cvx_base, bounds_base):
 
 
 def _integer_negative_odd_expo_pow_convexity(_expo, cvx_base, bounds_base):
-    if cvx_base.is_concave() and bounds_base.is_nonnegative():
+    if bounds_base is None:
+        return Convexity.Unknown
+    elif cvx_base.is_concave() and bounds_base.is_nonnegative():
         return Convexity.Convex
     elif cvx_base.is_convex() and bounds_base.is_nonpositive():
         return Convexity.Concave
@@ -120,6 +128,8 @@ def _integer_negative_odd_expo_pow_convexity(_expo, cvx_base, bounds_base):
 
 
 def _noninteger_expo_pow_convexity(expo, cvx_base, bounds_base):
+    if bounds_base is None:
+        return Convexity.Unknown
     if not bounds_base.is_nonnegative():
         return Convexity.Unknown
     if cvx_base.is_convex() and expo > 1:

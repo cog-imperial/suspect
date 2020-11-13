@@ -23,10 +23,13 @@ class AbsRule(MonotonicityRule):
     def apply(self, expr, monotonicity, bounds):
         child = expr.args[0]
         mono = monotonicity[child]
-        child_bounds = bounds[child]
 
         if mono.is_constant():
             return mono
+
+        child_bounds = bounds.get(child)
+        if child_bounds is None:
+            return Monotonicity.Unknown
 
         # good examples to understand the behaviour of abs are abs(-x) and
         # abs(1/x)

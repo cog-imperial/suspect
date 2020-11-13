@@ -56,9 +56,11 @@ class ProductRule(ConvexityRule):
 def _product_as_square_convexity(f, convexity, bounds):
     # same as f**2
     cvx_f = convexity[f]
-    bounds_f = bounds[f]
+    bounds_f = bounds.get(f)
     if cvx_f.is_linear():
         return Convexity.Convex
+    elif bounds_f is None:
+        return Convexity.Unknown
     elif cvx_f.is_convex() and bounds_f.is_nonnegative():
         return Convexity.Convex
     elif cvx_f.is_concave() and bounds_f.is_nonpositive():
@@ -77,10 +79,12 @@ def _product_monomial_term_by_variable_convexity(f, g):
 
 def _product_convexity(f, g, convexity, bounds):
     cvx_f = convexity[f]
-    bounds_g = bounds[g]
+    bounds_g = bounds.get(g)
 
     if cvx_f.is_linear():
         return cvx_f
+    elif bounds_g is None:
+        return Convexity.Unknown
     elif cvx_f.is_convex() and bounds_g.is_nonnegative():
         return Convexity.Convex
     elif cvx_f.is_concave() and bounds_g.is_nonpositive():

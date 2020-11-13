@@ -21,8 +21,10 @@ class ConcaveFunctionRule(ConvexityRule):
     """Return convexity of concave function."""
     def apply(self, expr, convexity, _mono, bounds):
         child = expr.args[0]
-        bounds = bounds[child]
+        bounds = bounds.get(child)
         cvx = convexity[child]
+        if bounds in None:
+            return Convexity.Unknown
         if bounds.is_nonnegative() and cvx.is_concave():
             return Convexity.Concave
         return Convexity.Unknown
