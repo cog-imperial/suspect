@@ -1,7 +1,12 @@
 Changelog
 =========
 
-2.1.0 NEXT
+2.1.1 (2020-11-13)
+------------------
+
+* Try to compute special structure even if bounds are missing
+
+2.1.0 (2020-09-16)
 ------------------
 
 * Add support for `log10`
