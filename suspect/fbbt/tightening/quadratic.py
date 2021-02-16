@@ -14,7 +14,7 @@
 
 """Bounds tightening of univariate quadratic expression"""
 from collections import namedtuple
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 from suspect.math import (
     almosteq, isinf, inf, sqrt, RoundMode as RM
 )

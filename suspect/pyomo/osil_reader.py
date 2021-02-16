@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from functools import reduce
 
 import pyomo.environ as aml
-from pyomo.core.expr.numeric_expr import NumericConstant
+from pyomo.core.expr.numvalue import NumericConstant
 
 NS = {'osil': 'os.optimizationservices.org'}
 TYPE_TO_DOMAIN = {

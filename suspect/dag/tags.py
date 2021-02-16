@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Tags are a way to tag a group of nodes as special structure."""
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 import pyomo.environ as pe
 from suspect.pyomo.expressions import nonpyomo_leaf_types
 import suspect.pyomo.expressions as dex

@@ -16,7 +16,7 @@
 import numpy as np
 
 from suspect.math import almostgte, almostlte
-from pyomo.environ import ComponentMap
+from pyomo.common.collections import ComponentMap
 from suspect.convexity.convexity import Convexity
 from suspect.convexity.rules.rule import ConvexityRule
 

@@ -16,7 +16,6 @@
 """Re-import Pyomo expression types."""
 
 from pyomo.core.expr.numeric_expr import (
-    NumericConstant,
     NegationExpression,
     PowExpression,
     ProductExpression,
@@ -29,7 +28,7 @@ from pyomo.core.expr.numeric_expr import (
     LinearExpression,
     nonpyomo_leaf_types,
 )
-
+from pyomo.core.expr.numvalue import NumericConstant
 from pyomo.core.base.var import Var
 
 from suspect.dag.expressions import Constraint, Objective, Sense, Domain

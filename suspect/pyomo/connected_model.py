@@ -4,12 +4,12 @@ import pyomo.environ as pyo
 from pyomo.repn.standard_repn import generate_standard_repn
 from pyomo.core.expr.numeric_expr import (
     nonpyomo_leaf_types,
-    NumericConstant,
     SumExpression,
     LinearExpression,
 )
+from pyomo.core.expr.numvalue import NumericConstant
 from pyomo.core.expr.visitor import ExpressionValueVisitor
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 
 from suspect.float_hash import BTreeFloatHasher
 from suspect.pyomo.expr_dict import ExpressionDict

@@ -15,7 +15,7 @@
 import logging
 import pkg_resources
 import pyomo.environ as pyo
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from suspect.monotonicity import MonotonicityPropagationVisitor, propagate_expression_monotonicity
 from suspect.convexity import ConvexityPropagationVisitor, propagate_expression_convexity

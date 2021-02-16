@@ -14,10 +14,8 @@
 
 from numbers import Number
 import pyomo.environ as aml
-from pyomo.core.expr.numeric_expr import (
-    nonpyomo_leaf_types,
-    NumericConstant,
-)
+from pyomo.core.expr.numeric_expr import nonpyomo_leaf_types
+from pyomo.core.expr.numvalue import NumericConstant
 from pyomo.core.expr.logical_expr import (
     InequalityExpression,
     EqualityExpression,

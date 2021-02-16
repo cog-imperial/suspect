@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """FBBT bounds tightening rules."""
-from pyomo.environ import ComponentMap
+from pyomo.common.collections import ComponentMap
 import pyomo.environ as pe
 from suspect.expression import UnaryFunctionType
 from suspect.interfaces import Rule, UnaryFunctionRule

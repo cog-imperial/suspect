@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 from suspect.dag.iterator import DagForwardIterator
 from suspect.polynomial import PolynomialDegreeVisitor
 

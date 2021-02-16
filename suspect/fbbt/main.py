@@ -16,7 +16,7 @@
 import pyomo.environ as pe
 
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 
 from suspect.interval import Interval
 from suspect.fbbt.initialization import initialize_bounds
