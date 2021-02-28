@@ -23,16 +23,16 @@ def create_connected_model(model, active=True, connect_max_linear_children=50, c
     components = ExpressionDict(float_hasher=BTreeFloatHasher())
 
     for var in model.component_data_objects(pyo.Var, active=active, sort=True, descend_into=True):
-        connected_var = connected.find_component(var.getname(fully_qualified=True))
+        connected_var = connected.find_component(var)
         model_to_connected_map[var] = connected_var
         components[connected_var] = connected_var
 
     for constraint in model.component_data_objects(pyo.Constraint, active=active, sort=True, descend_into=True):
-        connected_constraint = connected.find_component(constraint.getname(fully_qualified=True))
+        connected_constraint = connected.find_component(constraint)
         model_to_connected_map[constraint] = connected_constraint
 
     for objective in model.component_data_objects(pyo.Objective, active=active, sort=True, descend_into=True):
-        connected_objective = connected.find_component(objective.getname(fully_qualified=True))
+        connected_objective = connected.find_component(objective)
         model_to_connected_map[objective] = connected_objective
 
     convert_visitor = _ConvertExpressionVisitor(
