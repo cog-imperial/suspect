@@ -34,6 +34,13 @@ class SumRule(ConvexityRule):
         return _combine_convexities(cvxs)
 
 
+class ExpressionRule(ConvexityRule):
+    """Return convexity of a named Expression"""
+    def apply(self, expr, convexity, monotonicity, bounds):
+        cvx = convexity[expr.expr]
+        return cvx
+
+
 def _adjust_convexity(cvx, coef):
     if cvx.is_unknown() or cvx.is_linear():
         return cvx

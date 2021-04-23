@@ -126,6 +126,12 @@ class NegationRule(Rule):
         return -bounds[expr.args[0]]
 
 
+class ExpressionRule(Rule):
+    """Bound propagation rule for Expressions"""
+    def apply(self, expr, bounds):
+        return bounds[expr.expr]
+
+
 class _UnaryFunctionRule(Rule):
     """Bound propagation rule for unary functions."""
     def apply(self, expr, bounds):
