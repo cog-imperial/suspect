@@ -89,7 +89,12 @@ class _ConvertExpressionVisitor(ExpressionValueVisitor):
         if _is_quadratic_expression(node):
             new_expr = _convert_quadratic_expression(node)
         else:
-            new_expr = node.create_node_with_local_data(tuple(values))
+            if node.is_named_expression_type():
+                assert len(values) == 1
+                node.expr = values[0]
+                new_expr = node
+            else:
+                new_expr = node.create_node_with_local_data(tuple(values))
         self.set(node, new_expr)
         return new_expr
 

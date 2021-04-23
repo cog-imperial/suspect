@@ -57,3 +57,8 @@ class AsinRule(NondecreasingFunctionRule):
 class AtanRule(NondecreasingFunctionRule):
     """Return monotonicity of atan function."""
     pass
+
+
+class ExpressionRule(NondecreasingFunctionRule):
+    """Return monotonicity of a named Expression"""
+    pass

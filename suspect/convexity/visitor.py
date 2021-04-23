@@ -29,6 +29,8 @@ from suspect.pyomo.expressions import (
     PowExpression,
     NegationExpression,
     UnaryFunctionExpression,
+    SimpleExpression,
+    _GeneralExpressionData,
 )
 from suspect.pyomo.quadratic import QuadraticExpression
 from suspect.interfaces import CombineUnaryFunctionRules
@@ -51,6 +53,8 @@ _expr_to_rule_map[PowExpression] = PowerRule()
 _expr_to_rule_map[NegationExpression] = NegationRule()
 _expr_to_rule_map[AbsExpression] = AbsRule()
 _expr_to_rule_map[QuadraticExpression] = QuadraticRule()
+_expr_to_rule_map[SimpleExpression] = ExpressionRule()
+_expr_to_rule_map[_GeneralExpressionData] = ExpressionRule()
 _expr_to_rule_map[UnaryFunctionExpression] = CombineUnaryFunctionRules({
     'abs': AbsRule(),
     'sqrt': SqrtRule(),

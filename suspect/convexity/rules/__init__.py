@@ -16,7 +16,7 @@
 from .base import VariableRule, ConstantRule, ConstraintRule, ObjectiveRule
 from .abs import AbsRule
 from .division import DivisionRule, ReciprocalRule
-from .linear import LinearRule, SumRule
+from .linear import LinearRule, SumRule, ExpressionRule
 from .concave import SqrtRule, LogRule, Log10Rule
 from .convex import ExpRule
 from .negation import NegationRule
@@ -31,5 +31,5 @@ __all__ = [
     'ProductRule', 'DivisionRule', 'LinearRule', 'SumRule', 'AbsRule',
     'SqrtRule', 'ExpRule', 'LogRule', 'TanRule', 'AsinRule', 'AtanRule',
     'AcosRule', 'NegationRule', 'PowerRule', 'SinRule', 'CosRule',
-    'QuadraticRule', 'ReciprocalRule', 'Log10Rule',
+    'QuadraticRule', 'ReciprocalRule', 'Log10Rule', 'ExpressionRule',
 ]

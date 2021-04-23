@@ -10,11 +10,13 @@ def create_model():
     m = pe.ConcreteModel()
     m.x = pe.Var(bounds=(-1, 1))
     m.y = pe.Var()
+    m.z = pe.Var()
     m.p = pe.Param(mutable=True)
 
     m.e = pe.Expression(expr=m.x - 1)
-    m.obj = pe.Objective(expr=m.x**2 + m.y**2)
+    m.obj = pe.Objective(expr=m.x**2 + m.y**2 + m.z**2)
     m.c1 = pe.Constraint(expr=(0, m.y - pe.exp(m.e), None))
+    m.c2 = pe.Constraint(expr=(0, m.z - pe.exp(m.e), None))
 
     return m
 
@@ -23,6 +25,8 @@ def test_connected_model():
     m = create_model()
     cm, cm_m_map = suspect.create_connected_model(m)
     assert cm.c1.body.args[1].args[0].args[0] is cm.e
+    assert cm.c2.body.args[1].args[0].args[0] is cm.e
+    assert cm.c1.body.args[1].args[0] is cm.c2.body.args[1].args[0]
     assert cm.e is not m.e
     cm_copy = cm.clone()
     assert cm.x not in ComponentSet(identify_variables(cm_copy.c1.body))
