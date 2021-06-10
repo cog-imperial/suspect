@@ -20,6 +20,9 @@ from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.interval import Interval
 from suspect.math import almosteq, isinf  # pylint: disable=no-name-in-module
 from suspect.pyomo.expressions import nonpyomo_leaf_types
+from typing import List, MutableMapping
+from pyomo.core.expr.numeric_expr import NumericValue
+
 
 MAX_EXPR_CHILDREN = 1000
 
@@ -38,23 +41,37 @@ class SumRule(Rule):
             max_expr_children = MAX_EXPR_CHILDREN
         self.max_expr_children = max_expr_children
 
-    def apply(self, expr, bounds):
-        if len(expr.args) > self.max_expr_children:  # pragma: no cover
-            return None
-        expr_bound = bounds[expr]
-        children_bounds = [
-            self._child_bounds(child_idx, child, expr, expr_bound, bounds)
-            for child_idx, child in enumerate(expr.args)
-        ]
-        return children_bounds
+    def apply(self, expr, bounds: MutableMapping[NumericValue, Interval]):
+        accumulated_bounds: List[Interval] = list()
+        accumulated_bounds.append(bounds[expr.arg(0)])
+        expr_bounds: Interval = bounds[expr]
+        for i in range(1, expr.nargs()):
+            last_bounds = accumulated_bounds[i-1]
+            arg_bounds = bounds[expr.arg(i)]
+            accumulated_bounds.append(last_bounds + arg_bounds)
+        if expr_bounds.lower_bound > accumulated_bounds[-1].lower_bound:
+            accumulated_bounds[-1] = Interval(expr_bounds.lower_bound, accumulated_bounds[-1].upper_bound)
+        if expr_bounds.upper_bound < accumulated_bounds[-1].upper_bound:
+            accumulated_bounds[-1] = Interval(accumulated_bounds[-1].lower_bound, expr_bounds.upper_bound)
 
-    def _child_bounds(self, child_idx, _child, expr, expr_bound, bounds):
-        siblings_bound = sum(
-            bounds[c]
-            for i, c in enumerate(expr.args)
-            if i != child_idx
-        )
-        return expr_bound - siblings_bound
+        children_bounds = [None] * expr.nargs()
+        for i in reversed(range(1, expr.nargs())):
+            bnds0 = accumulated_bounds[i]
+            bnds1 = accumulated_bounds[i-1]
+            bnds2 = bounds[expr.arg(i)]
+            _bnds1 = bnds0 - bnds2
+            _bnds2 = bnds0 - bnds1
+            bnds1 = bnds1.intersect(_bnds1)
+            bnds2 = bnds2.intersect(_bnds2)
+            accumulated_bounds[i-1] = bnds1
+            children_bounds[i] = bnds2
+
+        bnds = bounds[expr.arg(0)]
+        _bnds = accumulated_bounds[0]
+        bnds = bnds.intersect(_bnds)
+        children_bounds[0] = bnds
+
+        return children_bounds
 
 
 class LinearRule(Rule):
