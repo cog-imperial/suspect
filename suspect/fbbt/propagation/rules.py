@@ -20,6 +20,7 @@ from suspect.interval import Interval
 from suspect.interfaces import Rule
 from suspect.expression import ExpressionType, UnaryFunctionType
 from suspect.math import almosteq # pylint: disable=no-name-in-module
+import pyomo.environ as pe
 
 
 class VariableRule(Rule):
@@ -90,10 +91,10 @@ class LinearRule(Rule):
     """Bound propagation rule for linear expressions."""
     def apply(self, expr, bounds):
         children_contribution = sum(
-            expr.coefficient(child) * bounds[child]
-            for child in expr.args
+            pe.value(coef) * bounds[child]
+            for coef, child in zip(expr.linear_coefs, expr.linear_vars)
         )
-        constant_contribution = Interval(expr.constant_term, expr.constant_term)
+        constant_contribution = Interval(expr.constant, expr.constant)
         return children_contribution + constant_contribution
 
 
