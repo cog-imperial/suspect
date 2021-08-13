@@ -1,4 +1,4 @@
-name: SUSPECT
+name: Build and test SUSPECT
 
 on:
   push:

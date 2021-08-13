@@ -16,6 +16,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+    - name: Install suspect
+      run: |
+        pip install .
     - name: Build docs
       uses: ammaraskar/sphinx-action@master
       with:
