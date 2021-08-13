@@ -2,7 +2,7 @@ name: Build and publish docs
 
 on:
   push:
-    tags
+    tags:
     - *
   workflow_dispatch:
     inputs: {}
