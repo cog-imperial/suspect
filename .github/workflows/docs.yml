@@ -19,10 +19,9 @@ jobs:
     - name: Install suspect
       run: |
         pip install .
-    - name: Build docs
-      uses: ammaraskar/sphinx-action@master
-      with:
-        docs-folder: docs/
+    - name: Run sphinx
+      run: |
+        cd docs && make html
     - name: Deploy docs
       uses: JamesIves/github-pages-deploy-action@4.1.4
       with:
