@@ -18,7 +18,7 @@ from suspect.pyomo.expressions import (
 from tests.strategies import expressions, variables, reals, unary_function_types
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def visitor():
     return PolynomialDegreeVisitor()
 

@@ -18,7 +18,7 @@ from suspect.convexity.rules import *
 from suspect.math import almosteq, pi
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def visitor():
     return ConvexityPropagationVisitor()
 
