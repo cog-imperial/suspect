@@ -23,7 +23,7 @@ class ConcaveFunctionRule(ConvexityRule):
         child = expr.args[0]
         bounds = bounds.get(child)
         cvx = convexity[child]
-        if bounds in None:
+        if bounds is None:
             return Convexity.Unknown
         if bounds.is_nonnegative() and cvx.is_concave():
             return Convexity.Concave

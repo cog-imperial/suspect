@@ -21,7 +21,6 @@ from pyomo.core.expr.numeric_expr import (
     ProductExpression,
     MonomialTermExpression,
     DivisionExpression,
-    ReciprocalExpression,
     SumExpression,
     UnaryFunctionExpression,
     AbsExpression,
