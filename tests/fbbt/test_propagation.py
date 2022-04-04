@@ -12,7 +12,7 @@ from suspect.pyomo.expressions import *
 from tests.strategies import expressions, reals, intervals
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def visitor():
     return BoundsPropagationVisitor()
 

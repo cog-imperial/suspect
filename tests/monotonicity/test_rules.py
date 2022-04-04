@@ -26,7 +26,7 @@ from suspect.monotonicity.rules import *
 from suspect.math import almosteq, pi
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def visitor():
     return MonotonicityPropagationVisitor()
 

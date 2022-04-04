@@ -27,7 +27,7 @@ from pyomo.core.expr.numeric_expr import (
     LinearExpression,
     nonpyomo_leaf_types,
 )
-from pyomo.core.base.expression import _GeneralExpressionData, SimpleExpression
+from pyomo.core.base.expression import _GeneralExpressionData, SimpleExpression, ScalarExpression
 from pyomo.core.expr.numvalue import NumericConstant
 from pyomo.core.base.var import Var
 

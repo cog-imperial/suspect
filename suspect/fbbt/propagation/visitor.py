@@ -30,7 +30,8 @@ from suspect.pyomo.expressions import (
     AbsExpression,
     UnaryFunctionExpression,
     _GeneralExpressionData,
-    SimpleExpression
+    SimpleExpression,
+    ScalarExpression,
 )
 from suspect.visitor import ForwardVisitor
 from suspect.pyomo.quadratic import QuadraticExpression
@@ -69,6 +70,7 @@ _expr_to_rule_map[UnaryFunctionExpression] = UnaryFunctionRule()
 _expr_to_rule_map[QuadraticExpression] = QuadraticRule()
 _expr_to_rule_map[_GeneralExpressionData] = ExpressionRule()
 _expr_to_rule_map[SimpleExpression] = ExpressionRule()
+_expr_to_rule_map[ScalarExpression] = ExpressionRule()
 
 
 def propagate_bounds_leaf_to_root(expr, bounds):

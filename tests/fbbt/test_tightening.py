@@ -26,7 +26,7 @@ from suspect.interval import Interval as I
 from tests.strategies import reals
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def visitor():
     return BoundsTighteningVisitor()
 

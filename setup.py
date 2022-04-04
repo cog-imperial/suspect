@@ -64,5 +64,6 @@ setup(
         'boto3>=1.7.4',
     ],
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-cov', 'hypothesis', 'pytest-rerunfailures', 'sympy'],
+    tests_require=[
+        'pytest', 'pytest-cov', 'hypothesis', 'pytest-rerunfailures', 'sympy'],
 )

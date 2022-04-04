@@ -31,6 +31,7 @@ from suspect.pyomo.expressions import (
     NegationExpression,
     UnaryFunctionExpression,
     SimpleExpression,
+    ScalarExpression,
     _GeneralExpressionData,
 )
 from suspect.pyomo.quadratic import QuadraticExpression
@@ -51,6 +52,7 @@ _expr_to_rule_map[NegationExpression] = NegationRule()
 _expr_to_rule_map[AbsExpression] = AbsRule()
 _expr_to_rule_map[QuadraticExpression] = QuadraticRule()
 _expr_to_rule_map[SimpleExpression] = ExpressionRule()
+_expr_to_rule_map[ScalarExpression] = ExpressionRule()
 _expr_to_rule_map[_GeneralExpressionData] = ExpressionRule()
 _expr_to_rule_map[UnaryFunctionExpression] = CombineUnaryFunctionRules({
     'abs': AbsRule(),

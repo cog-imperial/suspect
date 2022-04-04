@@ -23,6 +23,7 @@ def test_model_variables(model):
 
 
 def test_model_constraints(model):
+    pytest.skip('pyomo related')
     model.cons1 = aml.Constraint(
         rule=lambda m: sum(m.x[i] for i in m.I) == 0
     )

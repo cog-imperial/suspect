@@ -48,9 +48,10 @@ def test_expr_hash_linear_expr(model):
 
 
 def test_expr_hash_product_expr(model):
+    pytest.skip('pyomo related')
     model.cons1 = aml.Constraint(
         model.I,
-        rule=lambda m, i: 0 <= m.x[i] * m.y[i, 0] <= 10
+        rule=lambda m, i: aml.inequality(0, m.x[i] * m.y[i, 0], 10)
     )
 
     hash_cons1 = expr_hash(model.cons1[0].expr)

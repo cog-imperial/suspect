@@ -15,6 +15,7 @@
 # pylint: skip-file
 import pytest
 import numpy as np
+import hypothesis
 from collections import namedtuple
 from suspect.interval import Interval
 from suspect.monotonicity.monotonicity import Monotonicity
@@ -23,6 +24,7 @@ from suspect.expression import ExpressionType as ET
 from suspect.context import SpecialStructurePropagationContext
 
 
+hypothesis.settings.register_profile('github-ci', max_examples=10)
 
 BilinearTerm = namedtuple('BilinearTerm', ['var1', 'var2', 'coefficient'])
 
