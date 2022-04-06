@@ -101,6 +101,9 @@ class TestLinearRule:
         new_bounds = self._rule_result([-1, 1], [I(0, 1), I(-1, 0)], I(0, None))
         assert new_bounds[0] == I(0, 0)
         assert new_bounds[1] == I(0, 0)
+        new_bounds = self._rule_result([-1, 1], [I(0, 1), I(-1, 0)], I(None, 0))
+        assert new_bounds[0] == I(0, 1)
+        assert new_bounds[1] == I(-1, 0)
 
     def test_bounded_expr(self):
         expr_bounds = I(-5 , 5)
