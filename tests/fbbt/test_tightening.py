@@ -65,8 +65,8 @@ class TestSumRule:
 
     def test_unbounded_expr(self, visitor):
         new_bounds = self._rule_result(visitor, [I(0, 1), I(-1, 0)], I(0, None))
-        assert new_bounds[0] == I(0, None)
-        assert new_bounds[1] == I(-1, None)
+        assert new_bounds[0] == I(0, 1)
+        assert new_bounds[1] == I(-1, 0)
 
     def test_bounded_expr(self, visitor):
         expr_bounds = I(-5, 5)
@@ -94,12 +94,13 @@ class TestLinearRule:
         rule = LinearRule()
         self.children = children
         self.expr = expr
-        return rule.apply(expr, bounds)
+        res = rule.apply(expr, bounds)
+        return res
 
     def test_unbounded_expr(self):
         new_bounds = self._rule_result([-1, 1], [I(0, 1), I(-1, 0)], I(0, None))
-        assert new_bounds[0] == I(None, 0)
-        assert new_bounds[1] == I(0, None)
+        assert new_bounds[0] == I(0, 0)
+        assert new_bounds[1] == I(0, 0)
 
     def test_bounded_expr(self):
         expr_bounds = I(-5 , 5)

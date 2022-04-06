@@ -17,7 +17,7 @@
 import numpy as np
 import math
 
-make_number = np.float
+make_number = float
 inf = np.inf
 zero = float(0.0)
 pi = np.pi
