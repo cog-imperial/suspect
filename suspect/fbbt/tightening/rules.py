@@ -43,32 +43,32 @@ class SumRule(Rule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, bounds: MutableMapping[NumericValue, Interval]):
-        accumulated_bounds: List[Interval] = list()
-        accumulated_bounds.append(bounds[expr.arg(0)])
+        bnds_list: List[Interval] = list()
+        bnds_list.append(bounds[expr.arg(0)])
         expr_bounds: Interval = bounds[expr]
         for i in range(1, expr.nargs()):
-            last_bounds = accumulated_bounds[i-1]
+            last_bounds = bnds_list[i-1]
             arg_bounds = bounds[expr.arg(i)]
-            accumulated_bounds.append(last_bounds + arg_bounds)
-        if expr_bounds.lower_bound > accumulated_bounds[-1].lower_bound:
-            accumulated_bounds[-1] = Interval(expr_bounds.lower_bound, accumulated_bounds[-1].upper_bound)
-        if expr_bounds.upper_bound < accumulated_bounds[-1].upper_bound:
-            accumulated_bounds[-1] = Interval(accumulated_bounds[-1].lower_bound, expr_bounds.upper_bound)
+            bnds_list.append(last_bounds + arg_bounds)
+        if expr_bounds.lower_bound > bnds_list[-1].lower_bound:
+            bnds_list[-1] = Interval(expr_bounds.lower_bound, bnds_list[-1].upper_bound)
+        if expr_bounds.upper_bound < bnds_list[-1].upper_bound:
+            bnds_list[-1] = Interval(bnds_list[-1].lower_bound, expr_bounds.upper_bound)
 
         children_bounds = [None] * expr.nargs()
         for i in reversed(range(1, expr.nargs())):
-            bnds0 = accumulated_bounds[i]
-            bnds1 = accumulated_bounds[i-1]
+            bnds0 = bnds_list[i]
+            bnds1 = bnds_list[i-1]
             bnds2 = bounds[expr.arg(i)]
             _bnds1 = bnds0 - bnds2
             _bnds2 = bnds0 - bnds1
             bnds1 = bnds1.intersect(_bnds1)
             bnds2 = bnds2.intersect(_bnds2)
-            accumulated_bounds[i-1] = bnds1
+            bnds_list[i-1] = bnds1
             children_bounds[i] = bnds2
 
         bnds = bounds[expr.arg(0)]
-        _bnds = accumulated_bounds[0]
+        _bnds = bnds_list[0]
         bnds = bnds.intersect(_bnds)
         children_bounds[0] = bnds
 
@@ -83,24 +83,24 @@ class LinearRule(Rule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, bounds):
-        accumulated_bounds: List[Interval] = list()
+        bnds_list: List[Interval] = list()
         const_val = pe.value(expr.constant)
-        accumulated_bounds.append(Interval(const_val, const_val))
+        bnds_list.append(Interval(const_val, const_val))
         expr_bounds: Interval = bounds[expr]
         for coef, v in zip(expr.linear_coefs, expr.linear_vars):
-            last_bounds = accumulated_bounds[-1]
+            last_bounds = bnds_list[-1]
             coef = pe.value(coef)
             v_bounds = bounds[v]
-            accumulated_bounds.append(last_bounds + coef*v_bounds)
-        if expr_bounds.lower_bound > accumulated_bounds[-1].lower_bound:
-            accumulated_bounds[-1] = Interval(expr_bounds.lower_bound, accumulated_bounds[-1].upper_bound)
-        if expr_bounds.upper_bound < accumulated_bounds[-1].upper_bound:
-            accumulated_bounds[-1] = Interval(accumulated_bounds[-1].lower_bound, expr_bounds.upper_bound)
+            bnds_list.append(last_bounds + coef*v_bounds)
+        if expr_bounds.lower_bound > bnds_list[-1].lower_bound:
+            bnds_list[-1] = Interval(expr_bounds.lower_bound, bnds_list[-1].upper_bound)
+        if expr_bounds.upper_bound < bnds_list[-1].upper_bound:
+            bnds_list[-1] = Interval(bnds_list[-1].lower_bound, expr_bounds.upper_bound)
 
         children_bounds = [None] * len(expr.linear_vars)
         for i in reversed(range(len(expr.linear_vars))):
-            bnds0 = accumulated_bounds[i + 1]
-            bnds1 = accumulated_bounds[i]
+            bnds0 = bnds_list[i + 1]
+            bnds1 = bnds_list[i]
             coef = pe.value(expr.linear_coefs[i])
             v = expr.linear_vars[i]
             v_bounds = bounds[v]
@@ -109,7 +109,7 @@ class LinearRule(Rule):
             _bnds2 = bnds0 - bnds1
             bnds1 = bnds1.intersect(_bnds1)
             bnds2 = bnds2.intersect(_bnds2)
-            accumulated_bounds[i] = bnds1
+            bnds_list[i] = bnds1
             children_bounds[i] = bnds2 / coef
 
         return children_bounds
@@ -154,35 +154,35 @@ class QuadraticRule(Rule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, bounds):
-        accumulated_bounds: List[Interval] = list()
+        bnds_list: List[Interval] = list()
         expr_bounds: Interval = bounds[expr]
         terms_bounds = [self._term_bound(t, bounds) for t in expr.terms]
-        accumulated_bounds.append(terms_bounds[0])
+        bnds_list.append(terms_bounds[0])
         for t_bnds in terms_bounds[1:]:
-            accumulated_bounds.append(accumulated_bounds[-1] + t_bnds)
-        if expr_bounds.lower_bound > accumulated_bounds[-1].lower_bound:
-            accumulated_bounds[-1] = Interval(expr_bounds.lower_bound, accumulated_bounds[-1].upper_bound)
-        if expr_bounds.upper_bound < accumulated_bounds[-1].upper_bound:
-            accumulated_bounds[-1] = Interval(accumulated_bounds[-1].lower_bound, expr_bounds.upper_bound)
+            bnds_list.append(bnds_list[-1] + t_bnds)
+        if expr_bounds.lower_bound > bnds_list[-1].lower_bound:
+            bnds_list[-1] = Interval(expr_bounds.lower_bound, bnds_list[-1].upper_bound)
+        if expr_bounds.upper_bound < bnds_list[-1].upper_bound:
+            bnds_list[-1] = Interval(bnds_list[-1].lower_bound, expr_bounds.upper_bound)
 
         terms = list(expr.terms)
         child_bounds = ComponentMap()
         for i in reversed(range(1, len(terms_bounds))):
-            bnds0 = accumulated_bounds[i]
-            bnds1 = accumulated_bounds[i-1]
+            bnds0 = bnds_list[i]
+            bnds1 = bnds_list[i-1]
             bnds2 = terms_bounds[i]
             _bnds1 = bnds0 - bnds2
             _bnds2 = bnds0 - bnds1
             bnds1 = bnds1.intersect(_bnds1)
             bnds2 = bnds2.intersect(_bnds2)
-            accumulated_bounds[i-1] = bnds1
+            bnds_list[i-1] = bnds1
             _update_var_bounds_from_bilinear_term_bounds(t=terms[i],
                                                          term_bound=bnds2,
                                                          bounds=bounds,
                                                          child_bounds=child_bounds)
 
         bnds = terms_bounds[0]
-        _bnds = accumulated_bounds[0]
+        _bnds = bnds_list[0]
         bnds = bnds.intersect(_bnds)
         _update_var_bounds_from_bilinear_term_bounds(t=terms[0],
                                                      term_bound=bnds,
