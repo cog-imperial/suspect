@@ -2,7 +2,7 @@ pytest>=3.2.0
 pytest-cov
 pytest-benchmark
 pytest-runner
-Pyomo>=5.6
+Pyomo>=6.0
 numpy>=1.13.1
 mpmath>=1.2.0
 boto3>=1.4.8
@@ -10,4 +10,4 @@ sphinx>=4.0.0
 numpydoc>=1.1.0
 tox>=3.0.0
 pandas>=0.23.0
-simpy
+sympy
