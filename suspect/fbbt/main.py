@@ -22,6 +22,7 @@ from suspect.interval import Interval
 from suspect.fbbt.initialization import initialize_bounds
 from suspect.fbbt.propagation import propagate_bounds_leaf_to_root
 from suspect.fbbt.tightening import tighten_bounds_root_to_leaf
+from pyomo.core.expr.numeric_expr import LinearExpression
 
 
 def perform_fbbt(model, max_iter=10, active=True, objective_bounds=None, initial_bounds=None, should_continue=None):
@@ -131,7 +132,10 @@ def _perform_fbbt_iteration_on_expr(expr, bounds, tighten, propagate, visit_all=
         if result is None:
             return None, None
         if isinstance(result, list):
-            result_iter = zip(node.args, result)
+            if type(node) is LinearExpression:
+                result_iter = zip(node.linear_vars, result)
+            else:
+                result_iter = zip(node.args, result)
         else:
             result_iter = result.items()
         descend_into_args = []

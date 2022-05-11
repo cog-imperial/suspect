@@ -152,7 +152,7 @@ class Interval: # pylint: disable=too-many-public-methods
             up(lambda: 1.0 / self._lower),
         )
 
-    def intersect(self, other, rel_eps=None, abs_eps=None):
+    def intersect(self, other, rel_eps=1e-5, abs_eps=1e-8):
         """Intersect this interval with another."""
         if not isinstance(other, Interval):
             raise ValueError('intersect with non Interval value')

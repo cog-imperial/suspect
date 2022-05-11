@@ -20,6 +20,10 @@ from suspect.interfaces import Rule, UnaryFunctionRule
 from suspect.interval import Interval
 from suspect.math import almosteq, isinf  # pylint: disable=no-name-in-module
 from suspect.pyomo.expressions import nonpyomo_leaf_types
+from typing import List, MutableMapping
+from pyomo.core.expr.numeric_expr import NumericValue
+from suspect.pyomo.quadratic import BilinearTerm
+
 
 MAX_EXPR_CHILDREN = 1000
 
@@ -38,23 +42,37 @@ class SumRule(Rule):
             max_expr_children = MAX_EXPR_CHILDREN
         self.max_expr_children = max_expr_children
 
-    def apply(self, expr, bounds):
-        if len(expr.args) > self.max_expr_children:  # pragma: no cover
-            return None
-        expr_bound = bounds[expr]
-        children_bounds = [
-            self._child_bounds(child_idx, child, expr, expr_bound, bounds)
-            for child_idx, child in enumerate(expr.args)
-        ]
-        return children_bounds
+    def apply(self, expr, bounds: MutableMapping[NumericValue, Interval]):
+        bnds_list: List[Interval] = list()
+        bnds_list.append(bounds[expr.arg(0)])
+        expr_bounds: Interval = bounds[expr]
+        for i in range(1, expr.nargs()):
+            last_bounds = bnds_list[i-1]
+            arg_bounds = bounds[expr.arg(i)]
+            bnds_list.append(last_bounds + arg_bounds)
+        if expr_bounds.lower_bound > bnds_list[-1].lower_bound:
+            bnds_list[-1] = Interval(expr_bounds.lower_bound, bnds_list[-1].upper_bound)
+        if expr_bounds.upper_bound < bnds_list[-1].upper_bound:
+            bnds_list[-1] = Interval(bnds_list[-1].lower_bound, expr_bounds.upper_bound)
 
-    def _child_bounds(self, child_idx, _child, expr, expr_bound, bounds):
-        siblings_bound = sum(
-            bounds[c]
-            for i, c in enumerate(expr.args)
-            if i != child_idx
-        )
-        return expr_bound - siblings_bound
+        children_bounds = [None] * expr.nargs()
+        for i in reversed(range(1, expr.nargs())):
+            bnds0 = bnds_list[i]
+            bnds1 = bnds_list[i-1]
+            bnds2 = bounds[expr.arg(i)]
+            _bnds1 = bnds0 - bnds2
+            _bnds2 = bnds0 - bnds1
+            bnds1 = bnds1.intersect(_bnds1)
+            bnds2 = bnds2.intersect(_bnds2)
+            bnds_list[i-1] = bnds1
+            children_bounds[i] = bnds2
+
+        bnds = bounds[expr.arg(0)]
+        _bnds = bnds_list[0]
+        bnds = bnds.intersect(_bnds)
+        children_bounds[0] = bnds
+
+        return children_bounds
 
 
 class LinearRule(Rule):
@@ -65,26 +83,67 @@ class LinearRule(Rule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, bounds):
-        if expr.nargs() > self.max_expr_children:  # pragma: no cover
-            return None
-        expr_bound = bounds[expr]
-        children_bounds = [
-            bounds[child] * coef
-            for coef, child in zip(expr.linear_coefs, expr.linear_vars)
-        ]
+        bnds_list: List[Interval] = list()
+        const_val = pe.value(expr.constant)
+        bnds_list.append(Interval(const_val, const_val))
+        expr_bounds: Interval = bounds[expr]
+        for coef, v in zip(expr.linear_coefs, expr.linear_vars):
+            last_bounds = bnds_list[-1]
+            coef = pe.value(coef)
+            v_bounds = bounds[v]
+            bnds_list.append(last_bounds + coef*v_bounds)
+        if expr_bounds.lower_bound > bnds_list[-1].lower_bound:
+            bnds_list[-1] = Interval(expr_bounds.lower_bound, bnds_list[-1].upper_bound)
+        if expr_bounds.upper_bound < bnds_list[-1].upper_bound:
+            bnds_list[-1] = Interval(bnds_list[-1].lower_bound, expr_bounds.upper_bound)
 
-        const = expr.constant
-        children_bounds = [
-            self._child_bounds(child_idx, coef, const, expr_bound, children_bounds)
-            for child_idx, (coef, child) in enumerate(zip(expr.linear_coefs, expr.linear_vars))
-        ]
+        children_bounds = [None] * len(expr.linear_vars)
+        for i in reversed(range(len(expr.linear_vars))):
+            bnds0 = bnds_list[i + 1]
+            bnds1 = bnds_list[i]
+            coef = pe.value(expr.linear_coefs[i])
+            v = expr.linear_vars[i]
+            v_bounds = bounds[v]
+            bnds2 = coef * v_bounds
+            _bnds1 = bnds0 - bnds2
+            _bnds2 = bnds0 - bnds1
+            bnds1 = bnds1.intersect(_bnds1)
+            bnds2 = bnds2.intersect(_bnds2)
+            bnds_list[i] = bnds1
+            children_bounds[i] = bnds2 / coef
+
         return children_bounds
 
-    def _child_bounds(self, child_idx, coef, const, expr_bound, children_bounds):
-        siblings_bound = sum(
-            b for i, b in enumerate(children_bounds) if i != child_idx
-        ) + const
-        return (expr_bound - siblings_bound) / coef
+
+def _update_var_bounds_from_bilinear_term_bounds(t: BilinearTerm,
+                                                 term_bound: Interval,
+                                                 bounds: MutableMapping[NumericValue, Interval],
+                                                 child_bounds: MutableMapping[NumericValue, Interval]):
+    term_bound = term_bound / t.coefficient
+    if t.var1 is t.var2:
+        term_bound = term_bound.intersect(Interval(0, None))
+        upper_bound = term_bound.sqrt().upper_bound
+        new_bound = Interval(-upper_bound, upper_bound)
+        if t.var1 in child_bounds:
+            existing = child_bounds[t.var1]
+            child_bounds[t.var1] = existing.intersect(new_bound)
+        else:
+            child_bounds[t.var1] = new_bound
+    else:
+        new_bound_var1 = term_bound / bounds[t.var2]
+        new_bound_var2 = term_bound / bounds[t.var1]
+
+        if t.var1 in child_bounds:
+            existing = child_bounds[t.var1]
+            child_bounds[t.var1] = existing.intersect(new_bound_var1)
+        else:
+            child_bounds[t.var1] = new_bound_var1
+
+        if t.var2 in child_bounds:
+            existing = child_bounds[t.var2]
+            child_bounds[t.var2] = existing.intersect(new_bound_var2)
+        else:
+            child_bounds[t.var2] = new_bound_var2
 
 
 class QuadraticRule(Rule):
@@ -95,50 +154,40 @@ class QuadraticRule(Rule):
         self.max_expr_children = max_expr_children
 
     def apply(self, expr, bounds):
-        expr_bound = bounds[expr]
-        child_bounds = ComponentMap()
-        if len(expr.terms) > self.max_expr_children:
-            return None
-
-        # Build bounds for all terms
+        bnds_list: List[Interval] = list()
+        expr_bounds: Interval = bounds[expr]
         terms_bounds = [self._term_bound(t, bounds) for t in expr.terms]
+        bnds_list.append(terms_bounds[0])
+        for t_bnds in terms_bounds[1:]:
+            bnds_list.append(bnds_list[-1] + t_bnds)
+        if expr_bounds.lower_bound > bnds_list[-1].lower_bound:
+            bnds_list[-1] = Interval(expr_bounds.lower_bound, bnds_list[-1].upper_bound)
+        if expr_bounds.upper_bound < bnds_list[-1].upper_bound:
+            bnds_list[-1] = Interval(bnds_list[-1].lower_bound, expr_bounds.upper_bound)
 
-        terms = expr.terms
+        terms = list(expr.terms)
+        child_bounds = ComponentMap()
+        for i in reversed(range(1, len(terms_bounds))):
+            bnds0 = bnds_list[i]
+            bnds1 = bnds_list[i-1]
+            bnds2 = terms_bounds[i]
+            _bnds1 = bnds0 - bnds2
+            _bnds2 = bnds0 - bnds1
+            bnds1 = bnds1.intersect(_bnds1)
+            bnds2 = bnds2.intersect(_bnds2)
+            bnds_list[i-1] = bnds1
+            _update_var_bounds_from_bilinear_term_bounds(t=terms[i],
+                                                         term_bound=bnds2,
+                                                         bounds=bounds,
+                                                         child_bounds=child_bounds)
 
-        for term_idx, term in enumerate(terms):
-            var1 = term.var1
-            var2 = term.var2
-            siblings_bound = sum(
-                terms_bounds[i]
-                for i, t in enumerate(terms) if i != term_idx
-            )
-            term_bound = (expr_bound - siblings_bound) / term.coefficient
-            if id(var1) == id(var2):
-                term_bound = term_bound.intersect(Interval(0, None))
-                upper_bound = term_bound.sqrt().upper_bound
-                new_bound = Interval(-upper_bound, upper_bound)
-
-                if var1 in child_bounds:
-                    existing = child_bounds[var1]
-                    child_bounds[var1] = existing.intersect(new_bound)
-                else:
-                    child_bounds[var1] = Interval(new_bound.lower_bound, new_bound.upper_bound)
-
-            else:
-                new_bound_var1 = term_bound / bounds[var2]
-                new_bound_var2 = term_bound / bounds[var1]
-
-                if var1 in child_bounds:
-                    existing = child_bounds[var1]
-                    child_bounds[var1] = existing.intersect(new_bound_var1)
-                else:
-                    child_bounds[var1] = new_bound_var1
-
-                if var2 in child_bounds:
-                    existing = child_bounds[var2]
-                    child_bounds[var2] = existing.intersect(new_bound_var2)
-                else:
-                    child_bounds[var2] = new_bound_var2
+        bnds = terms_bounds[0]
+        _bnds = bnds_list[0]
+        bnds = bnds.intersect(_bnds)
+        _update_var_bounds_from_bilinear_term_bounds(t=terms[0],
+                                                     term_bound=bnds,
+                                                     bounds=bounds,
+                                                     child_bounds=child_bounds)
 
         return child_bounds
 

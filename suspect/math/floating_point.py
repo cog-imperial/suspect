@@ -15,13 +15,15 @@
 # pylint: disable=invalid-name
 """Floating point arithmetic."""
 import numpy as np
+import math
 
-make_number = np.float
+make_number = float
 inf = np.inf
 zero = float(0.0)
 pi = np.pi
 isnan = lambda n: np.isnan(n)
 isinf = lambda n: np.isinf(n)
+float_int = {float, int}
 
 
 def _declare_unary_function(name, fun):
@@ -68,14 +70,12 @@ def max_(*args):
     return max(a for a in args if not isnan(a))
 
 
-def almosteq(a, b, rel_eps=None, abs_eps=None):
+def almosteq(a, b, rel_eps=1e-5, abs_eps=1e-8):
     """Floating point equality check between `a` and `b`."""
-    # inf != inf, but we want inf == inf
-    if rel_eps is None:
-        rel_eps = 1.0e-5
-    if abs_eps is None:
-        abs_eps = 1.0e-8
-    return np.all(np.isclose(a, b, rtol=rel_eps, atol=abs_eps))
+    if type(a) in float_int and type(b) in float_int:
+        return math.isclose(a, b, rel_tol=rel_eps, abs_tol=abs_eps)
+    else:
+        return np.isclose(a, b, rtol=rel_eps, atol=abs_eps)
 
 
 def almostgte(a, b):
