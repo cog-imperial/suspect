@@ -1,12 +1,12 @@
 Special Structure Detection for Pyomo
 =====================================
 
-|DOI|_ |travis|_ |codecov|_
+|DOI|_ |GHA|_ |codecov|_
 
 .. |DOI| image:: https://zenodo.org/badge/127118649.svg
 .. _DOI: https://zenodo.org/badge/latestdoi/127118649
-.. |travis| image:: https://travis-ci.org/cog-imperial/suspect.svg?branch=master
-.. _travis: https://travis-ci.org/cog-imperial/suspect
+.. |GHA| image:: https://github.com/cog-imperial/suspect/actions/workflows/main.yml/badge.svg
+.. _GHA: https://github.com/cog-imperial/suspect/actions/workflows/main.yml
 .. |codecov| image:: https://codecov.io/gh/cog-imperial/suspect/branch/master/graph/badge.svg
 .. _codecov: https://codecov.io/gh/cog-imperial/suspect
 
