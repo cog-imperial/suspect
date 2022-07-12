@@ -70,7 +70,7 @@ def max_(*args):
     return max(a for a in args if not isnan(a))
 
 
-def almosteq(a, b, rel_eps=1e-5, abs_eps=1e-8):
+def almosteq(a, b, rel_eps=1e-6, abs_eps=1e-8):
     """Floating point equality check between `a` and `b`."""
     if type(a) in float_int and type(b) in float_int:
         return math.isclose(a, b, rel_tol=rel_eps, abs_tol=abs_eps)
